@@ -181,16 +181,19 @@ export async function submitCheckin(lat: number | null, lng: number | null, accu
   const gpsWeak = lat === null || lng === null || (accuracy !== null && accuracy > 100);
 
   if (gpsWeak) {
-    finalStatus = "pending";
-    await logEvent(student.studentId, "gps_denied", "เช็คชื่อด้วยสัญญาณ GPS อ่อน ต้องให้ครูตรวจสอบ");
-  } else {
-    const location = await getActiveLocation(student.classroomId);
-    distance = haversineDistance(lat!, lng!, location.lat, location.lng);
-    if (distance > location.radius) {
-      finalStatus = "flagged";
-      isSuspicious = true;
-      await logEvent(student.studentId, "out_of_radius", `เช็คอินนอกรัศมี: ห่าง ${Math.round(distance)} เมตร สภาพถูกจัดไว้ให้รอครูตรวจ`);
-    }
+    await logEvent(student.studentId, "gps_denied", "พยายามเช็คชื่อด้วยสัญญาณ GPS อ่อนหรือไม่มีพิกัด — ถูกปฏิเสธ ต้องแก้ไขสิทธิ์ตำแหน่งก่อน");
+    return {
+      ok: false,
+      message: "ไม่สามารถตรวจสอบพิกัดของคุณได้ กรุณาตรวจสอบว่าเปิดสิทธิ์การเข้าถึงตำแหน่ง (Location Permission) แล้ว และลองใหม่อีกครั้ง",
+    };
+  }
+
+  const location = await getActiveLocation(student.classroomId);
+  distance = haversineDistance(lat!, lng!, location.lat, location.lng);
+  if (distance > location.radius) {
+    finalStatus = "flagged";
+    isSuspicious = true;
+    await logEvent(student.studentId, "out_of_radius", `เช็คอินนอกรัศมี: ห่าง ${Math.round(distance)} เมตร สภาพถูกจัดไว้ให้รอครูตรวจ`);
   }
 
   await prisma.attendanceRecord.create({
@@ -199,8 +202,8 @@ export async function submitCheckin(lat: number | null, lng: number | null, accu
       studentId: student.studentId,
       status: finalStatus,
       checkTime,
-      latitude: gpsWeak ? null : lat,
-      longitude: gpsWeak ? null : lng,
+      latitude: lat,
+      longitude: lng,
       distanceM: distance !== null ? Math.round(distance) : null,
       isSuspicious: isSuspicious ? 1 : 0,
     },

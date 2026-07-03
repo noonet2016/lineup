@@ -100,9 +100,10 @@ export default function CheckinClient({
             setStep("confirm");
             startCountdown();
           } else if (result.gpsWeak) {
-            setStep("confirm");
-            startCountdown();
-            setAlert({ type: "warning", message: `สัญญาณตำแหน่งค่อนข้างต่ำ: ${result.message}` });
+            setAlert({
+              type: "error",
+              message: `${result.message}<br>กรุณาตรวจสอบว่าเปิดสิทธิ์การเข้าถึงตำแหน่ง (Location Permission) แล้ว และลองออกไปที่โล่งแจ้งเพื่อรับสัญญาณ GPS ที่ดีขึ้น จากนั้นกดเช็คอินใหม่อีกครั้ง`,
+            });
           } else {
             setAlert({
               type: "error",
