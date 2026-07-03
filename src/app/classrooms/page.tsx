@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClassroomsPage() {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
   const classrooms = await prisma.classroom.findMany({
     orderBy: { roomName: "asc" },
     include: {

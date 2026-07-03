@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { holidayBlockReason, loadDashboard, type DashboardFilter } from "@/lib/dashboard";
 import { formatWallClockDate, todayInBangkok } from "@/lib/time";
@@ -47,8 +47,10 @@ export default async function ClassroomDashboardPage({
     getSession(),
   ]);
 
+  if (!session) redirect("/login");
+
   const { sessionOpen } = data;
-  const isAdvisor = session?.role === "teacher" && classroom.advisorId === Number(session.id);
+  const isAdvisor = session.role === "teacher" && classroom.advisorId === Number(session.id);
 
   const page = (
     <main className="max-w-full mx-auto safe-px py-8 space-y-6">

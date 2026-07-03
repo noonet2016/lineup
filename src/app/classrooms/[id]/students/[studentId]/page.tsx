@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { StudentShell, TeacherShell } from "@/app/_components/LegacyChrome";
@@ -45,10 +45,16 @@ export default async function StudentHistoryPage({
   const data = await loadStudentHistory(studentId, year, month);
   if (!data || data.student.classroomId !== classroomId) notFound();
   const session = await getSession();
+  if (!session) redirect("/login");
+
   const classroom =
-    session?.role === "teacher"
+    session.role === "teacher"
       ? await prisma.classroom.findUnique({ where: { id: classroomId }, include: { advisor: { select: { fullName: true } } } })
       : null;
+
+  const isOwnStudent = session.role === "student" && session.id === studentId;
+  const isAdvisor = session.role === "teacher" && classroom?.advisorId === Number(session.id);
+  if (!isOwnStudent && !isAdvisor) redirect(`/classrooms/${classroomId}`);
 
   const todayBadge = historyStatusMeta(
     data.todayStatus === "notyet" || data.todayStatus === "none" ? "none" : data.todayStatus,
@@ -183,17 +189,13 @@ export default async function StudentHistoryPage({
     </main>
   );
 
-  if (session?.role === "student" && session.id === studentId) {
+  if (isOwnStudent) {
     return <StudentShell active="history">{content}</StudentShell>;
   }
 
-  if (session?.role === "teacher" && classroom?.advisorId === Number(session.id)) {
-    return (
-      <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId}>
-        {content}
-      </TeacherShell>
-    );
-  }
-
-  return content;
+  return (
+    <TeacherShell active="dashboard" fullName={classroom?.advisor?.fullName ?? ""} roomName={classroom?.roomName ?? ""} classroomId={classroomId}>
+      {content}
+    </TeacherShell>
+  );
 }
