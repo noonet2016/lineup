@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Sarabun } from "next/font/google";
 import "./globals.css";
+import LineExternalBrowserRedirect from "./_components/LineExternalBrowserRedirect";
 
 const sarabun = Sarabun({
   variable: "--font-sarabun",
@@ -29,7 +30,10 @@ export default function RootLayout({
       lang="th"
       className={`${sarabun.variable} ${outfit.variable} h-full bg-slate-950 text-slate-100 antialiased`}
     >
-      <body className="min-h-full flex flex-col overflow-x-hidden relative">{children}</body>
+      <body className="min-h-full flex flex-col overflow-x-hidden relative">
+        <LineExternalBrowserRedirect />
+        {children}
+      </body>
     </html>
   );
 }
