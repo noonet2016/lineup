@@ -353,3 +353,46 @@ Classroom (teacher, advisor-guarded unless noted): `/classrooms` (list), `/class
 - Hit a nasty self-inflicted bug chasing this: an earlier line-splice script (used to insert the new sidebar nav item) matched the WRONG target line and clobbered the "settings" object's closing `},` instead of inserting before it, silently breaking `LegacyChrome.tsx`'s syntax. Spent a long stretch chasing a false "invisible Unicode/encoding corruption" theory (checked bidi control chars, UTF-8 validity, killed a stale background `next dev` server) before finally isolating the array literal into a standalone `.js` file and running `node --check` on it directly — which pinpointed the exact missing `},` immediately. Lesson: when Turbopack's error location seems to defy manual inspection, extract the suspect block and run it through a plain parser (`node --check`) rather than re-reading it by eye.
 - Verified locally: `npm run build` clean, standalone server smoke test — unauthenticated `/classrooms/1/students/manage` correctly 307-redirects to `/login` (HTTP 200 on home page).
 - Trainer explicitly asked to STOP PUSHING and keep this local-only until the feature is confirmed clear — committed locally, NOT pushed to `origin/main`. This entry also folds in several earlier same-day commits (96dfb52 through ee29cb7) whose WORKLOG entries were written but never actually staged/committed until now.
+
+## ========== CHECKPOINT (2026-07-03, end of M6 go-live session) ==========
+
+### สรุปภาพรวม session นี้
+วันนี้พา lineup-nextjs จาก "build เสร็จแต่ยังไม่ deploy" → **ขึ้น production จริงที่ https://lineup.thatnarai.net และใช้งานได้** แล้วไล่แก้บั๊กที่เจอจากการทดสอบจริงหลายรอบ + เพิ่มฟีเจอร์ใหม่ 1 อย่าง (จัดการรายชื่อนักเรียน).
+
+### สถานะ Git (สำคัญ)
+- Repo: `noonet2016/lineup` (public) บน GitHub. Local repo = `projects/lineup-nextjs`, branch `main`.
+- **origin/main ล่าสุด = `ee29cb7`** (ทุก commit จนถึงตัวนี้ push แล้ว = อยู่บน production ได้)
+- **`e297d10` (student-roster management) = LOCAL ONLY, ยังไม่ push** — ตาม Trainer สั่งให้หยุด push ไว้ก่อน ให้ทดลองใน local จน "เคลียร์" ก่อนค่อยขึ้น. อย่าเผลอ push จนกว่า Trainer อนุมัติ.
+- Working tree clean.
+
+### ลำดับงานที่ทำวันนี้ (เรียงตามที่เกิด)
+1. **Dev DB sync** — import `~/Desktop/thatnara_lineup.sql` (dump สด 2026-07-03) เข้า `lineup_dev`, backup เก่าไว้ที่ `scratch/lineup_dev_backup_20260703.sql`, `prisma db push --accept-data-loss` (drop devices/teacher_credentials/device_id ตามมติ M3), แก้ orphan FK 7 แถวใน attendance_logs. ข้อมูลจริง: 40 นักเรียน / 437 records / 1947 logs.
+2. **M6 deploy chain** (ดู 3 entry ก่อนหน้า checkpoint นี้สำหรับรายละเอียดเต็ม) — จบที่ deploy live สำเร็จ.
+3. **แก้บั๊กหลัง go-live** (ทั้งหมด push แล้ว):
+   - Security: 3 หน้ารั่ว PII (ไม่บังคับ login) → เพิ่ม auth guard (`46a53d8`).
+   - Login page: ลบปุ่ม Face ID ตาย + เพิ่มปุ่ม LINE login (`3ac41bc`); แก้ redirect ผ่าน `appOrigin()` แทน `req.url` (`fdc4699`).
+   - LINE in-app browser: auto `openExternalBrowser=1` (`7209a28`).
+   - **LINE channel ยังเป็น Developing** → Trainer กด Publish (นี่คือสาเหตุหลักที่นักเรียนทั่วไป login ไม่ได้).
+   - GPS: บล็อกเช็คชื่อถ้าพิกัดอ่อน แทนบันทึกเป็น pending (`6298a04`); เปลี่ยน single-shot → watchPosition retry 15s / early-exit ที่ ±50m (`ee29cb7`).
+4. **ฟีเจอร์ใหม่: จัดการนักเรียน** (`e297d10`, local-only) — add/edit/soft-delete, หน้า `/classrooms/[id]/students/manage`, เมนู sidebar "จัดการนักเรียน".
+
+### Production config ที่ตั้งไว้แล้ว (อย่าทำหาย)
+- Plesk `lineup.thatnarai.net`: Application Root = `/lineup.thatnarai.net`, Startup File = `.next/standalone/server.js`, Document Root = `.next/standalone/public`, Package Manager = npm, Node 24.
+- Prod DB = `thatnara_lineup_prod` @ localhost:3306 (บน host). schema sync แล้ว.
+- Env vars: ตั้ง 2 ที่ — (ก) Custom environment variables ใน Node.js panel (สำหรับ Passenger รันแอปจริง), (ข) ไฟล์ `.env` ที่ File Manager Application Root (สำหรับ `npm run db:push` ที่รันผ่าน "Run script" ซึ่งไม่เห็น env ของ panel). ทั้งสองที่ต้องมี: DATABASE_URL, LINE_CHANNEL_ID=2010580999, LINE_CHANNEL_SECRET, LINE_REDIRECT_URI=https://lineup.thatnarai.net/api/auth/line/callback, SESSION_SECRET (prod ตัวใหม่ ไม่ใช่ dev).
+- LINE Developers Console: callback URL production เพิ่มแล้ว, channel Published แล้ว.
+
+### วิธี deploy ครั้งถัดไป (playbook)
+1. push จาก local → GitHub. 2. Plesk Git tab → Pull updates. 3. Run script → `run build`. 4. Restart App.
+- reset DB test → import `scratch/lineup_prod_import_20260703.sql` ทับผ่าน phpMyAdmin + `run db:push -- --accept-data-loss`.
+- `npx` ตรงๆ ใน Run-script ใช้ไม่ได้ (รับแค่ npm subcommand). Plesk cwd ไม่นิ่ง → ใช้ wrapper scripts absolute-path เสมอ.
+
+### Next steps (M6 ยังไม่ปิด)
+1. **Trainer ทดสอบฟีเจอร์จัดการนักเรียน (`e297d10`) ใน local** (`npm run dev`) จนพอใจ → แจ้ง Rudolf ให้ push + deploy.
+2. ทดสอบ flow จริงบน production ที่ยังไม่ครบ: GPS check-in จริง (retry ใหม่ช่วยเคสนักเรียนอยู่ในพื้นที่แต่ถูก reject ได้จริงไหม), teacher admin, report/CSV.
+3. Cutover communication: แจ้งครู/นักเรียนว่าต้อง re-bind LINE ใหม่ทุกคน (device/WebAuthn เดิมหายไปแล้ว).
+4. (ค้างจากแผนเดิม) LIFF student self-service leave-request — เลื่อนไว้หลัง M6. หมายเหตุจาก POC (`projects/lineup-liff-poc/index.html`): LIFF ก็เรียก `navigator.geolocation` ตัวเดียวกัน ไม่มี API พิกัดแยก; ข้อดีคือ permission ระดับ app + webview อาจแม่นกว่า browser บางตัว. ยังไม่มีผลทดสอบจริงเทียบ accuracy.
+
+### Open questions
+- watchPosition retry (`ee29cb7`) แก้ปัญหานักเรียนอยู่ในพื้นที่แต่เช็คไม่ผ่านได้จริงหรือยัง — รอผลทดสอบภาคสนาม. ถ้ายังไม่พอ ค่อยพิจารณาดึง checkin มาทำ LIFF.
+- ต้องการ hard-delete นักเรียนถาวรไหม (ตอนนี้มีแค่ soft delete) — Trainer ถามค้างไว้ว่า "ถ้าอยากลบเด็กออกจริงๆ ทำยังไง"; คำตอบปัจจุบัน = ต้องทำผ่าน DB โดยตรง เพราะ FK Restrict, ยังไม่ได้ทำ UI ให้.
