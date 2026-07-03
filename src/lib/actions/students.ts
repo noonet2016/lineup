@@ -90,6 +90,45 @@ export async function updateStudent(
   return { ok: true, message: `บันทึกข้อมูลของ ${fullName} เรียบร้อยแล้ว` };
 }
 
+export async function renumberStudents(): Promise<ActionResult> {
+  const teacher = await requireTeacherClassroom();
+
+  const students = await prisma.student.findMany({
+    where: { classroomId: teacher.classroomId, status: 1 },
+    orderBy: [{ numberInClass: "asc" }, { studentId: "asc" }],
+  });
+  const ordered = students.slice().sort((a, b) => {
+    if (a.numberInClass === null && b.numberInClass !== null) return 1;
+    if (a.numberInClass !== null && b.numberInClass === null) return -1;
+    if (a.numberInClass !== b.numberInClass) return (a.numberInClass ?? 0) - (b.numberInClass ?? 0);
+    return a.studentId.localeCompare(b.studentId);
+  });
+
+  const updates = ordered.flatMap((student, index) => {
+    const nextNumber = index + 1;
+    if (student.numberInClass === nextNumber) return [];
+    return [
+      prisma.student.update({
+        where: { studentId: student.studentId },
+        data: { numberInClass: nextNumber },
+      }),
+    ];
+  });
+  await prisma.$transaction([
+    ...updates,
+    prisma.attendanceLog.create({
+      data: {
+        studentId: null,
+        eventType: "settings_changed",
+        detail: `ครู ${teacher.fullName} จัดเรียงเลขที่นักเรียนใหม่ (${ordered.length} คน)`,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/classrooms/${teacher.classroomId}/students/manage`);
+  return { ok: true, message: `จัดเรียงเลขที่ใหม่เรียบร้อยแล้ว (${ordered.length} คน)` };
+}
+
 /** Soft delete: flips status to 0. FK relations to attendance history use onDelete:Restrict, so a hard delete is intentionally not exposed here — it would fail (or need a separate irreversible admin-only path) once a student has any attendance record. */
 export async function deactivateStudent(studentId: string): Promise<ActionResult> {
   const teacher = await requireTeacherClassroom();

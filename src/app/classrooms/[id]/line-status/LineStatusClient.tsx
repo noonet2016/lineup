@@ -83,7 +83,7 @@ export default function LineStatusClient({
                       <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-xs text-slate-500 shrink-0">?</div>
                     )}
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-white truncate">
+                      <div className="text-sm font-semibold text-white break-words">
                         เลขที่ {s.numberInClass ?? "-"} · {s.fullName}
                       </div>
                       <div className="text-[11px] text-slate-500 font-mono">เลขประจำตัว {s.studentId}{s.nickname ? ` · ชื่อเล่น ${s.nickname}` : ""}</div>

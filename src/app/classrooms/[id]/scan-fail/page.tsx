@@ -2,11 +2,14 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import PollRefresh from "@/app/_components/PollRefresh";
-import LineStatusClient from "./LineStatusClient";
+import ScanFailListClient from "./ScanFailListClient";
+import { getUnmatchedScanFailReports } from "@/lib/actions/scanfail";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClassroomLineStatusPage({ params }: { params: Promise<{ id: string }> }) {
+type Params = { id: string };
+
+export default async function ClassroomScanFailPage({ params }: { params: Promise<Params> }) {
   const { id } = await params;
   const classroomId = Number(id);
   if (!Number.isInteger(classroomId)) redirect("/classrooms");
@@ -21,27 +24,16 @@ export default async function ClassroomLineStatusPage({ params }: { params: Prom
   });
   if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
 
-  const students = await prisma.student.findMany({
-    where: { classroomId, status: 1 },
-    orderBy: { numberInClass: "asc" },
-  });
+  const reports = await getUnmatchedScanFailReports(classroomId);
 
   return (
     <>
       <PollRefresh />
-      <LineStatusClient
+      <ScanFailListClient
         classroomId={classroomId}
         roomName={classroom.roomName}
         fullName={classroom.advisor?.fullName ?? ""}
-        students={students.map((s) => ({
-          studentId: s.studentId,
-          fullName: s.fullName,
-          nickname: s.nickname,
-          numberInClass: s.numberInClass,
-          linked: Boolean(s.lineUserId),
-          lineDisplayName: s.lineDisplayName,
-          linePictureUrl: s.linePictureUrl,
-        }))}
+        reports={reports}
       />
     </>
   );

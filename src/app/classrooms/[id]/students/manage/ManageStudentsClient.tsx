@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createStudent, deactivateStudent, updateStudent } from "@/lib/actions/students";
+import { createStudent, deactivateStudent, renumberStudents, updateStudent } from "@/lib/actions/students";
 
 type Student = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null };
 
@@ -12,8 +12,8 @@ const EMPTY_FORM: FormState = { studentId: "", fullName: "", nickname: "", numbe
 function sortStudents(items: Student[]): Student[] {
   const copy = items.slice();
   copy.sort((a, b) => {
-    const an = a.numberInClass === null ? 9999 : a.numberInClass;
-    const bn = b.numberInClass === null ? 9999 : b.numberInClass;
+    const an = a.numberInClass === null ? Number.POSITIVE_INFINITY : a.numberInClass;
+    const bn = b.numberInClass === null ? Number.POSITIVE_INFINITY : b.numberInClass;
     if (an !== bn) return an - bn;
     return a.studentId.localeCompare(b.studentId);
   });
@@ -27,6 +27,7 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(EMPTY_FORM);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [confirmingRenumber, setConfirmingRenumber] = useState(false);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -79,6 +80,18 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
         setList(sortStudents(updated));
         setEditingId(null);
       }
+      setMessage({ type: result.ok ? "success" : "error", text: result.message });
+    });
+  }
+
+  function doRenumber() {
+    setMessage(null);
+    startTransition(async () => {
+      const result = await renumberStudents();
+      if (result.ok) {
+        setList(sortStudents(list).map((student, index) => ({ ...student, numberInClass: index + 1 })));
+      }
+      setConfirmingRenumber(false);
       setMessage({ type: result.ok ? "success" : "error", text: result.message });
     });
   }
@@ -173,13 +186,44 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
       </div>
 
       <div className="glass-panel rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-900 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-slate-900 flex items-center justify-between gap-3">
           <h2 className="text-base font-bold text-white">นักเรียนทั้งหมด ({list.length})</h2>
+          {confirmingRenumber ? (
+            <div className="flex gap-1.5 shrink-0">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={doRenumber}
+                className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-lg"
+              >
+                ยืนยันจัดเรียง
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingRenumber(false)}
+                className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg"
+              >
+                ยกเลิก
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={pending || list.length === 0}
+              onClick={() => {
+                setConfirmingRenumber(true);
+                setConfirmingDeleteId(null);
+              }}
+              className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-lg"
+            >
+              จัดเรียงเลขที่ใหม่
+            </button>
+          )}
         </div>
         {list.length === 0 ? (
           <div className="px-5 py-10 text-center text-slate-500 text-sm">ยังไม่มีนักเรียนในห้องนี้</div>
         ) : (
-          <ul className="divide-y divide-slate-900/60">
+          <ul className="divide-y divide-slate-900/60 overflow-y-auto max-h-[60vh]">
             {list.map((s) => {
               if (editingId === s.studentId) {
                 return (

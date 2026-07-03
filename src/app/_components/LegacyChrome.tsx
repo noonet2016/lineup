@@ -1,7 +1,8 @@
 import { logout } from "@/lib/actions/auth";
+import { TeacherMobileNav } from "@/app/_components/TeacherMobileNav";
 
-type TeacherActive = "dashboard" | "devices" | "exemptions" | "settings" | "report" | "students";
-type StudentActive = "checkin" | "history" | "devices" | "profile";
+type TeacherActive = "dashboard" | "devices" | "exemptions" | "leave" | "scanfail" | "settings" | "report" | "students";
+type StudentActive = "checkin" | "history" | "profile" | "leave";
 
 const teacherItems: { key: TeacherActive; label: string; href: string; path: string }[] = [
   {
@@ -21,6 +22,18 @@ const teacherItems: { key: TeacherActive; label: string; href: string; path: str
     label: "ยกเว้นเข้าแถว",
     href: "/classrooms",
     path: "M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+  },
+  {
+    key: "leave",
+    label: "คำขอลา",
+    href: "/classrooms",
+    path: "M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.008v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.008v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.008v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z",
+  },
+  {
+    key: "scanfail",
+    label: "สแกนหน้าไม่ติด",
+    href: "/classrooms",
+    path: "M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243L9.88 9.88",
   },
   {
     key: "settings",
@@ -44,8 +57,8 @@ const teacherItems: { key: TeacherActive; label: string; href: string; path: str
 
 const studentItems: { label: string; href: string; key: StudentActive; path: string }[] = [
   { label: "เช็คชื่อ", href: "/checkin", key: "checkin", path: "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
-  { label: "ผลการเช็ค", href: "/account", key: "history", path: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1-1.125 1h-2.25A1.125 1.125 0 0116.5 19.875V4.125z" },
-  { label: "อุปกรณ์", href: "/account", key: "devices", path: "M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" },
+  { label: "ยื่นขอลา", href: "/leave", key: "leave", path: "M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.008v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.008v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.008v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" },
+  { label: "ผลการเช็ค", href: "/history", key: "history", path: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1-1.125 1h-2.25A1.125 1.125 0 0116.5 19.875V4.125z" },
   { label: "โปรไฟล์", href: "/account", key: "profile", path: "M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" },
 ];
 
@@ -98,6 +111,10 @@ export function TeacherShell({
           ? `/classrooms/${classroomId}/students/manage`
         : item.key === "exemptions" && classroomId
           ? `/classrooms/${classroomId}/exemptions`
+        : item.key === "leave" && classroomId
+          ? `/classrooms/${classroomId}/leave-requests`
+        : item.key === "scanfail" && classroomId
+          ? `/classrooms/${classroomId}/scan-fail`
         : item.key === "devices" && classroomId
           ? `/classrooms/${classroomId}/line-status`
         : item.key === "report" && classroomId
@@ -110,7 +127,7 @@ export function TeacherShell({
     <>
       <BackgroundGlow variant="purple" />
       <div className="md:hidden sticky top-0 z-30 flex items-center justify-between h-14 safe-px safe-pt bg-slate-950/90 backdrop-blur border-b border-slate-900">
-        <span className="text-slate-300 p-2 -ml-2">☰</span>
+        <TeacherMobileNav items={items} active={active} fullName={fullName} roomName={roomName} />
         <span className="font-bold text-white tracking-wider text-sm">TEACHER PORTAL</span>
         <form action={logout}>
           <button type="submit" className="text-slate-400 hover:text-rose-400 p-2 -mr-2" aria-label="ออกระบบ">

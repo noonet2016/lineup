@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireTeacherClassroom } from "@/lib/teacher";
-import { nowInBangkok } from "@/lib/time";
+import { formatDateInput, nowInBangkok } from "@/lib/time";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string };
 
@@ -11,6 +11,18 @@ function parseDateInput(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const [y, m, d] = value.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d));
+}
+
+function normalizeReviewNote(note?: string): string | null {
+  const trimmed = String(note ?? "").trim();
+  return trimmed ? trimmed.slice(0, 255) : null;
+}
+
+function formatLeaveRange(startDate: Date | null, endDate: Date | null): string {
+  if (!startDate || !endDate) return "-";
+  const start = formatDateInput(startDate);
+  const end = formatDateInput(endDate);
+  return start === end ? start : `${start} ถึง ${end}`;
 }
 
 /**
@@ -87,4 +99,92 @@ export async function toggleExemptionActive(exemptId: number, isActive: boolean)
 
   revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
   return { ok: true, message: isActive ? "เปิดใช้งานการยกเว้นแล้ว" : "ปิดใช้งานการยกเว้นแล้ว" };
+}
+
+export async function approveLeave(id: number, note?: string): Promise<ActionResult> {
+  const teacher = await requireTeacherClassroom();
+  const { wallClock: reviewedAt } = nowInBangkok();
+  const reviewNote = normalizeReviewNote(note);
+
+  const exemption = await prisma.studentExemption.findFirst({
+    where: { id, requestedByStudent: 1, student: { classroomId: teacher.classroomId } },
+    select: { id: true, studentId: true, reason: true, startDate: true, endDate: true },
+  });
+  if (!exemption) return { ok: false, message: "ไม่พบคำขอลาที่รออนุมัติในห้องของคุณ" };
+
+  await prisma.studentExemption.update({
+    where: { id: exemption.id },
+    data: { status: "approved", reviewedBy: teacher.teacherId, reviewedAt, reviewNote },
+  });
+  await prisma.attendanceLog.create({
+    data: {
+      studentId: exemption.studentId,
+      eventType: "settings_changed",
+      detail: `ครู ${teacher.fullName} อนุมัติคำขอลา: ${exemption.reason} (${formatLeaveRange(exemption.startDate, exemption.endDate)})`,
+    },
+  });
+
+  revalidatePath(`/classrooms/${teacher.classroomId}`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/exemptions`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/leave-requests`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  return { ok: true, message: "อนุมัติคำขอลาเรียบร้อยแล้ว" };
+}
+
+export async function rejectLeave(id: number, note?: string): Promise<ActionResult> {
+  const teacher = await requireTeacherClassroom();
+  const { wallClock: reviewedAt } = nowInBangkok();
+  const reviewNote = normalizeReviewNote(note);
+
+  const exemption = await prisma.studentExemption.findFirst({
+    where: { id, requestedByStudent: 1, student: { classroomId: teacher.classroomId } },
+    select: { id: true, studentId: true, reason: true, startDate: true, endDate: true },
+  });
+  if (!exemption) return { ok: false, message: "ไม่พบคำขอลาที่รอพิจารณาในห้องของคุณ" };
+
+  await prisma.studentExemption.update({
+    where: { id: exemption.id },
+    data: { status: "rejected", reviewedBy: teacher.teacherId, reviewedAt, reviewNote },
+  });
+  await prisma.attendanceLog.create({
+    data: {
+      studentId: exemption.studentId,
+      eventType: "settings_changed",
+      detail: `ครู ${teacher.fullName} ไม่อนุมัติคำขอลา: ${exemption.reason} (${formatLeaveRange(exemption.startDate, exemption.endDate)})`,
+    },
+  });
+
+  revalidatePath(`/classrooms/${teacher.classroomId}`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/exemptions`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/leave-requests`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  return { ok: true, message: "ปฏิเสธคำขอลาเรียบร้อยแล้ว" };
+}
+
+export async function revertLeaveToPending(id: number): Promise<ActionResult> {
+  const teacher = await requireTeacherClassroom();
+
+  const exemption = await prisma.studentExemption.findFirst({
+    where: { id, requestedByStudent: 1, student: { classroomId: teacher.classroomId } },
+    select: { id: true, studentId: true, reason: true, startDate: true, endDate: true },
+  });
+  if (!exemption) return { ok: false, message: "ไม่พบคำขอลาในห้องของคุณ" };
+
+  await prisma.studentExemption.update({
+    where: { id: exemption.id },
+    data: { status: "pending", reviewedBy: null, reviewedAt: null, reviewNote: null },
+  });
+  await prisma.attendanceLog.create({
+    data: {
+      studentId: exemption.studentId,
+      eventType: "settings_changed",
+      detail: `ครู ${teacher.fullName} คืนคำขอลาเป็นสถานะรออนุมัติ: ${exemption.reason} (${formatLeaveRange(exemption.startDate, exemption.endDate)})`,
+    },
+  });
+
+  revalidatePath(`/classrooms/${teacher.classroomId}`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/exemptions`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/leave-requests`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  return { ok: true, message: "คืนคำขอลาเป็นสถานะรออนุมัติแล้ว" };
 }

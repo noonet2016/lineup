@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { locateCheckin, submitCheckin } from "@/lib/checkin";
+import { reportScanFail } from "@/lib/actions/scanfail";
 
 const STATUS_LABEL: Record<string, string> = {
   present: "มาปกติ",
@@ -40,7 +41,9 @@ export default function CheckinClient({
   const [gpsStatus, setGpsStatus] = useState("สถานะ GPS: รอตรวจพิกัด");
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [scanFailPending, startScanFailTransition] = useTransition();
   const [alert, setAlert] = useState<Alert>(null);
+  const [distance, setDistance] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(120);
   const [completeMessage, setCompleteMessage] = useState<string>(
     alreadyCheckedIn && existingCheckTime
@@ -80,6 +83,33 @@ export default function CheckinClient({
   const MAX_WAIT_MS = 15000;
   const GOOD_ENOUGH_ACCURACY = 50;
 
+  async function getBestEffortGps() {
+    if (!navigator.geolocation) return null;
+
+    return new Promise<{ lat: number; lng: number; accuracy: number } | null>((resolve) => {
+      let settled = false;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      const settle = (value: { lat: number; lng: number; accuracy: number } | null) => {
+        if (settled) return;
+        settled = true;
+        if (timeoutId) clearTimeout(timeoutId);
+        resolve(value);
+      };
+
+      timeoutId = setTimeout(() => settle(null), 4000);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          settle({ lat: latitude, lng: longitude, accuracy });
+        },
+        () => {
+          settle(null);
+        },
+        { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 },
+      );
+    });
+  }
+
   async function finishLocating(latitude: number, longitude: number, accuracy: number) {
     coordsRef.current = { lat: latitude, lng: longitude, accuracy };
     setGpsStatus(`พิกัดปัจจุบัน: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (คลาดเคลื่อน ±${Math.round(accuracy)} ม.)`);
@@ -87,6 +117,7 @@ export default function CheckinClient({
     try {
       const result = await locateCheckin(latitude, longitude, accuracy);
       if ("inRadius" in result && result.inRadius) {
+        setDistance(result.distance);
         setStep("confirm");
         startCountdown();
       } else if (result.gpsWeak) {
@@ -184,6 +215,27 @@ export default function CheckinClient({
     }
   }
 
+  function submitScanFailReport() {
+    setAlert(null);
+    startScanFailTransition(async () => {
+      try {
+        const coords = await getBestEffortGps();
+        const result = coords
+          ? await reportScanFail(coords.lat, coords.lng, coords.accuracy)
+          : await reportScanFail(null, null, null);
+        setAlert({
+          type: result.ok ? "success" : "error",
+          message: result.message,
+        });
+      } catch (err) {
+        setAlert({
+          type: "error",
+          message: `เกิดข้อผิดพลาด: ${err instanceof Error ? err.message : "unknown"}`,
+        });
+      }
+    });
+  }
+
   const alertClass =
     alert?.type === "error"
       ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
@@ -244,6 +296,13 @@ export default function CheckinClient({
               <h3 className="text-xl font-bold text-white mt-2">ขั้นตอนที่ 2: บันทึกยืนยันเช็คชื่อ</h3>
               <p className="text-slate-400 text-sm">ตรวจสอบพิกัดตำแหน่งเรียบร้อยแล้ว กดปุ่มยืนยันด้านล่างเพื่อลงชื่อเช็คอินเข้าแถวทันที</p>
             </div>
+            {distance !== null && (
+              <div className="flex items-center justify-center gap-2 text-cyan-300 text-sm bg-cyan-500/5 py-2 px-4 rounded-xl border border-cyan-500/15 w-fit mx-auto">
+                <span>
+                  📍 คุณอยู่ห่างจากจุดเช็คอิน <strong>{distance}</strong> เมตร (รัศมีที่กำหนด {radius} เมตร)
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-center gap-2 text-amber-400 text-sm bg-amber-500/5 py-2 px-4 rounded-xl border border-amber-500/10 w-fit mx-auto">
               <span>
                 ตำแหน่งพิกัดจะหมดอายุภายใน: <strong>{countdown} วินาที</strong>
@@ -270,6 +329,28 @@ export default function CheckinClient({
             </div>
           </div>
         )}
+
+        <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-slate-800/80 bg-slate-950/30 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
+              !
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-white font-bold">สแกนหน้าไม่ติดใช่ไหม?</h4>
+              <p className="text-slate-400 text-sm">
+                กดแจ้งได้ทันที ระบบจะพยายามดึงพิกัดแบบดีที่สุดเท่าที่ทำได้ แต่ GPS ไม่บังคับ
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={submitScanFailReport}
+            disabled={scanFailPending}
+            className="w-full rounded-2xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 text-amber-200 font-bold py-4 px-5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {scanFailPending ? "กำลังส่งรายงาน..." : "สแกนหน้าไม่ติด? แจ้งที่นี่"}
+          </button>
+        </div>
       </div>
     </main>
   );

@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { todayInBangkok } from "./time";
+import { getScanFailMap } from "./actions/scanfail";
 
 export type { DashboardStatus } from "./dashboardBadge";
 export { dashBadge } from "./dashboardBadge";
@@ -28,6 +29,7 @@ export type DashboardRow = {
   editReason: string | null;
   exemptReason: string | null;
   exemptLabel: string;
+  scanFailBadge: string | null;
 };
 
 export type DashboardStats = {
@@ -63,6 +65,7 @@ export async function getExemptMap(classroomId: number, date: Date): Promise<Map
   const exemptions = await prisma.studentExemption.findMany({
     where: {
       isActive: 1,
+      status: "approved",
       student: { classroomId },
       OR: [{ weekday: null }, { weekday }],
       AND: [
@@ -83,6 +86,7 @@ async function getExemptLabels(classroomId: number): Promise<Map<string, string>
   const exemptions = await prisma.studentExemption.findMany({
     where: {
       isActive: 1,
+      status: "approved",
       student: { classroomId },
       OR: [
         { startDate: null },
@@ -132,9 +136,10 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
   });
   const sessionId = session?.id ?? 0;
 
-  const [exemptMap, exemptLabels, students] = await Promise.all([
+  const [exemptMap, exemptLabels, scanFailMap, students] = await Promise.all([
     getExemptMap(classroomId, today),
     getExemptLabels(classroomId),
+    getScanFailMap(classroomId),
     prisma.student.findMany({
       where: { classroomId, status: 1 },
       orderBy: [{ numberInClass: "asc" }, { studentId: "asc" }],
@@ -214,6 +219,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
         editReason: record?.editReason ?? null,
         exemptReason,
         exemptLabel: exemptLabels.get(student.studentId) ?? "",
+        scanFailBadge: record && scanFailMap[student.studentId] ? `⚠️ สแกนหน้าไม่ติด · แจ้ง ${scanFailMap[student.studentId].reportedAt}` : null,
       });
     }
   }

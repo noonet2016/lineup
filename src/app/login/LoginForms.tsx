@@ -1,22 +1,23 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { loginStudent, loginTeacher, type LoginResult } from "@/lib/actions/auth";
 
 const initialState: LoginResult = { ok: false, error: "" };
 
 export default function LoginForms({ initialRole = "student" }: { initialRole?: "student" | "teacher" }) {
-  const router = useRouter();
   const action = initialRole === "student" ? loginStudent : loginTeacher;
   const [state, formAction, pending] = useActionState(action, initialState);
 
   useEffect(() => {
     if (state.ok) {
-      router.push("/account");
-      router.refresh();
+      // Hard navigation (not router.push): the session cookie is set inside the
+      // server action, and a soft nav's RSC fetch can race the cookie commit,
+      // landing back on /login even though auth succeeded. A full GET guarantees
+      // the freshly-set cookie is sent.
+      window.location.assign("/account");
     }
-  }, [state.ok, router]);
+  }, [state.ok]);
 
   const isTeacher = initialRole === "teacher";
   return (

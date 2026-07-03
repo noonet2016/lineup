@@ -62,7 +62,7 @@ export default function DashboardLive({
   }, [initialData]);
 
   useEffect(() => {
-    intervalRef.current = setInterval(refresh, 30000);
+    intervalRef.current = setInterval(refresh, 15000);
     const onVisible = () => {
       if (!document.hidden) refresh();
     };
@@ -156,6 +156,11 @@ export default function DashboardLive({
                       )}
                       {student.editReason && (
                         <span className="block text-[10px] text-indigo-400 mt-1">📝 แก้ไขโดยครู: {student.editReason}</span>
+                      )}
+                      {student.scanFailBadge && (
+                        <span className="block w-fit mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-400/15 border border-amber-400/50 text-amber-300">
+                          {student.scanFailBadge}
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-400 font-mono">{formatWallClockTime(student.checkTime, true)}</td>
@@ -286,6 +291,11 @@ export default function DashboardLive({
               {student.editReason && (
                 <div className="text-[10px] text-indigo-400 bg-indigo-500/5 px-2.5 py-1.5 rounded-lg border border-indigo-500/10">
                   📝 แก้ไขโดยครู: {student.editReason}
+                </div>
+              )}
+              {student.scanFailBadge && (
+                <div className="text-[10px] text-amber-300 bg-amber-400/10 px-2.5 py-1.5 rounded-lg border border-amber-400/30 font-bold">
+                  {student.scanFailBadge}
                 </div>
               )}
             </div>

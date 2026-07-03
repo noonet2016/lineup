@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { getExemptMap } from "./dashboard";
+import { getScanFailMap } from "./actions/scanfail";
 import type { DashboardStatus } from "./dashboardBadge";
 
 /** Mirrors legacy teacher/report.php's summary query: one row per attendance_session in the date range. */
@@ -81,6 +82,7 @@ export type ReportDayRow = {
   editReason: string | null;
   editorName: string | null;
   exemptReason: string | null;
+  scanFailBadge: string | null;
 };
 
 export type ReportDayStats = { present: number; late: number; absent: number; excused: number; pending: number; flagged: number };
@@ -99,8 +101,9 @@ export async function loadReportDay(classroomId: number, sessionId: number): Pro
   });
   if (!session) return null;
 
-  const [exemptMap, students] = await Promise.all([
+  const [exemptMap, scanFailMap, students] = await Promise.all([
     getExemptMap(classroomId, session.sessionDate),
+    getScanFailMap(classroomId),
     prisma.student.findMany({
       where: { classroomId, status: 1 },
       orderBy: [{ numberInClass: "asc" }, { studentId: "asc" }],
@@ -155,6 +158,7 @@ export async function loadReportDay(classroomId: number, sessionId: number): Pro
       editReason: record?.editReason ?? null,
       editorName: record?.editor?.fullName ?? null,
       exemptReason,
+      scanFailBadge: record && scanFailMap[student.studentId] ? `⚠️ สแกนหน้าไม่ติด · แจ้ง ${scanFailMap[student.studentId].reportedAt}` : null,
     });
   }
 

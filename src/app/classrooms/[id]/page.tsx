@@ -73,7 +73,7 @@ export default async function ClassroomDashboardPage({
         <div>
           <h1 className="text-3xl font-extrabold text-white">เช็คชื่อเข้าแถวห้อง ม.{classroom.roomName}</h1>
           <p className="text-slate-400 text-sm mt-1">
-            ประจำวันที่ {formatWallClockDate(today)} | อัปเดทข้อมูลทุก 30 วินาที
+            ประจำวันที่ {formatWallClockDate(today)} | อัปเดทข้อมูลทุก 15 วินาที
             {!sessionOpen && " · ยังไม่เปิดรอบวันนี้"}
           </p>
           {!isAdvisor && <p className="text-xs text-slate-500 mt-1">มุมมองอ่านอย่างเดียว (read-only)</p>}

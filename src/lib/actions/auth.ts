@@ -12,9 +12,11 @@ export async function loginStudent(_prev: LoginResult | null, formData: FormData
   if (!studentId || !password) return { ok: false, error: "กรอกรหัสนักเรียนและรหัสผ่านให้ครบ" };
 
   const student = await prisma.student.findUnique({ where: { studentId } });
+  console.error(`[LOGIN DEBUG] studentId="${studentId}" (len=${studentId.length}) pwLen=${password.length} found=${!!student} status=${student?.status}`);
   if (!student || student.status !== 1) return { ok: false, error: "ไม่พบบัญชีนักเรียนนี้" };
 
   const valid = await bcrypt.compare(password, student.passwordHash);
+  console.error(`[LOGIN DEBUG] bcrypt.compare valid=${valid}`);
   if (!valid) return { ok: false, error: "รหัสผ่านไม่ถูกต้อง" };
 
   await createSession("student", student.studentId);

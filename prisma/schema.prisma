@@ -38,6 +38,7 @@ model Teacher {
   editedRecords      AttendanceRecord[] @relation("AttendanceRecordEditor")
   holidays           Holiday[]          @relation("HolidayCreator")
   studentExemptions  StudentExemption[] @relation("StudentExemptionCreator")
+  reviewedExemptions StudentExemption[] @relation("StudentExemptionReviewer")
 
   @@map("teachers")
 }
@@ -59,6 +60,7 @@ model Student {
   attendanceRecords AttendanceRecord[]
   attendanceLogs   AttendanceLog[]
   exemptions       StudentExemption[]
+  scanFailReports  ScanFailReport[]
 
   @@index([classroomId])
   @@map("students")
@@ -118,6 +120,21 @@ model AttendanceLog {
   @@map("attendance_logs")
 }
 
+model ScanFailReport {
+  id          Int      @id @default(autoincrement())
+  studentId   String   @map("student_id") @db.VarChar(20)
+  student     Student  @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
+  sessionDate DateTime @map("session_date") @db.Date
+  reportedAt  DateTime @default(now()) @map("reported_at") @db.DateTime(0)
+  latitude    Float?   @db.Double
+  longitude   Float?   @db.Double
+  accuracy    Float?   @db.Double
+
+  @@unique([studentId, sessionDate])
+  @@index([sessionDate])
+  @@map("scan_fail_reports")
+}
+
 model SystemSetting {
   settingKey   String @id @map("setting_key") @db.VarChar(50)
   settingValue String @map("setting_value") @db.VarChar(255)
@@ -161,10 +178,18 @@ model StudentExemption {
   endDate   DateTime? @map("end_date") @db.Date
   isActive  Int      @default(1) @map("is_active") @db.TinyInt
   createdBy Int?     @map("created_by")
+  status    String   @default("approved") @db.VarChar(10)
+  requestedByStudent Int @default(0) @map("requested_by_student") @db.TinyInt
+  reviewedBy Int?    @map("reviewed_by")
+  reviewNote String? @map("review_note") @db.VarChar(255)
+  reviewedAt DateTime? @map("reviewed_at") @db.DateTime(0)
   creator   Teacher? @relation("StudentExemptionCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  reviewer  Teacher? @relation("StudentExemptionReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
   @@index([studentId])
   @@index([createdBy])
+  @@index([reviewedBy])
+  @@index([status])
   @@map("student_exemptions")
 }

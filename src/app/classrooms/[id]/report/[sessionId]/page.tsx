@@ -53,6 +53,7 @@ export default async function ClassroomReportDayPage({
         editReason: s.editReason,
         editorName: s.editorName,
         exemptReason: s.exemptReason,
+        scanFailBadge: s.scanFailBadge,
       }))}
     />
   );

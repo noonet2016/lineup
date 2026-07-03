@@ -396,3 +396,83 @@ Classroom (teacher, advisor-guarded unless noted): `/classrooms` (list), `/class
 ### Open questions
 - watchPosition retry (`ee29cb7`) แก้ปัญหานักเรียนอยู่ในพื้นที่แต่เช็คไม่ผ่านได้จริงหรือยัง — รอผลทดสอบภาคสนาม. ถ้ายังไม่พอ ค่อยพิจารณาดึง checkin มาทำ LIFF.
 - ต้องการ hard-delete นักเรียนถาวรไหม (ตอนนี้มีแค่ soft delete) — Trainer ถามค้างไว้ว่า "ถ้าอยากลบเด็กออกจริงๆ ทำยังไง"; คำตอบปัจจุบัน = ต้องทำผ่าน DB โดยตรง เพราะ FK Restrict, ยังไม่ได้ทำ UI ให้.
+
+## 2026-07-03 — REUSABLE: testing LINE/OAuth login in local through an HTTPS dev tunnel
+
+Goal: test student "เชื่อมบัญชี LINE" flow locally. LINE OAuth needs a public HTTPS callback, so the whole session must run through a tunnel (login + bind must share one origin — you can't log in on localhost then bind on the tunnel, different cookie origins).
+
+**Playbook to expose `next dev` (localhost:3000) over HTTPS for OAuth testing:**
+1. Start a tunnel to 3000. **Prefer `cloudflared tunnel --url http://localhost:3000`** (free, HTTPS, no interstitial) over `ngrok http 3000`. ngrok free serves a **browser-warning interstitial** that hijacks client-side RSC fetches (`router.push`) → navigation silently fails. Proven via `curl` (no skip-header → ngrok's own HTML; `-H "ngrok-skip-browser-warning: 1"` → app). You can't inject that header into Next's internal RSC fetches, so ngrok free is unusable for RSC apps. cloudflared has no such page.
+2. Point the app's OAuth redirect at the tunnel: set `LINE_REDIRECT_URI=https://<tunnel-host>/api/auth/line/callback` in `.env`. `appOrigin()` (`src/lib/line.ts`) derives the whole public origin from this var, not from `req.url`. **Restart dev after** (env read at boot).
+3. **`next.config.ts` — TWO separate settings both required, or Server-Action logins fail through the tunnel:**
+   - `experimental.serverActions.allowedOrigins` — Server Actions enforce `Origin === Host`; a tunnel always trips this (browser Origin = tunnel host, forwarded Host differs) → action **rejected before running**.
+   - `allowedDevOrigins` (top-level) — Next dev blocks cross-origin dev requests (RSC/HMR/soft-nav); without it the action *runs* but the post-login RSC navigation is blocked. The dev-log warning names this one explicitly.
+   Both accept wildcards: `["*.trycloudflare.com", "*.ngrok-free.app"]`. Gated to `NODE_ENV !== "production"` (serverActions one) so prod is untouched. **Config is NOT hot-reloaded — restart dev.**
+4. Add the tunnel callback URL in the LINE Developers Console (channel `2010580999` → LINE Login → Callback URL), alongside localhost/prod. Tunnel URL changes each restart → re-add each time (cloudflared quick tunnels are ephemeral).
+
+**Debugging method that isolated it fast:** compared localhost (worked) vs tunnel (failed); minted a valid session cookie by hand (had `SESSION_SECRET`, replicated the HMAC scheme from `src/lib/session.ts`) and `curl`ed `/account` through the tunnel → HTTP 200, proving server session-read + guard were fine and the fault was purely the browser not establishing the cookie / the action being blocked. Then the dev-log surfaced the `allowedDevOrigins` warning.
+
+**Also changed (kept, prod-safe):** `LoginForms.tsx` post-login redirect `router.push("/account")+router.refresh()` → `window.location.assign("/account")`. Soft-nav RSC fetch can race the cookie the Server Action just set → land back on `/login` even though auth succeeded; a hard GET guarantees the fresh cookie is sent. Avoids `redirect()` (Passenger prod crash).
+
+**Local test data:** dev student `25569` ("ทดสอบ ระบบ") password reset to `25569`, `mustChangePw=0` (via `scratch/*.mts` run with `tsx` + the `@prisma/adapter-mariadb` adapter — Prisma 7 client is TS, needs the adapter, can't `node` it raw).
+
+**Loose ends to revert before any deploy:** (a) remove `[LOGIN DEBUG]` `console.error` lines in `src/lib/actions/auth.ts`; (b) restore `.env` from `.env.bak` (`LINE_REDIRECT_URI` currently points at cloudflared, not prod); (c) `allowedOrigins`/`allowedDevOrigins` + `window.location.assign` change are safe to keep. Tunnel + dev server are running in background.
+
+## 2026-07-03 — NEW FEATURE START: student self-service leave request (with approval)
+- Trainer approved building the long-deferred student self-service leave/exemption request (was queued post-M6). Test target: localhost via cloudflared tunnel (works — same authed session).
+- Design decisions (Trainer via AskUserQuestion): (1) **approval required** — requests start `status=pending`, teacher approves/rejects; (2) duration **both single-day (default) + date range**; (3) reason **dropdown + free-text**.
+- Architecture: **reuse `student_exemptions` table** (single exemption source for attendance logic), add columns `status` (default 'approved' so existing teacher rows stay valid), `requestedByStudent`, `reviewedBy`, `reviewNote`, `reviewedAt`. Attendance-honoring queries must filter to `status='approved'`.
+- Delegation (per Trainer "don't hoard" directive): **Phase 1 → Tokai Teio** (schema migration + backend actions `src/lib/actions/leave.ts` + review actions in exemptions.ts + attendance integration + build) — dispatched, running. **Phase 2 (after review) → Mejiro** (student submit page) + **Tomi** (teacher review UI).
+
+### Phase 1 + 2 done (2026-07-03, same session)
+- **Tokai Teio (Codex)** — Phase 1 backend: added approval columns to `student_exemptions` (status default 'approved', requestedByStudent, reviewedBy/reviewNote/reviewedAt + reviewer relation + indexes), `prisma generate` + `db push` on lineup_dev, new `src/lib/actions/leave.ts` (requestLeave/cancelMyLeave/getMyLeaveRequests), teacher `approveLeave`/`rejectLeave` in exemptions.ts, and attendance integration: `getExemptMap`+`getExemptLabels` in dashboard.ts now filter `status:"approved"` (report.ts inherits). Build clean. Also excluded `scratch/` in tsconfig (my scratch .mts broke typecheck).
+- **Tomi (Codex acc2)** — teacher review UI: `/classrooms/[id]/leave-requests` page + `LeaveRequestsClient.tsx` (approve/reject + note, status badges). Build clean. Did not touch nav.
+- **Mejiro (GLM)** — returned EMPTY (content blank, reasoning-only); Rudolf wrote the student page instead: `src/app/leave/page.tsx` + `LeaveClient.tsx` (reason dropdown+custom, single/range date, own-requests list w/ status badges + cancel).
+- **Rudolf** — wired nav both sides in `LegacyChrome.tsx` (student "ยื่นขอลา" → /leave; teacher "คำขอลา" → /classrooms/[id]/leave-requests; added `leave` to both Active types + href map), full `npm run build` clean, smoke-tested both routes (307 auth-guard). NOT committed. Ready for cloudflared testing.
+
+## ========== CHECKPOINT (2026-07-04, post-M6 feature-build session) ==========
+
+### Overview
+Large feature-build session on top of the live M6 deploy. All work is LOCAL-ONLY (committed to local `main`, NOT pushed). Delegated heavily to the team per Trainer's "don't hoard" directive (Teio=backend/multi-file, Tomi=scoped UI, Rudolf=orchestrate+nav+review+small fixes). Everything verified with `npm run build` + dev smoke tests; tested live by Trainer through a cloudflared tunnel.
+
+### Dev/test environment (must re-establish next session)
+- Local test runs through an HTTPS dev tunnel because LINE OAuth + cross-user testing need a public origin.
+- **Use cloudflared, NOT ngrok** (ngrok free's browser-warning interstitial breaks Next RSC client navigation). Current tunnel URL was `https://windsor-cholesterol-daniel-pit.trycloudflare.com` (EPHEMERAL — changes on restart; re-add its `/api/auth/line/callback` to LINE console channel 2010580999 each time).
+- `.env` `LINE_REDIRECT_URI` currently points at the cloudflared URL (backup at `.env.bak` has prod). `.env` is gitignored.
+- next.config.ts: added `allowedDevOrigins` (top-level) + `serverActions.allowedOrigins` (dev-only, gated NODE_ENV!==production) with `*.trycloudflare.com` + `*.ngrok-free.app` — BOTH are required for Server-Action logins to work through a tunnel. See memory `ref-oauth-local-tunnel-testing`.
+- After any Prisma schema/generate change you MUST restart `next dev` (a running dev server caches the old client → PrismaClientValidationError "Unknown argument").
+
+### Features built this session
+1. **Login fix (tunnel):** `LoginForms.tsx` post-login `router.push` → `window.location.assign("/account")` (soft-nav races the just-set session cookie). Root cause of "can't log in through tunnel" was the two missing allowedOrigins settings above, not the app.
+2. **Manage-students UX:** scroll panel (`overflow-y-auto max-h-[60vh]` on the list); **renumber button** "จัดเรียงเลขที่ใหม่" → `renumberStudents()` reassigns numberInClass 1..N to active students in order (for the "student leaves mid-term, school shifts numbers up" case; numberInClass has no unique constraint; attendance history keys off studentId so renumbering is safe).
+3. **Student self-service leave request (with approval)** — Trainer decisions: approval required; single-day(default)+range; reason dropdown(ลาป่วย/ลากิจ/ร.ด./ไปแข่งขัน/อื่นๆ)+custom. Reused `student_exemptions` table + new cols (status default 'approved', requestedByStudent, reviewedBy/reviewNote/reviewedAt). `src/lib/actions/leave.ts` (requestLeave/cancelMyLeave/getMyLeaveRequests). Teacher approve/reject/**revertLeaveToPending** in exemptions.ts — decisions are now fully revisable (not one-shot). Attendance honoring filters status='approved' (dashboard getExemptMap/getExemptLabels; report inherits). Student page `/leave` + `LeaveClient.tsx` (ThaiDatePicker, default today, overlap guard blocks pending+approved same-day dupes, working cancel via router.refresh). Teacher page `/classrooms/[id]/leave-requests` + client.
+4. **Thai date picker** `src/app/_components/ThaiDatePicker.tsx` — custom, no deps, Buddhist-era display, emits/stores Gregorian YYYY-MM-DD, min=today Bangkok, outside-click/Escape close. Wired into the leave form.
+5. **Near-realtime via polling** — `src/app/_components/PollRefresh.tsx` (router.refresh every 12s, pauses when tab hidden, refresh on visibility). Dropped into `/leave`, `/classrooms/[id]/leave-requests`, `/classrooms/[id]/line-status`. Teacher DashboardLive poll 30s→15s (+ label text on `classrooms/[id]/page.tsx` updated to "15 วินาที"). Explained to Trainer: React reactivity is free but cross-user realtime needs a transport; polling chosen (best fit for Plesk/Passenger; WebSocket/SSE reserved).
+6. **Mobile teacher nav** `src/app/_components/TeacherMobileNav.tsx` — the old `☰` was a dead static span; built a real hamburger + slide-in drawer. Fix: overlay/drawer were trapped in the top bar's `z-30 backdrop-blur` stacking context (page content bled through) → wrapped in `createPortal(..., document.body)` with a `mounted` guard, z-index 100/110.
+7. **Face-scan-fail report** — school has a face-scan gate; when it fails students spam a LINE group and teachers log times by hand. Design (Trainer-refined to a lean version): student taps "แจ้งสแกนหน้าไม่ติด" → stores server timestamp (+best-effort GPS); cross-checks with the assembly check-in. Model = separate `scan_fail_reports` table (studentId+sessionDate unique, reportedAt, lat/lng/accuracy). `src/lib/actions/scanfail.ts` (reportScanFail / getScanFailMap / getUnmatchedScanFailReports). Teacher sees: (a) amber badge "⚠️ สแกนหน้าไม่ติด · แจ้ง HH:MM" on the roster row of anyone who reported AND checked in (dashboard + report-day); (b) a dedicated page `/classrooms/[id]/scan-fail` listing those who reported but have NOT checked in ("came but skipped assembly" — Trainer chose to surface these, option ข). Student button lives on `/checkin`. Page has PollRefresh. NOTE: full "came but skipped" coverage would need importing the face-scan CSV export (Trainer confirmed CSV/Excel export exists, no API) — deferred; current version covers scan-fail reporters only, which was the agreed scope.
+8. Small polish: check-in step-2 shows distance-from-point; line-status name `truncate`→`break-words` (full names wrap); leave reason button "อนุมัติแทน"→"อนุมัติ".
+
+### Nav wiring (Rudolf, in LegacyChrome.tsx)
+- Student order: เช็คชื่อ → ยื่นขอลา(/leave) → ผลการเช็ค(/history redirect→student detail) → โปรไฟล์. Removed dead "อุปกรณ์" item.
+- Teacher: added "คำขอลา"(/leave-requests) + "สแกนหน้าไม่ติด"(/scan-fail).
+
+### Schema changes applied to lineup_dev ONLY (via prisma db push; prod untouched)
+- `student_exemptions`: +status/requestedByStudent/reviewedBy/reviewNote/reviewedAt (+reviewer relation, indexes).
+- new table `scan_fail_reports`.
+(Both must be applied to prod DB at deploy time — `run db:push` per the deploy playbook.)
+
+### Dev test data note
+- Student `25569` ("ทดสอบ ระบบ") password reset to `25569`, mustChangePw=0; LINE bound (lineUserId U319b60a0da1c8c718027a045ffca585c). Its student-requested leave rows were deleted during testing.
+
+### LOOSE ENDS — do BEFORE any prod deploy
+1. Remove the two `[LOGIN DEBUG]` `console.error` lines in `src/lib/actions/auth.ts` (they ARE committed in this checkpoint — WIP).
+2. `.env` is local-only (gitignored) and points at cloudflared — prod env is set separately in Plesk; restore `.env` from `.env.bak` if running non-tunnel local.
+3. Apply the two schema changes to prod DB (`thatnara_lineup_prod`) before deploying this code.
+4. tsconfig.json now excludes `scratch/` (Rudolf's dev-only .mts helpers) — harmless.
+5. Kept-safe-in-prod: allowedOrigins/allowedDevOrigins (dev-gated), PollRefresh, window.location.assign login, all new features.
+6. Everything is committed to LOCAL main only — NOT pushed. Push + Plesk deploy is a separate future step per Trainer.
+
+### Background processes still running (this machine)
+- cloudflared tunnel → localhost:3000
+- `next dev` on :3000
+(Trainer fell asleep mid-test; leave running or they can Ctrl-C later.)
