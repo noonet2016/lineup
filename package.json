@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
-    "postbuild": "cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/",
+    "build": "node scripts/build.js",
+    "postbuild": "node scripts/postbuild.js",
     "start": "next start",
     "lint": "eslint",
     "diag": "node -e \"console.log('cwd:', process.cwd()); console.log(require('fs').readdirSync('.').join('\\n'))\""
