@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { buildAuthorizeUrl, signState, type OAuthMode } from "@/lib/line";
+import { appOrigin, buildAuthorizeUrl, signState, type OAuthMode } from "@/lib/line";
 import { getSession } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   if (mode === "bind") {
     const session = await getSession();
     if (!session) {
-      return NextResponse.redirect(new URL("/login?error=need_login_first", req.url));
+      return NextResponse.redirect(new URL("/login?error=need_login_first", appOrigin()));
     }
   }
 

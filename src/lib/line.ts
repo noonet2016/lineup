@@ -22,6 +22,16 @@ function redirectUri(): string {
   return uri;
 }
 
+/**
+ * The app's public origin, derived from LINE_REDIRECT_URI rather than a request's
+ * own URL. Behind Plesk/Passenger, req.url resolves to the internal bind address
+ * (e.g. http://0.0.0.0:3000) instead of the real public hostname, which breaks any
+ * redirect built from it.
+ */
+export function appOrigin(): string {
+  return new URL(redirectUri()).origin;
+}
+
 export type OAuthMode = "login" | "bind";
 
 /** Signed state payload so the callback can trust `mode` without a server-side store. */
