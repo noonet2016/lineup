@@ -41,22 +41,20 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
             <LoginForms initialRole={activeRole} />
 
-            {activeRole === "teacher" && (
-              <>
-                <div className="flex items-center gap-3 my-5">
-                  <div className="h-px bg-slate-800 flex-grow" />
-                  <span className="text-xs text-slate-500">หรือ</span>
-                  <div className="h-px bg-slate-800 flex-grow" />
-                </div>
-                <button type="button" className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/40 text-slate-200 font-semibold py-3 px-4 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor" className="w-5 h-5 text-indigo-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 004.5 10.5a7.464 7.464 0 01-1.15 3.993m1.989 3.559A11.209 11.209 0 008.25 10.5a3.75 3.75 0 117.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 01-3.6 9.75m6.633-4.596a18.666 18.666 0 01-2.485 5.33" />
-                  </svg>
-                  เข้าสู่ระบบด้วย Face ID / ลายนิ้วมือ
-                </button>
-                <div className="hidden mt-3 p-3 rounded-xl text-sm" />
-              </>
-            )}
+            <div className="flex items-center gap-3 my-5">
+              <div className="h-px bg-slate-800 flex-grow" />
+              <span className="text-xs text-slate-500">หรือ</span>
+              <div className="h-px bg-slate-800 flex-grow" />
+            </div>
+            <a
+              href="/api/auth/line/start?mode=login"
+              className="w-full bg-[#06C755] hover:bg-[#05b34c] text-white font-semibold py-3 px-4 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                <path d="M12 2C6.477 2 2 5.686 2 10.222c0 4.06 3.522 7.462 8.283 8.109.323.07.762.213.873.49.1.25.066.642.032.895l-.14.86c-.043.25-.198.984.86.537 1.058-.447 5.71-3.362 7.788-5.758C21.1 13.55 22 11.98 22 10.222 22 5.686 17.523 2 12 2z" />
+              </svg>
+              เข้าสู่ระบบด้วย LINE
+            </a>
           </div>
 
           <div className="text-center mt-6 text-sm text-slate-500 flex justify-between px-2">
