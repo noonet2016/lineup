@@ -77,10 +77,40 @@ export default function CheckinClient({
     }, 1000);
   }
 
+  const MAX_WAIT_MS = 15000;
+  const GOOD_ENOUGH_ACCURACY = 50;
+
+  async function finishLocating(latitude: number, longitude: number, accuracy: number) {
+    coordsRef.current = { lat: latitude, lng: longitude, accuracy };
+    setGpsStatus(`พิกัดปัจจุบัน: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (คลาดเคลื่อน ±${Math.round(accuracy)} ม.)`);
+
+    try {
+      const result = await locateCheckin(latitude, longitude, accuracy);
+      if ("inRadius" in result && result.inRadius) {
+        setStep("confirm");
+        startCountdown();
+      } else if (result.gpsWeak) {
+        setAlert({
+          type: "error",
+          message: `${result.message}<br>กรุณาตรวจสอบว่าเปิดสิทธิ์การเข้าถึงตำแหน่ง (Location Permission) แล้ว และลองออกไปที่โล่งแจ้งเพื่อรับสัญญาณ GPS ที่ดีขึ้น จากนั้นกดเช็คอินใหม่อีกครั้ง`,
+        });
+      } else {
+        setAlert({
+          type: "error",
+          message: `คุณไม่ได้อยู่ในรัศมีที่กำหนด<br>ระยะปัจจุบันของคุณอยู่ห่างออกไปประมาณ ${result.distance} เมตร (กำหนดรัศมี ${radius} เมตร)`,
+        });
+      }
+    } catch (err) {
+      setAlert({ type: "error", message: `ระบบล้มเหลวในการส่งข้อมูลพิกัด: ${err instanceof Error ? err.message : "unknown"}` });
+    } finally {
+      setLocating(false);
+    }
+  }
+
   function requestLocation() {
     setAlert(null);
     setLocating(true);
-    setGpsStatus("กำลังเข้าถึงพิกัด GPS ของอุปกรณ์...");
+    setGpsStatus("กำลังเข้าถึงพิกัด GPS ของอุปกรณ์... (รอสัญญาณนิ่งสูงสุด 15 วินาที)");
 
     if (!navigator.geolocation) {
       setAlert({ type: "error", message: "เบราว์เซอร์ของคุณไม่รองรับการดึงค่าตำแหน่ง Geolocation" });
@@ -88,45 +118,50 @@ export default function CheckinClient({
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
+    let best: { lat: number; lng: number; accuracy: number } | null = null;
+    let settled = false;
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        if (settled) return;
         const { latitude, longitude, accuracy } = position.coords;
-        coordsRef.current = { lat: latitude, lng: longitude, accuracy };
-        setGpsStatus(`พิกัดปัจจุบัน: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (คลาดเคลื่อน ±${Math.round(accuracy)} ม.)`);
-
-        try {
-          const result = await locateCheckin(latitude, longitude, accuracy);
-          if ("inRadius" in result && result.inRadius) {
-            setStep("confirm");
-            startCountdown();
-          } else if (result.gpsWeak) {
-            setAlert({
-              type: "error",
-              message: `${result.message}<br>กรุณาตรวจสอบว่าเปิดสิทธิ์การเข้าถึงตำแหน่ง (Location Permission) แล้ว และลองออกไปที่โล่งแจ้งเพื่อรับสัญญาณ GPS ที่ดีขึ้น จากนั้นกดเช็คอินใหม่อีกครั้ง`,
-            });
-          } else {
-            setAlert({
-              type: "error",
-              message: `คุณไม่ได้อยู่ในรัศมีที่กำหนด<br>ระยะปัจจุบันของคุณอยู่ห่างออกไปประมาณ ${result.distance} เมตร (กำหนดรัศมี ${radius} เมตร)`,
-            });
-          }
-        } catch (err) {
-          setAlert({ type: "error", message: `ระบบล้มเหลวในการส่งข้อมูลพิกัด: ${err instanceof Error ? err.message : "unknown"}` });
-        } finally {
-          setLocating(false);
+        if (!best || accuracy < best.accuracy) {
+          best = { lat: latitude, lng: longitude, accuracy };
+          setGpsStatus(`กำลังปรับสัญญาณ... ความแม่นยำล่าสุด ±${Math.round(accuracy)} ม.`);
+        }
+        if (accuracy <= GOOD_ENOUGH_ACCURACY) {
+          settled = true;
+          navigator.geolocation.clearWatch(watchId);
+          finishLocating(best.lat, best.lng, best.accuracy);
         }
       },
       (error) => {
+        if (settled) return;
+        // A transient error (e.g. one bad fix) shouldn't kill the whole retry window if we
+        // already have a reading, or if there's still time left — only bail out immediately
+        // on a hard permission denial, which retrying can never fix.
+        if (error.code === error.PERMISSION_DENIED) {
+          settled = true;
+          navigator.geolocation.clearWatch(watchId);
+          setLocating(false);
+          setGpsStatus("สถานะ GPS: รอตรวจพิกัด");
+          setAlert({ type: "error", message: "ต้องอนุญาตสิทธิ์การเข้าถึงตำแหน่ง จึงจะสามารถดำเนินการเช็คชื่อเข้าแถวได้" });
+        }
+      },
+      { enableHighAccuracy: true, timeout: MAX_WAIT_MS, maximumAge: 0 },
+    );
+
+    setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      navigator.geolocation.clearWatch(watchId);
+      if (best) {
+        finishLocating(best.lat, best.lng, best.accuracy);
+      } else {
         setLocating(false);
         setGpsStatus("สถานะ GPS: รอตรวจพิกัด");
-        let msg = "เกิดข้อผิดพลาดในการดึงค่าตำแหน่งของคุณ";
-        if (error.code === error.PERMISSION_DENIED) msg = "ต้องอนุญาตสิทธิ์การเข้าถึงตำแหน่ง จึงจะสามารถดำเนินการเช็คชื่อเข้าแถวได้";
-        else if (error.code === error.POSITION_UNAVAILABLE) msg = "ไม่สามารถระบุพิกัดที่ตั้งของท่านได้ในขณะนี้";
-        else if (error.code === error.TIMEOUT) msg = "การค้นหาพิกัด GPS หมดเวลาก่อนการตอบสนอง";
-        setAlert({ type: "error", message: msg });
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    );
+        setAlert({ type: "error", message: "ไม่สามารถระบุพิกัดที่ตั้งของท่านได้ กรุณาตรวจสอบสัญญาณ GPS แล้วลองใหม่อีกครั้ง" });
+      }
+    }, MAX_WAIT_MS);
   }
 
   async function confirmCheckin() {
