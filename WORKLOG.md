@@ -480,3 +480,19 @@ Large feature-build session on top of the live M6 deploy. All work is LOCAL-ONLY
 ## 2026-07-04 — NOTE (deferred)
 - **Holiday guard for scan-fail + check-in:** currently a student CAN report "สแกนหน้าไม่ติด" (and check in) even on a holiday. Left ENABLED on purpose so we can test the flow now. TODO before prod: block scan-fail report + check-in when today is a holiday (no assembly session). Decided with Trainer 2026-07-04.
 - Scan-fail report now has persisted reported-state + self-cancel (`cancelMyScanFail`); green "แจ้งแล้ว" card in CheckinClient.
+
+## 2026-07-04 — Session: popup, lightbox, scan-fail acknowledge, dashboard search (commit f861ae6)
+- Rudolf: Extracted shared `PopupAlertModal`/`usePopupAlert` (`src/app/_components/PopupAlert.tsx`); replaced inline banner/message feedback in 7 client pages (exemptions, leave-requests, line-status, settings, students/edit, students/manage, leave). CheckinClient keeps its own popup.
+- Rudolf: New `ImageLightbox.tsx` (`LightboxProvider`/`LightboxThumb`) — click LINE avatar to view enlarged; wired into scan-fail list + line-status pages.
+- Rudolf: Scan-fail report list now shows student LINE avatar + displayName (LINE User ID intentionally NOT shown).
+- Rudolf: **Teacher scan-fail acknowledge** — new `acknowledgeScanFail(studentId, ack)` (teacher-only, advisor-scoped); button "✓ รับทราบ (ยืนยันอยู่ในบริเวณ)" toggles; student CheckinClient shows green "ครูรับทราบแล้ว" banner + hides self-cancel once acknowledged. Student page auto-polls `router.refresh()` every 12s (visible-tab only) until acknowledged.
+- Rudolf: Added client-side search box to teacher dashboard (`DashboardLive.tsx`) — filter by name/nickname/id/number, both desktop table + mobile cards.
+- Rudolf: Settings location cards restyled per Trainer — status badge / "ใช้จุดนี้" button moved to top-right corner, full-width name (no truncate), radius on its own line, mobile-responsive header ("จุดเข้าแถว ม.5/7" + nowrap badge).
+- Saved Trainer's UI style prefs to auto-memory `feedback-design-style.md`.
+
+### NEW LOOSE END — prod DB schema (adds to the "two schema changes" note above)
+- **`scan_fail_reports.acknowledged_at`** column (DateTime NULL) was added to DEV DB `lineup_dev` via `prisma db push` this session. Prod (`thatnara_lineup_prod`) still lacks it. Before deploying commit f861ae6:
+  `ALTER TABLE scan_fail_reports ADD COLUMN acknowledged_at DATETIME NULL;`
+- (mysqldump not installed on this Mac — no table backup taken; column add is additive/nullable so rollback = DROP COLUMN.)
+
+### Reminder — address the Trainer as นู๋เน็ตเวิร์ค on this machine (NOT เติ้ล). See auto-memory trainer-identity-macbook.
