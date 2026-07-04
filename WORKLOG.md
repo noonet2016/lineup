@@ -513,3 +513,32 @@ Goal: let other teachers in the SAME school use the app (Trainer decision: same 
 2. **owner role on prod** — `UPDATE teachers SET role='owner' WHERE username='<Trainer's prod account>';` — WITHOUT this, NO ONE can edit school-wide settings (assembly times / holidays / scan-fail radius) on prod.
 3. (Still open from before) remove `[LOGIN DEBUG]` console.error in `src/lib/actions/auth.ts`; restore `.env` LINE_REDIRECT_URI for non-tunnel.
 4. Dev-only test data: teacher `advisor52` (ม.5/2, empty) — delete via /admin when done testing.
+
+## 2026-07-04 — Session 3: student onboarding at scale (commit e745b8d)
+Delegated to **Tokai Teio** (Codex) end-to-end (write + tsc verify); Rudolf specced + orchestrated. Trainer feedback this session: stop hoarding — hand scoped code to the team.
+
+### What shipped
+1. **Bulk paste-import** — `bulkImportStudents(text, classroomId)` in `src/lib/actions/students.ts`.
+   - Input: TAB-separated rows (paste from Excel/Sheets), column order **เลขที่ · รหัส · ชื่อ-นามสกุล · ชื่อเล่น(optional)**. One student/line.
+   - Per-row validate; SKIPS bad rows with Thai reason (ข้อมูลไม่ครบ / เลขที่ไม่ถูกต้อง / รหัสซ้ำในระบบ / รหัสซ้ำในรายการที่วาง) instead of aborting; imports the rest in one `$transaction`. Password = studentId, mustChangePw=1, status=1. Writes one summary attendanceLog row.
+   - Returns `BulkImportResult = {ok:true; added; skipped:{line,reason}[]; message} | {ok:false; message}`.
+   - UI: `ManageStudentsClient` — '📋 นำเข้าเป็นชุด' button → modal (textarea + hint + skipped-row preview via PopupAlertModal dangerouslySetInnerHTML, capped ~15 lines), router.refresh on success.
+2. **Owner can manage ANY classroom's students** (no login/logout as each teacher).
+   - New `requireClassroomManager(classroomId)` in `src/lib/teacher.ts`: allow if session teacher is that classroom's advisor OR `role==='owner'`; else throw.
+   - Refactored to take `classroomId` + authorize target room: `createStudent` (input gained classroomId), `bulkImportStudents`, `updateStudent`, `deactivateStudent`, `renumberStudents`. Advisor-own-room behavior unchanged.
+   - `/classrooms/[id]/students/manage/page.tsx` guard now allows advisor OR owner (reuses `isOwner()`).
+   - `/admin`: teacher rows now carry `roomsDetailed:{id,roomName}[]`; each renders a 'จัดการนักเรียน ม.X' link into that room's manage page. Owner onboards students for teachers who can't.
+
+### Security note
+All five student actions now authorize the TARGET classroom (advisor-or-owner), not the caller's own room. Verified conceptually: advisor still limited to own room; owner is the only cross-classroom actor. tsc --noEmit exit 0.
+
+---
+
+## CHECKPOINT — 2026-07-04 (end of multi-teacher onboarding work)
+**Current task:** DONE — lineup-nextjs is ready for multiple teachers in the SAME school to use safely; owner (นู๋เน็ตเวิร์ค) can onboard/manage everything.
+**State (local `main`, NOT pushed):** last commits — f861ae6 (popup/lightbox/ack/polling/dashboard-search/settings-cards), 9707cb9 (dashboard read IDOR fix), f433a6c (owner role gates school-wide settings), dacd914 (/admin teacher CRUD), e745b8d (bulk import + owner cross-classroom student mgmt), plus WORKLOG commits. tsc clean. Dev DB: teacher advisor1=owner(ม.5/7), advisor52=advisor(ม.5/2, empty test room).
+**Background procs:** `next dev` on :3000 + cloudflared quick tunnel (URL rotates on restart) — still running.
+**Next steps (only when Trainer asks):**
+  - PROD DEPLOY LOOSE ENDS (see section above): (1) ALTER scan_fail_reports ADD acknowledged_at DATETIME NULL; (2) UPDATE teachers SET role='owner' for Trainer's prod acct; (3) remove [LOGIN DEBUG] in auth.ts + restore .env LINE_REDIRECT_URI; (4) delete dev test teacher advisor52.
+  - `git push` + Plesk deploy = separate future step, needs Trainer go-ahead.
+**Open questions:** none blocking. Multi-tenant (different schools) explicitly deferred — current design is single-school by decision.
