@@ -62,7 +62,7 @@ export default async function ClassroomDashboardPage({
   const isAdvisor = true; // only the advisor of this classroom reaches this point
 
   const page = (
-    <main className="max-w-full mx-auto safe-px py-8 space-y-6">
+    <main className="max-w-full! mx-auto safe-px py-8 space-y-6">
       <PullToRefresh />
       {success && (
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">{success}</div>

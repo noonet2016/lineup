@@ -12,16 +12,31 @@ datasource db {
 }
 
 model Classroom {
-  id        Int       @id @default(autoincrement())
-  roomName  String    @map("room_name") @db.VarChar(100)
-  advisorId Int?      @map("advisor_id")
-  advisor   Teacher?  @relation("ClassroomAdvisor", fields: [advisorId], references: [id], onDelete: SetNull)
-  students  Student[]
-  sessions  AttendanceSession[]
-  locations CheckinLocation[]
+  id         Int       @id @default(autoincrement())
+  roomName   String    @map("room_name") @db.VarChar(100)
+  advisorId  Int?      @map("advisor_id")
+  advisor    Teacher?  @relation("ClassroomAdvisor", fields: [advisorId], references: [id], onDelete: SetNull)
+  checkStart String?   @map("check_start") @db.VarChar(8)
+  lateAfter  String?   @map("late_after") @db.VarChar(8)
+  checkEnd   String?   @map("check_end") @db.VarChar(8)
+  students   Student[]
+  sessions   AttendanceSession[]
+  locations  CheckinLocation[]
 
   @@index([advisorId])
   @@map("classrooms")
+}
+
+model CentralLocation {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  latitude  Decimal  @db.Decimal(10, 7)
+  longitude Decimal  @db.Decimal(10, 7)
+  radiusM   Int      @default(400) @map("radius_m")
+  isActive  Int      @default(1) @map("is_active") @db.TinyInt
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  @@map("central_locations")
 }
 
 model Teacher {
@@ -61,9 +76,33 @@ model Student {
   attendanceLogs   AttendanceLog[]
   exemptions       StudentExemption[]
   scanFailReports  ScanFailReport[]
+  activities       StudentActivity[]
 
   @@index([classroomId])
   @@map("students")
+}
+
+model SchoolActivity {
+  id        Int               @id @default(autoincrement())
+  name      String            @unique @db.VarChar(100)
+  color     String            @default("slate") @db.VarChar(20)
+  isActive  Int               @default(1) @map("is_active") @db.TinyInt
+  createdAt DateTime          @default(now()) @map("created_at") @db.DateTime(0)
+  members   StudentActivity[]
+
+  @@map("school_activities")
+}
+
+model StudentActivity {
+  id         Int            @id @default(autoincrement())
+  studentId  String         @map("student_id") @db.VarChar(20)
+  student    Student        @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
+  activityId Int            @map("activity_id")
+  activity   SchoolActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, activityId])
+  @@index([activityId])
+  @@map("student_activities")
 }
 
 model AttendanceSession {

@@ -34,7 +34,7 @@ export default async function EditStatusPage({
 
   return (
     <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId}>
-      <main className="max-w-2xl mx-auto safe-px py-8 space-y-6">
+      <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div>
           <a href={`/classrooms/${classroomId}`} className="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1">
             &larr; กลับหน้าแดชบอร์ดสรุปผล

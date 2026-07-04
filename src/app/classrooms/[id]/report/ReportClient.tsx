@@ -45,10 +45,20 @@ export default function ReportClient({
 
   return (
     <TeacherShell active="report" fullName={fullName} roomName={roomName} classroomId={classroomId}>
-      <main className="max-w-full mx-auto safe-px py-8 space-y-6">
+      <main className="max-w-full! mx-auto safe-px py-8 space-y-6">
         <div>
           <h1 className="text-3xl font-extrabold text-white">รายงานผลการเข้าแถว</h1>
           <p className="text-slate-400 text-sm mt-1">สรุปข้อมูลสถิติของนักเรียนในห้องที่ปรึกษา ม.{roomName}</p>
+        </div>
+
+        <div className="flex gap-2">
+          <span className="px-4 py-2 rounded-xl text-sm font-bold bg-indigo-500 text-white shadow-md">รายวัน</span>
+          <a
+            href={`/classrooms/${classroomId}/report?view=student&start_date=${startDate}&end_date=${endDate}`}
+            className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+          >
+            รายคน
+          </a>
         </div>
 
         {errorMessage && (

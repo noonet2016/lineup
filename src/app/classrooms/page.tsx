@@ -18,7 +18,7 @@ export default async function ClassroomsPage() {
   });
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <main className="max-w-full mx-auto px-4 py-8 space-y-6">
       <h1 className="text-2xl font-extrabold text-white">ห้องเรียนทั้งหมด</h1>
       <div className="grid gap-3">
         {classrooms.length === 0 && (

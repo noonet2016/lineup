@@ -542,3 +542,46 @@ All five student actions now authorize the TARGET classroom (advisor-or-owner), 
   - PROD DEPLOY LOOSE ENDS (see section above): (1) ALTER scan_fail_reports ADD acknowledged_at DATETIME NULL; (2) UPDATE teachers SET role='owner' for Trainer's prod acct; (3) remove [LOGIN DEBUG] in auth.ts + restore .env LINE_REDIRECT_URI; (4) delete dev test teacher advisor52.
   - `git push` + Plesk deploy = separate future step, needs Trainer go-ahead.
 **Open questions:** none blocking. Multi-tenant (different schools) explicitly deferred — current design is single-school by decision.
+
+## 2026-07-04 — Session 4: per-student attendance report + prod loose-ends
+- Rudolf (edit): removed [LOGIN DEBUG] console.error x2 in src/lib/actions/auth.ts; restored .env LINE_REDIRECT_URI to http://localhost:3000/api/auth/line/callback (backup .env.bak). tsc exit 0. (loose-end #3 done)
+- Rudolf: loose-end #2 (prod UPDATE teachers role='owner') BLOCKED — no migration for `role` column exists; prod has no teachers.role column until code deploys. Deferred to deploy time (ALTER TABLE teachers ADD COLUMN role VARCHAR(50) NOT NULL DEFAULT 'advisor' + UPDATE). Needs prod DB creds + Trainer's prod username.
+- Rudolf (design): new per-student report spec → docs/report-per-student-design.md. Locked: late=full attend, ขาดบ่อย=%มา<80%, สม่ำเสมอ=%มา>=95%, advisor-own-room only (owner cross-room deferred).
+- Tokai Teio (codex): implemented per-student report. src/lib/report.ts loadStudentReport(); report/page.tsx view=student (daily unchanged); new StudentReportClient.tsx (tabs, stat tiles, ขาดบ่อย-first sections, sortable table, per-student day popup). Self-verified: tsc --noEmit + npm run build both pass. NOT committed/pushed.
+
+## 2026-07-04 — Session 5: School Activities (นักเรียนกิจกรรม) feature
+- Rudolf (design): docs/school-activities-feature.md. Decision: owner-managed activity list + explicit student assignment (NOT exemption-derived); badges on per-student report + daily dashboard + manage-students. Supersedes today's exemption-derived roleTagsFromReason.
+- Rudolf (DB): backed up dev DB -> scratch/lineup_dev_backup_20260704_212826.sql (504KB, 11 tables). Added SchoolActivity + StudentActivity models to prisma/schema.prisma (+ Student.activities relation).
+- Rudolf (DB gotcha): `npm run db:push` FAILED errno 150 — legacy tables utf8mb4_general_ci but Prisma creates utf8mb4_unicode_ci, student_id FK collation mismatch; Prisma 7 can't pin per-column collation. FIX: created school_activities + student_activities via explicit SQL with COLLATE=utf8mb4_general_ci + FKs, seeded 3 defaults (นางรำ=fuchsia/โปงลาง=amber/ร.ด.=lime), then `npx prisma generate`. PROD deploy must use the same CREATE TABLE SQL (in the spec doc), NOT db:push.
+- Rudolf -> Tomi (codex2, job): dispatched UI+actions build (activities.ts owner actions, ActivityBadge component, /admin activity CRUD+members, manage-students membership editor, swap report badges exemption->activity, badges on daily dashboard). Told Tomi DB is done, do NOT db:push. Self-verify tsc+build. [in progress]
+- Tomi (codex2): DONE + self-verified (tsc ✅ build ✅, no db push). Files: actions/activities.ts (createActivity/updateActivity/deleteActivity/assignActivityMembers/setStudentActivities/getActivityTagMap); _components/ActivityBadge.tsx; admin/page+AdminClient (activity CRUD + member modal); students/manage page+ManageStudentsClient (badges + แก้กิจกรรม editor); report.ts+StudentReportClient (exemption roleTags -> activity tags); dashboard.ts+DashboardLive.tsx (badges on daily roster). Removed roleTagsFromReason. NOT committed/pushed.
+
+## 2026-07-04 — Session 6: per-room times + central check-in locations
+- Rudolf (design): docs/per-room-times-central-locations.md. Locked: times central=default + per-room override (null=inherit); central locations import=copy into room.
+- Rudolf (UI, earlier this session): width sweep via Tomi (all pages max-w-full / login max-w-md). Then TeacherShell fix: mx-auto in flex-col collapsed <main> to content width — added [&>main]:w-full md:[&>main]:max-w-[60vw] (mobile full, desktop 60vw). report + dashboard pages overridden to max-w-full! (per Trainer). Also fixed agy-run.sh mktemp (BSD template bug made Oguri jobs die silently) -> mktemp -t agy-out.
+- Rudolf (DB): backup scratch/lineup_dev_backup_20260704_233753.sql (13 tables). schema: Classroom + check_start/late_after/check_end (VarChar(8) nullable); new CentralLocation model. Applied via explicit SQL (ALTER classrooms ADD 3 cols; CREATE central_locations COLLATE utf8mb4_general_ci; seeded 1 central loc from dome_lat/lng/radius_m). prisma generate OK. PROD deploy = same SQL, NOT db push.
+- Rudolf -> Teio (dispatched): build actions + UI (updateClassroomTimes advisor; openTodaySession per-room-then-central; central location CRUD owner + importCentralLocation advisor=copy; settings page unlock times + import-from-central; /admin central location manager). Self-verify tsc+build. [in progress]
+- Teio (codex): DONE + self-verified (tsc + build ✅, no db push). Files: actions/settings.ts (updateClassroomTimes advisor + openTodaySession room->central->default), actions/centralLocations.ts (owner CRUD + importCentralLocation advisor=copy skip-dup), settings page+SettingsClient (advisor edits room times + import-from-central), admin page+AdminClient (จุดเข้าแถวส่วนกลาง tab). Rudolf restarted dev (PID 8500) to load regenerated client; settings GET 200 OK. Browser needs hard-refresh (stale chunk). NOT committed/pushed.
+
+---
+
+## CHECKPOINT — 2026-07-05 (end of feature+UI day; sessions 4–6)
+**Current task:** DONE for this batch — new per-student report, school activities, per-room times, central check-in locations, full-width/60vw UI sweep, and login redesign are all built + tsc/build-verified in dev. About to git-commit everything (first commit of this batch).
+
+**State (local `main`, NOT pushed):**
+- **Per-student report** (`/classrooms/[id]/report?view=student`): `loadStudentReport` in report.ts; StudentReportClient (tabs, clickable stat-tile filters, sort %มา desc, LINE avatar + ImageLightbox, day-by-day popup). Late counts as attended; ขาดบ่อย=%มา<80%, สม่ำเสมอ=≥95%.
+- **School activities** (นักเรียนกิจกรรม): tables school_activities + student_activities (seeded นางรำ/โปงลาง/ร.ด.); activities.ts actions; ActivityBadge; /admin tab (owner CRUD + members); manage-students editor; badges on report + daily dashboard. Advisor-own-room membership page `/classrooms/[id]/activities` + setActivityMembersInClassroom (room-scoped). /admin split into 2 tabs (จัดการครู / กิจกรรมนักเรียน).
+- **Per-room times + central locations**: classrooms.check_start/late_after/check_end (nullable=inherit central); central_locations table (seeded from dome_*). settings.ts updateClassroomTimes (advisor) + openTodaySession room→central→default; centralLocations.ts (owner CRUD + importCentralLocation=copy). Settings page: advisor edits room times (pre-filled with effective value) + ดึงจากส่วนกลาง. /admin: จุดเข้าแถวส่วนกลาง manager.
+- **UI width**: Tomi sweep all pages max-w-full / login max-w-md. TeacherShell fix: mx-auto in flex-col collapsed <main> → added `[&>main]:w-full md:[&>main]:max-w-[60vw]` (mobile full, desktop 60vw). report + dashboard overridden to `max-w-full!`.
+- **Login redesign** (OpenAI-pattern, per Trainer ref): role tabs (subtle segmented, not saturated); ONE solid primary submit (cyan student / indigo teacher); LINE = neutral bordered button, green logo only (not filled); LINE at bottom both tabs; "หรือ" divider. auth logic/field names untouched.
+
+**DB (dev `lineup_dev`):** 4 new tables total this batch (school_activities, student_activities, central_locations) + classrooms 3 time cols. All created via explicit SQL with COLLATE utf8mb4_general_ci (db push mints unicode_ci → FK errno 150). Backups in scratch/ (gitignored). Prisma client regenerated. PROD must use the same CREATE TABLE / ALTER SQL, NOT db push (documented in docs/*.md).
+
+**Who did what:** Rudolf = design specs (docs/report-per-student-design.md, school-activities-feature.md, per-room-times-central-locations.md), all DB/migration, UI width TeacherShell fix, login iterations. Teio = per-room-times build. Tomi = activities build + UI sweep + login redesign. Also fixed agy-run.sh mktemp BSD bug (Oguri jobs were dying silently) + gemini-run.sh masculine ack + trainer.md/all wrappers identity (นู๋เน็ตเวิร์ค).
+
+**Next steps:**
+- Commit (this step). NOT pushing yet.
+- Cleanup: dev test account `advisor52` password was set to `test1234` for a browser check — reset/delete before or at deploy (also listed as dev-only test data to remove).
+- M6 Rollout (prod deploy) — the remaining milestone. Prod DB needs: the SQL for all new tables/cols (activities, central_locations, classroom time cols), scan_fail_reports.acknowledged_at, teachers.role + set owner. Then Plesk build+deploy, LINE prod channel/callback, cutover comms (device/WebAuthn gone → re-bind LINE).
+
+**Open questions:** none blocking.

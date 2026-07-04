@@ -8,9 +8,36 @@ import { nowInBangkok } from "@/lib/time";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string };
 
+const TIME_FIELDS = ["check_start", "late_after", "check_end"] as const;
+const DEFAULT_TIMES = { check_start: "07:45", late_after: "08:00", check_end: "08:15" } as const;
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+
 function hmsToDate(hms: string): Date {
   const [h, m, s] = hms.split(":").map(Number);
   return new Date(Date.UTC(1970, 0, 1, h, m, s ?? 0));
+}
+
+function normalizeTime(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!TIME_RE.test(trimmed)) return "__INVALID__";
+  return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
+}
+
+async function resolveClassroomTimes(classroomId: number) {
+  const [classroom, settings] = await Promise.all([
+    prisma.classroom.findUnique({
+      where: { id: classroomId },
+      select: { checkStart: true, lateAfter: true, checkEnd: true },
+    }),
+    prisma.systemSetting.findMany({ where: { settingKey: { in: [...TIME_FIELDS] } } }),
+  ]);
+  const map = new Map(settings.map((s) => [s.settingKey, s.settingValue]));
+  return {
+    check_start: classroom?.checkStart ?? map.get("check_start") ?? DEFAULT_TIMES.check_start,
+    late_after: classroom?.lateAfter ?? map.get("late_after") ?? DEFAULT_TIMES.late_after,
+    check_end: classroom?.checkEnd ?? map.get("check_end") ?? DEFAULT_TIMES.check_end,
+  };
 }
 
 /** Mirrors legacy teacher/settings.php action=generate_code. */
@@ -26,19 +53,15 @@ export async function openTodaySession(): Promise<ActionResult> {
   const holiday = await holidayBlockReason(today);
   if (holiday !== null) return { ok: false, message: `วันนี้เป็นวันหยุด (${holiday}) ไม่สามารถเปิดรอบได้` };
 
-  const settings = await prisma.systemSetting.findMany();
-  const map = new Map(settings.map((s) => [s.settingKey, s.settingValue]));
-  const start = map.get("check_start") ?? "07:45";
-  const lateAfter = map.get("late_after") ?? "08:00";
-  const end = map.get("check_end") ?? "08:15";
+  const times = await resolveClassroomTimes(teacher.classroomId);
 
   await prisma.attendanceSession.create({
     data: {
       sessionDate: today,
       classroomId: teacher.classroomId,
-      startTime: hmsToDate(start),
-      lateAfter: hmsToDate(lateAfter),
-      endTime: hmsToDate(end),
+      startTime: hmsToDate(times.check_start),
+      lateAfter: hmsToDate(times.late_after),
+      endTime: hmsToDate(times.check_end),
       dailyCode: "active",
     },
   });
@@ -57,11 +80,11 @@ export async function openTodaySession(): Promise<ActionResult> {
 export async function updateSystemSettings(formData: FormData): Promise<ActionResult> {
   const teacher = await requireOwner();
 
-  const fields = ["check_start", "late_after", "check_end"] as const;
   const values: Record<string, string> = {};
-  for (const f of fields) {
+  for (const f of TIME_FIELDS) {
     const v = String(formData.get(f) ?? "").trim();
     if (!v) return { ok: false, message: "กรุณากรอกข้อมูลให้ครบทุกช่อง" };
+    if (normalizeTime(v) === "__INVALID__") return { ok: false, message: "รูปแบบเวลาต้องเป็น HH:MM หรือ HH:MM:SS" };
     values[f] = v;
   }
 
@@ -75,7 +98,7 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
     values.scanfail_alert_radius_m = String(scanRadius);
   }
 
-  const keysToSave = scanRadiusRaw !== "" ? [...fields, "scanfail_alert_radius_m"] : [...fields];
+  const keysToSave = scanRadiusRaw !== "" ? [...TIME_FIELDS, "scanfail_alert_radius_m"] : [...TIME_FIELDS];
   await Promise.all(
     keysToSave.map((f) => prisma.systemSetting.upsert({ where: { settingKey: f }, update: { settingValue: values[f] }, create: { settingKey: f, settingValue: values[f] } })),
   );
@@ -97,6 +120,51 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
 
   revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
   return { ok: true, message: "บันทึกข้อมูลตั้งค่าระบบและรอบเช็คชื่อวันนี้สำเร็จ!" };
+}
+
+export async function updateClassroomTimes(formData: FormData): Promise<ActionResult> {
+  const teacher = await requireTeacherClassroom();
+
+  const values: {
+    checkStart: string | null;
+    lateAfter: string | null;
+    checkEnd: string | null;
+  } = { checkStart: null, lateAfter: null, checkEnd: null };
+
+  const start = normalizeTime(String(formData.get("check_start") ?? ""));
+  const late = normalizeTime(String(formData.get("late_after") ?? ""));
+  const end = normalizeTime(String(formData.get("check_end") ?? ""));
+  if (start === "__INVALID__" || late === "__INVALID__" || end === "__INVALID__") {
+    return { ok: false, message: "รูปแบบเวลาต้องเป็น HH:MM หรือ HH:MM:SS" };
+  }
+  values.checkStart = start;
+  values.lateAfter = late;
+  values.checkEnd = end;
+
+  await prisma.classroom.update({
+    where: { id: teacher.classroomId },
+    data: values,
+  });
+
+  const { dateOnly: today } = nowInBangkok();
+  const session = await prisma.attendanceSession.findUnique({
+    where: { sessionDate_classroomId: { sessionDate: today, classroomId: teacher.classroomId } },
+  });
+  if (session) {
+    const resolved = await resolveClassroomTimes(teacher.classroomId);
+    await prisma.attendanceSession.update({
+      where: { id: session.id },
+      data: {
+        startTime: hmsToDate(resolved.check_start),
+        lateAfter: hmsToDate(resolved.late_after),
+        endTime: hmsToDate(resolved.check_end),
+      },
+    });
+  }
+
+  revalidatePath(`/classrooms/${teacher.classroomId}`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  return { ok: true, message: "บันทึกเวลาเข้าแถวของห้องเรียบร้อยแล้ว" };
 }
 
 /** Mirrors legacy action=add_holiday (upsert by date). */

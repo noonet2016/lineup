@@ -32,7 +32,7 @@ export default function ScanFailListClient({ classroomId, roomName, fullName, re
     <TeacherShell active="dashboard" fullName={fullName} roomName={roomName} classroomId={classroomId}>
       <LightboxProvider>
       <PopupAlertModal alert={alert} onClose={() => setAlert(null)} />
-      <main className="max-w-5xl mx-auto safe-px py-8 space-y-6">
+      <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-xl sm:text-3xl font-extrabold text-white">📷 รายงานสแกนหน้าไม่ติด</h1>
           <p className="text-slate-400 text-sm">แจ้งสแกนหน้าไม่ติด แต่ยังไม่ได้เช็คชื่อเข้าแถว</p>

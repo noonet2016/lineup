@@ -1,37 +1,42 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { bulkImportStudents, createStudent, deactivateStudent, renumberStudents, updateStudent } from "@/lib/actions/students";
+import ActivityBadge from "@/app/_components/ActivityBadge";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
+import { bulkImportStudents, createStudent, deactivateStudent, renumberStudents, updateStudent } from "@/lib/actions/students";
+import { setStudentActivities } from "@/lib/actions/activities";
 
-type Student = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null };
-
+type StudentActivity = { name: string; color: string };
+type ActivityOption = { id: number; name: string; color: string; isActive: number };
+type Student = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null; activities: StudentActivity[] };
 type FormState = { studentId: string; fullName: string; nickname: string; numberInClass: string };
+type ActivityEditorState = { studentId: string; fullName: string; selectedIds: number[] } | null;
 
 const EMPTY_FORM: FormState = { studentId: "", fullName: "", nickname: "", numberInClass: "" };
 
 function sortStudents(items: Student[]): Student[] {
-  const copy = items.slice();
-  copy.sort((a, b) => {
+  return items.slice().sort((a, b) => {
     const an = a.numberInClass === null ? Number.POSITIVE_INFINITY : a.numberInClass;
     const bn = b.numberInClass === null ? Number.POSITIVE_INFINITY : b.numberInClass;
     if (an !== bn) return an - bn;
     return a.studentId.localeCompare(b.studentId);
   });
-  return copy;
 }
 
 function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-export default function ManageStudentsClient({ classroomId, students }: { classroomId: number; students: Student[] }) {
+export default function ManageStudentsClient({
+  classroomId,
+  students,
+  activities,
+}: {
+  classroomId: number;
+  students: Student[];
+  activities: ActivityOption[];
+}) {
   const router = useRouter();
   const [list, setList] = useState<Student[]>(students);
   const [showAdd, setShowAdd] = useState(false);
@@ -40,23 +45,34 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
   const [addForm, setAddForm] = useState<FormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(EMPTY_FORM);
+  const [activityEditor, setActivityEditor] = useState<ActivityEditorState>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [confirmingRenumber, setConfirmingRenumber] = useState(false);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function startEdit(s: Student) {
-    setEditingId(s.studentId);
+  const activityById = useMemo(() => new Map(activities.map((activity) => [activity.id, activity])), [activities]);
+
+  function startEdit(student: Student) {
+    setEditingId(student.studentId);
     setEditForm({
-      studentId: s.studentId,
-      fullName: s.fullName,
-      nickname: s.nickname || "",
-      numberInClass: s.numberInClass === null ? "" : String(s.numberInClass),
+      studentId: student.studentId,
+      fullName: student.fullName,
+      nickname: student.nickname || "",
+      numberInClass: student.numberInClass === null ? "" : String(student.numberInClass),
     });
     setConfirmingDeleteId(null);
   }
 
-  function submitAdd(e: React.FormEvent) {
+  function openActivityEditor(student: Student) {
+    setActivityEditor({
+      studentId: student.studentId,
+      fullName: student.fullName,
+      selectedIds: activities.filter((activity) => student.activities.some((tag) => tag.name === activity.name)).map((activity) => activity.id),
+    });
+  }
+
+  function submitAdd(e: FormEvent) {
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
@@ -67,8 +83,9 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
           fullName: addForm.fullName.trim(),
           nickname: addForm.nickname.trim() === "" ? null : addForm.nickname.trim(),
           numberInClass: addForm.numberInClass.trim() === "" ? null : Number(addForm.numberInClass),
+          activities: [],
         };
-        setList(sortStudents(list.concat([newStudent])));
+        setList((current) => sortStudents(current.concat([newStudent])));
         setAddForm(EMPTY_FORM);
         setShowAdd(false);
       }
@@ -76,7 +93,7 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
     });
   }
 
-  function submitImport(e: React.FormEvent) {
+  function submitImport(e: FormEvent) {
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
@@ -96,16 +113,16 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
     });
   }
 
-  function submitEdit(e: React.FormEvent) {
+  function submitEdit(e: FormEvent) {
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
       const result = await updateStudent(editForm.studentId, { ...editForm, classroomId });
       if (result.ok) {
-        const updated = list.map((s) => {
-          if (s.studentId !== editForm.studentId) return s;
+        const updated = list.map((student) => {
+          if (student.studentId !== editForm.studentId) return student;
           return {
-            studentId: s.studentId,
+            ...student,
             fullName: editForm.fullName.trim(),
             nickname: editForm.nickname.trim() === "" ? null : editForm.nickname.trim(),
             numberInClass: editForm.numberInClass.trim() === "" ? null : Number(editForm.numberInClass),
@@ -118,12 +135,39 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
     });
   }
 
+  function submitActivityEdit() {
+    if (!activityEditor) return;
+    setMessage(null);
+    const target = activityEditor;
+    startTransition(async () => {
+      const result = await setStudentActivities(target.studentId, target.selectedIds);
+      if (result.ok) {
+        const nextActivities = target.selectedIds
+          .map((id) => activityById.get(id))
+          .filter((activity): activity is ActivityOption => Boolean(activity))
+          .map((activity) => ({ name: activity.name, color: activity.color }));
+        setList((current) =>
+          current.map((student) =>
+            student.studentId === target.studentId
+              ? {
+                  ...student,
+                  activities: nextActivities,
+                }
+              : student,
+          ),
+        );
+        setActivityEditor(null);
+      }
+      setMessage({ type: result.ok ? "success" : "error", text: result.message });
+    });
+  }
+
   function doRenumber() {
     setMessage(null);
     startTransition(async () => {
       const result = await renumberStudents(classroomId);
       if (result.ok) {
-        setList(sortStudents(list).map((student, index) => ({ ...student, numberInClass: index + 1 })));
+        setList((current) => sortStudents(current).map((student, index) => ({ ...student, numberInClass: index + 1 })));
       }
       setConfirmingRenumber(false);
       setMessage({ type: result.ok ? "success" : "error", text: result.message });
@@ -135,7 +179,7 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
     startTransition(async () => {
       const result = await deactivateStudent(studentId, classroomId);
       if (result.ok) {
-        setList(list.filter((s) => s.studentId !== studentId));
+        setList((current) => current.filter((student) => student.studentId !== studentId));
       }
       setConfirmingDeleteId(null);
       setMessage({ type: result.ok ? "success" : "error", text: result.message });
@@ -143,7 +187,7 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
   }
 
   const inputClass =
-    "w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-650 focus:outline-none focus:ring-2 focus:ring-indigo-500/50";
+    "w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50";
 
   return (
     <div className="space-y-6">
@@ -298,10 +342,10 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
           <div className="px-5 py-10 text-center text-slate-500 text-sm">ยังไม่มีนักเรียนในห้องนี้</div>
         ) : (
           <ul className="divide-y divide-slate-900/60 overflow-y-auto max-h-[60vh]">
-            {list.map((s) => {
-              if (editingId === s.studentId) {
+            {list.map((student) => {
+              if (editingId === student.studentId) {
                 return (
-                  <li key={s.studentId} className="px-5 py-4">
+                  <li key={student.studentId} className="px-5 py-4">
                     <form onSubmit={submitEdit} className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <input
@@ -310,7 +354,7 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
                           onChange={(e) => setEditForm({ ...editForm, numberInClass: e.target.value })}
                           className={inputClass}
                         />
-                        <div className="text-xs text-slate-500 flex items-center px-1">รหัสนักเรียน: {s.studentId} (แก้ไม่ได้)</div>
+                        <div className="text-xs text-slate-500 flex items-center px-1">รหัสนักเรียน: {student.studentId} (แก้ไม่ได้)</div>
                         <input
                           required
                           placeholder="ชื่อ-นามสกุล"
@@ -339,57 +383,121 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
               }
 
               return (
-                <li key={s.studentId} className="flex items-center justify-between px-5 py-3 gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm text-slate-100 font-semibold truncate">
-                      {s.numberInClass ? s.numberInClass + ". " : ""}
-                      {s.fullName}
-                      {s.nickname ? " (" + s.nickname + ")" : ""}
-                    </p>
-                    <p className="text-xs text-slate-500">รหัสนักเรียน: {s.studentId}</p>
+                <li key={student.studentId} className="px-5 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-slate-100 font-semibold truncate">
+                        {student.numberInClass ? student.numberInClass + ". " : ""}
+                        {student.fullName}
+                        {student.nickname ? " (" + student.nickname + ")" : ""}
+                      </p>
+                      <p className="text-xs text-slate-500">รหัสนักเรียน: {student.studentId}</p>
+                      {student.activities.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {student.activities.map((activity) => (
+                            <ActivityBadge key={`${student.studentId}-${activity.name}`} name={activity.name} color={activity.color} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {confirmingDeleteId === student.studentId ? (
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => doDelete(student.studentId)}
+                          className="bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                        >
+                          ยืนยันลบ
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDeleteId(null)}
+                          className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                        >
+                          ยกเลิก
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
-                  {confirmingDeleteId === s.studentId ? (
-                    <div className="flex gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => doDelete(s.studentId)}
-                        className="bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg"
-                      >
-                        ยืนยันลบ
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmingDeleteId(null)}
-                        className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
-                      >
-                        ยกเลิก
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(s)}
-                        className="bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
-                      >
-                        แก้ไข
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmingDeleteId(s.studentId)}
-                        className="bg-slate-900 border border-slate-800 hover:border-rose-500/40 text-rose-400 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
-                      >
-                        ลบ
-                      </button>
-                    </div>
-                  )}
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => openActivityEditor(student)}
+                      className="bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                    >
+                      แก้กิจกรรม
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(student)}
+                      className="bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                    >
+                      แก้ไข
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteId(student.studentId)}
+                      className="bg-slate-900 border border-slate-800 hover:border-rose-500/40 text-rose-400 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                    >
+                      ลบ
+                    </button>
+                  </div>
                 </li>
               );
             })}
           </ul>
         )}
       </div>
+
+      {activityEditor && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]" onClick={() => setActivityEditor(null)}>
+          <div className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
+            <h4 className="text-white font-bold text-lg mb-1">แก้กิจกรรมนักเรียน</h4>
+            <p className="text-slate-400 text-sm mb-4">{activityEditor.fullName}</p>
+            <div className="max-h-72 overflow-auto rounded-2xl border border-slate-800 bg-slate-950/40 p-3 space-y-2">
+              {activities.map((activity) => {
+                const checked = activityEditor.selectedIds.includes(activity.id);
+                return (
+                  <label key={activity.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2.5 cursor-pointer hover:border-indigo-500/30">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <ActivityBadge name={activity.name} color={activity.color} />
+                        {!activity.isActive && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-400">ไม่ใช้งาน</span>}
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) =>
+                        setActivityEditor((current) =>
+                          current
+                            ? {
+                                ...current,
+                                selectedIds: e.target.checked
+                                  ? [...current.selectedIds, activity.id]
+                                  : current.selectedIds.filter((id) => id !== activity.id),
+                              }
+                            : current,
+                        )
+                      }
+                      className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-indigo-500 focus:ring-indigo-500"
+                    />
+                  </label>
+                );
+              })}
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={submitActivityEdit} disabled={pending} className="flex-grow rounded-2xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold py-2.5 transition-colors">
+                {pending ? "กำลังบันทึก..." : "บันทึกกิจกรรม"}
+              </button>
+              <button onClick={() => setActivityEditor(null)} className="rounded-2xl bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 transition-colors">
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

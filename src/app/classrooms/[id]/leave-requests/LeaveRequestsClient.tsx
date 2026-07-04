@@ -108,7 +108,7 @@ export default function LeaveRequestsClient({
 
   return (
     <TeacherShell active="dashboard" fullName={fullName} roomName={roomName} classroomId={classroomId}>
-      <main className="max-w-6xl mx-auto safe-px py-8 space-y-6">
+      <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-white">📝 คำขอลาเรียน</h1>
           <p className="text-slate-400 text-sm mt-1">ห้องที่ปรึกษา ม.{roomName}</p>

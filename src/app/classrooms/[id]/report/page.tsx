@@ -2,8 +2,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { formatDateInput, formatWallClockDate, parseDateInput, todayInBangkok } from "@/lib/time";
-import { loadReportSummary } from "@/lib/report";
+import { loadReportSummary, loadStudentReport } from "@/lib/report";
 import ReportClient from "./ReportClient";
+import StudentReportClient from "./StudentReportClient";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function ClassroomReportPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ start_date?: string; end_date?: string; error?: string }>;
+  searchParams: Promise<{ start_date?: string; end_date?: string; error?: string; view?: string }>;
 }) {
   const { id } = await params;
   const classroomId = Number(id);
@@ -28,11 +29,33 @@ export default async function ClassroomReportPage({
   });
   if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
 
-  const { start_date, end_date, error } = await searchParams;
+  const { start_date, end_date, error, view } = await searchParams;
   const today = todayInBangkok();
   const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
   const startDate = (start_date && parseDateInput(start_date)) || monthStart;
   const endDate = (end_date && parseDateInput(end_date)) || today;
+
+  if (view === "student") {
+    const rows = await loadStudentReport(classroomId, startDate, endDate);
+    return (
+      <StudentReportClient
+        classroomId={classroomId}
+        roomName={classroom.roomName}
+        fullName={classroom.advisor?.fullName ?? ""}
+        startDate={formatDateInput(startDate)}
+        endDate={formatDateInput(endDate)}
+        errorMessage={error ?? null}
+        rows={rows.map((row) => ({
+          ...row,
+          days: row.days.map((day) => ({
+            ...day,
+            sessionDate: formatDateInput(day.sessionDate),
+            sessionDateLabel: formatWallClockDate(day.sessionDate),
+          })),
+        }))}
+      />
+    );
+  }
 
   const reportRows = await loadReportSummary(classroomId, startDate, endDate);
 

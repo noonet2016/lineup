@@ -6,7 +6,7 @@ export default function Home() {
     <>
       <BackgroundGlow variant="indigo" />
       <main className="flex-grow flex items-center justify-center p-4 safe-px">
-        <div className="max-w-4xl w-full text-center space-y-12 py-12">
+        <div className="w-full max-w-full text-center space-y-12 py-12">
           <div className="space-y-4 animate-fade-in">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-semibold tracking-wider uppercase mb-2">
               ✨ Smart Morning Assembly Check-in
@@ -19,7 +19,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-6 w-full max-w-full mx-auto">
             <Link href="/login?role=student" className="group relative block p-8 rounded-2xl glass-panel glow-cyan hover:scale-[1.02] transition-all duration-300 hover:border-cyan-500/30 text-left">
               <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-bl-full group-hover:bg-cyan-500/10 transition-all" />
               <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 mb-6 group-hover:scale-110 transition-transform">

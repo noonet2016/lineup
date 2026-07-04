@@ -6,6 +6,7 @@ import { dashBadge } from "@/lib/dashboardBadge";
 import { fetchDashboardSnapshot } from "@/lib/actions/dashboardLive";
 import { addExemption } from "@/lib/actions/exemptions";
 import { formatWallClockTime } from "@/lib/time";
+import ActivityBadge from "@/app/_components/ActivityBadge";
 
 const FILTERS: { value: DashboardFilter; label: string; color: string }[] = [
   { value: "present", label: "มาปกติ", color: "border-l-emerald-500 text-emerald-400 ring-emerald-500/50" },
@@ -174,6 +175,13 @@ export default function DashboardLive({
                       <a href={`/classrooms/${classroomId}/students/${student.studentId}`} className="hover:text-indigo-400">
                         {student.fullName}
                       </a>
+                      {student.activities.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {student.activities.map((activity) => (
+                            <ActivityBadge key={`${student.studentId}-${activity.name}`} name={activity.name} color={activity.color} />
+                          ))}
+                        </div>
+                      )}
                       {student.exemptLabel && (
                         <span className="ml-1.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-400/15 border border-amber-400/50 text-amber-300 align-middle">
                           🎌 {student.exemptLabel}
@@ -268,6 +276,13 @@ export default function DashboardLive({
                         {student.fullName}
                       </a>
                     </h4>
+                    {student.activities.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {student.activities.map((activity) => (
+                          <ActivityBadge key={`${student.studentId}-${activity.name}`} name={activity.name} color={activity.color} />
+                        ))}
+                      </div>
+                    )}
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="text-[10px] text-slate-500 font-mono">รหัส: {student.studentId}</span>
                       {student.nickname && (

@@ -11,33 +11,41 @@ import {
   editLocation,
   openTodaySession,
   setActiveLocation,
+  updateClassroomTimes,
   updateSystemSettings,
 } from "@/lib/actions/settings";
+import { importCentralLocation } from "@/lib/actions/centralLocations";
 import { changeTeacherPassword } from "@/lib/actions/teacherAccount";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
 type Settings = { dome_lat: string; dome_lng: string; radius_m: string; check_start: string; late_after: string; check_end: string; scanfail_alert_radius_m: string };
+type ClassroomTimes = { check_start: string; late_after: string; check_end: string };
 type Holiday = { dateStr: string; label: string; name: string };
 type Location = { id: number; name: string; lat: number; lng: number; radius: number; isActive: boolean };
+type CentralLocation = { id: number; name: string; lat: number; lng: number; radius: number };
 
 export default function SettingsClient({
   classroomId,
   roomName,
   fullName,
   settings,
+  classroomTimes,
   sessionOpen,
   holiday,
   holidays,
   locations,
+  centralLocations,
   isOwner,
 }: {
   classroomId: number;
   roomName: string;
   fullName: string;
   settings: Settings;
+  classroomTimes: ClassroomTimes;
   sessionOpen: boolean;
   holiday: string | null;
   holidays: Holiday[];
   locations: Location[];
+  centralLocations: CentralLocation[];
   isOwner: boolean;
 }) {
   const router = useRouter();
@@ -124,7 +132,7 @@ export default function SettingsClient({
       </div>
       <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
 
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-full mx-auto">
         {isOwner && (
           <a
             href="/admin"
@@ -177,10 +185,34 @@ export default function SettingsClient({
           )}
         </div>
         <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-semibold">🏫 ค่าส่วนกลาง</span>
-          <span>เวลาเข้าแถว/รัศมี ใช้ร่วมกันทั้งโรงเรียน{isOwner ? "" : " — เฉพาะเจ้าของระบบแก้ได้"}</span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-semibold">🏠 เวลาของห้อง</span>
+          <span>ค่าเริ่มต้นมาจากโรงเรียน — แก้เพื่อกำหนดเวลาเฉพาะห้องนี้</span>
         </div>
+        <form action={(formData) => run(() => updateClassroomTimes(formData))} className="space-y-4 mb-7">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label>
+              <span className="block text-xs font-semibold text-slate-400 mb-2">เริ่มเช็คเวลา (Start)</span>
+              <input type="time" name="check_start" defaultValue={classroomTimes.check_start.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+            </label>
+            <label>
+              <span className="block text-xs font-semibold text-slate-400 mb-2">บันทึกสาย (Late)</span>
+              <input type="time" name="late_after" defaultValue={classroomTimes.late_after.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+            </label>
+            <label>
+              <span className="block text-xs font-semibold text-slate-400 mb-2">สิ้นสุดการเข้าแถวเวลา (End)</span>
+              <input type="time" name="check_end" defaultValue={classroomTimes.check_end.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+            </label>
+          </div>
+          <button type="submit" disabled={pending} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]">
+            บันทึกเวลาของห้อง
+          </button>
+        </form>
         {isOwner ? (
+        <>
+        <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-semibold">🏫 เวลาเริ่มต้นของโรงเรียน</span>
+          <span>ค่า default สำหรับห้องที่เว้นเวลาว่างไว้</span>
+        </div>
         <form
           action={(formData) => run(() => updateSystemSettings(formData))}
           className="space-y-6"
@@ -216,23 +248,11 @@ export default function SettingsClient({
             </span>
           </label>
           <button type="submit" disabled={pending} className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]">
-            บันทึกการตั้งค่า
+            บันทึกเวลาเริ่มต้นของโรงเรียน
           </button>
         </form>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { label: "เริ่มเช็ค", value: settings.check_start.slice(0, 5) },
-              { label: "บันทึกสาย", value: settings.late_after.slice(0, 5) },
-              { label: "สิ้นสุด", value: settings.check_end.slice(0, 5) },
-            ].map((f) => (
-              <div key={f.label} className="rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2">
-                <span className="block text-xs text-slate-500">{f.label}</span>
-                <span className="block text-lg font-bold text-slate-200 font-mono">{f.value}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        </>
+        ) : null}
       </section>
 
       {/* Holidays */}
@@ -289,6 +309,31 @@ export default function SettingsClient({
         >
           + เพิ่มจุดใหม่
         </button>
+        <div className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/30 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-sm font-bold text-white">ดึงจากส่วนกลาง</h3>
+              <p className="text-xs text-slate-500 mt-0.5">คัดลอกเข้าห้องเป็นจุดใหม่ แล้วค่อยเลือกใช้งานได้</p>
+            </div>
+          </div>
+          {centralLocations.length === 0 ? (
+            <p className="text-sm text-slate-500">ยังไม่มีจุดส่วนกลางที่เปิดใช้งาน</p>
+          ) : (
+            <ul className="space-y-2">
+              {centralLocations.map((loc) => (
+                <li key={loc.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-slate-900/70 border border-slate-800 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white break-words">{loc.name}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">{loc.lat}, {loc.lng} · รัศมี {loc.radius} ม.</p>
+                  </div>
+                  <button disabled={pending} onClick={() => run(() => importCentralLocation(loc.id))} className="shrink-0 text-xs font-bold text-cyan-200 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 px-3 py-1.5 rounded-lg">
+                    ดึงจากส่วนกลาง
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         {locations.length === 0 ? (
           <div className="text-center text-slate-500 text-sm py-4 mb-4">ยังไม่มีจุดเข้าแถว กดปุ่ม “+ เพิ่มจุดใหม่” ด้านบน</div>
         ) : (

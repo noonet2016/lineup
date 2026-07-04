@@ -35,6 +35,31 @@ export default async function AdminPage() {
       },
     },
   });
+  const activities = await prisma.schoolActivity.findMany({
+    orderBy: [{ id: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      color: true,
+      isActive: true,
+      _count: { select: { members: true } },
+      members: { select: { studentId: true } },
+    },
+  });
+  const centralLocations = await prisma.centralLocation.findMany({
+    orderBy: [{ id: "asc" }],
+    select: { id: true, name: true, latitude: true, longitude: true, radiusM: true, isActive: true },
+  });
+  const students = await prisma.student.findMany({
+    where: { status: 1 },
+    orderBy: [{ classroomId: "asc" }, { numberInClass: "asc" }, { studentId: "asc" }],
+    select: {
+      studentId: true,
+      fullName: true,
+      nickname: true,
+      classroom: { select: { id: true, roomName: true } },
+    },
+  });
 
   return (
     <TeacherShell
@@ -54,6 +79,29 @@ export default async function AdminPage() {
           roomsDetailed: t.advisedClassrooms.map((c) => ({ id: c.id, roomName: c.roomName })),
           studentCount: t.advisedClassrooms.reduce((n, c) => n + c._count.students, 0),
           sessionCount: t.advisedClassrooms.reduce((n, c) => n + c._count.sessions, 0),
+        }))}
+        activities={activities.map((activity) => ({
+          id: activity.id,
+          name: activity.name,
+          color: activity.color,
+          isActive: activity.isActive,
+          memberIds: activity.members.map((member) => member.studentId),
+          memberCount: activity._count.members,
+        }))}
+        centralLocations={centralLocations.map((location) => ({
+          id: location.id,
+          name: location.name,
+          lat: Number(location.latitude),
+          lng: Number(location.longitude),
+          radius: location.radiusM,
+          isActive: location.isActive === 1,
+        }))}
+        students={students.map((student) => ({
+          studentId: student.studentId,
+          fullName: student.fullName,
+          nickname: student.nickname,
+          classroomId: student.classroom.id,
+          roomName: student.classroom.roomName,
         }))}
       />
     </TeacherShell>

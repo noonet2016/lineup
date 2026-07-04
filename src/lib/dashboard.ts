@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { todayInBangkok } from "./time";
 import { getScanFailMap } from "./actions/scanfail";
+import { getActivityTagMap, type ActivityTag } from "./actions/activities";
 
 export type { DashboardStatus } from "./dashboardBadge";
 export { dashBadge } from "./dashboardBadge";
@@ -22,6 +23,7 @@ export type DashboardRow = {
   fullName: string;
   nickname: string | null;
   numberInClass: number | null;
+  activities: ActivityTag[];
   displayStatus: DashboardStatus;
   checkTime: Date | null;
   distanceM: number | null;
@@ -136,10 +138,11 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
   });
   const sessionId = session?.id ?? 0;
 
-  const [exemptMap, exemptLabels, scanFailMap, students] = await Promise.all([
+  const [exemptMap, exemptLabels, scanFailMap, activityTagMap, students] = await Promise.all([
     getExemptMap(classroomId, today),
     getExemptLabels(classroomId),
     getScanFailMap(classroomId),
+    getActivityTagMap(classroomId),
     prisma.student.findMany({
       where: { classroomId, status: 1 },
       orderBy: [{ numberInClass: "asc" }, { studentId: "asc" }],
@@ -212,6 +215,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
         fullName: student.fullName,
         nickname: student.nickname,
         numberInClass: student.numberInClass,
+        activities: activityTagMap.get(student.studentId) ?? [],
         displayStatus,
         checkTime: record?.checkTime ?? null,
         distanceM: record?.distanceM ?? null,

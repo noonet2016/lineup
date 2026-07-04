@@ -21,12 +21,13 @@ export default async function ClassroomSettingsPage({ params }: { params: Promis
   if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
 
   const { dateOnly: today } = nowInBangkok();
-  const [settingsRows, todaySession, holiday, holidays, locations] = await Promise.all([
+  const [settingsRows, todaySession, holiday, holidays, locations, centralLocations] = await Promise.all([
     prisma.systemSetting.findMany(),
     prisma.attendanceSession.findUnique({ where: { sessionDate_classroomId: { sessionDate: today, classroomId } } }),
     holidayBlockReason(today),
     prisma.holiday.findMany({ where: { holidayDate: { gte: today } }, orderBy: { holidayDate: "asc" } }),
     prisma.checkinLocation.findMany({ where: { classroomId }, orderBy: [{ isActive: "desc" }, { id: "asc" }] }),
+    prisma.centralLocation.findMany({ where: { isActive: 1 }, orderBy: [{ id: "asc" }] }),
   ]);
 
   const settings = Object.fromEntries(settingsRows.map((s) => [s.settingKey, s.settingValue]));
@@ -47,6 +48,11 @@ export default async function ClassroomSettingsPage({ params }: { params: Promis
         check_end: settings.check_end ?? "08:15",
         scanfail_alert_radius_m: settings.scanfail_alert_radius_m ?? "",
       }}
+      classroomTimes={{
+        check_start: classroom.checkStart ?? settings.check_start ?? "07:45",
+        late_after: classroom.lateAfter ?? settings.late_after ?? "08:00",
+        check_end: classroom.checkEnd ?? settings.check_end ?? "08:15",
+      }}
       sessionOpen={Boolean(todaySession)}
       holiday={holiday}
       holidays={holidays.map((h) => ({ dateStr: h.holidayDate.toISOString().slice(0, 10), label: formatWallClockDate(h.holidayDate), name: h.name }))}
@@ -57,6 +63,13 @@ export default async function ClassroomSettingsPage({ params }: { params: Promis
         lng: Number(l.longitude),
         radius: l.radiusM,
         isActive: l.isActive === 1,
+      }))}
+      centralLocations={centralLocations.map((l) => ({
+        id: l.id,
+        name: l.name,
+        lat: Number(l.latitude),
+        lng: Number(l.longitude),
+        radius: l.radiusM,
       }))}
     />
   );

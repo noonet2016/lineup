@@ -20,6 +20,10 @@ export default function LoginForms({ initialRole = "student" }: { initialRole?: 
   }, [state.ok]);
 
   const isTeacher = initialRole === "teacher";
+  const submitButtonClassName = isTeacher
+    ? "w-full bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+    : "w-full bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-500/50";
+
   return (
     <>
       <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
@@ -72,7 +76,7 @@ export default function LoginForms({ initialRole = "student" }: { initialRole?: 
         <button
           type="submit"
           disabled={pending}
-          className={`w-full bg-gradient-to-r ${isTeacher ? "from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 focus:ring-indigo-500/50" : "from-cyan-500 to-indigo-500 hover:from-cyan-600 hover:to-indigo-600 focus:ring-cyan-500/50"} disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all transform active:scale-[0.98] focus:outline-none focus:ring-2 text-lg`}
+          className={submitButtonClassName}
         >
           {pending ? "กำลังเข้าสู่ระบบ..." : isTeacher ? "เข้าสู่ระบบครูที่ปรึกษา" : "เข้าสู่ระบบ"}
         </button>

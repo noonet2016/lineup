@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { getExemptMap } from "./dashboard";
 import { getScanFailMap } from "./actions/scanfail";
+import { getActivityTagMap } from "./actions/activities";
 import type { DashboardStatus } from "./dashboardBadge";
 
 /** Mirrors legacy teacher/report.php's summary query: one row per attendance_session in the date range. */
@@ -14,6 +15,34 @@ export type ReportSummaryRow = {
   pending: number;
   flagged: number;
   totalStudents: number;
+};
+
+export type StudentReportBand = "regular" | "normal" | "frequent-absent";
+
+export type StudentReportDayRow = {
+  sessionId: number;
+  sessionDate: Date;
+  status: DashboardStatus;
+  exemptReason: string | null;
+};
+
+export type ActivityTag = { name: string; color: string };
+
+export type StudentReportRow = {
+  studentId: string;
+  fullName: string;
+  nickname: string | null;
+  numberInClass: number | null;
+  linePictureUrl: string | null;
+  activities: ActivityTag[];
+  sessionsExpected: number;
+  present: number;
+  late: number;
+  excused: number;
+  absent: number;
+  attendRate: number | null;
+  band: StudentReportBand;
+  days: StudentReportDayRow[];
 };
 
 /** Mirrors legacy teacher/report.php's daily summary table (start_date/end_date inclusive, both UTC-midnight Bangkok dates). */
@@ -68,6 +97,100 @@ export async function loadReportSummary(classroomId: number, startDate: Date, en
     });
   }
   return rows;
+}
+
+/** Builds the orthogonal report angle: one row per active student across every session in the range. */
+export async function loadStudentReport(classroomId: number, startDate: Date, endDate: Date): Promise<StudentReportRow[]> {
+  const [sessions, students, activityTagMap] = await Promise.all([
+    prisma.attendanceSession.findMany({
+      where: { classroomId, sessionDate: { gte: startDate, lte: endDate } },
+      orderBy: { sessionDate: "desc" },
+      select: {
+        id: true,
+        sessionDate: true,
+        attendanceRecords: { select: { studentId: true, status: true } },
+      },
+    }),
+    prisma.student.findMany({
+      where: { classroomId, status: 1 },
+      orderBy: [{ numberInClass: "asc" }, { studentId: "asc" }],
+      select: {
+        studentId: true,
+        fullName: true,
+        nickname: true,
+        numberInClass: true,
+        linePictureUrl: true,
+        createdAt: true,
+      },
+    }),
+    getActivityTagMap(classroomId),
+  ]);
+
+  const rows = new Map<string, StudentReportRow>();
+  for (const student of students) {
+    rows.set(student.studentId, {
+      studentId: student.studentId,
+      fullName: student.fullName,
+      nickname: student.nickname,
+      numberInClass: student.numberInClass,
+      linePictureUrl: student.linePictureUrl,
+      activities: activityTagMap.get(student.studentId) ?? [],
+      sessionsExpected: 0,
+      present: 0,
+      late: 0,
+      excused: 0,
+      absent: 0,
+      attendRate: null,
+      band: "normal",
+      days: [],
+    });
+  }
+
+  for (const session of sessions) {
+    const exemptMap = await getExemptMap(classroomId, session.sessionDate);
+    const recordMap = new Map(session.attendanceRecords.map((record) => [record.studentId, record.status]));
+
+    for (const student of students) {
+      const row = rows.get(student.studentId);
+      const enrolledDate = new Date(Date.UTC(student.createdAt.getUTCFullYear(), student.createdAt.getUTCMonth(), student.createdAt.getUTCDate()));
+      if (!row || session.sessionDate < enrolledDate) continue;
+
+      const recordStatus = recordMap.get(student.studentId);
+      if (recordStatus) {
+        const status = recordStatus as DashboardStatus;
+        if (status === "late") row.late++;
+        else if (status === "absent") row.absent++;
+        else row.present++;
+        row.sessionsExpected++;
+        row.days.push({ sessionId: session.id, sessionDate: session.sessionDate, status, exemptReason: null });
+        continue;
+      }
+
+      if (exemptMap.has(student.studentId)) {
+        row.excused++;
+        row.days.push({
+          sessionId: session.id,
+          sessionDate: session.sessionDate,
+          status: "excused",
+          exemptReason: exemptMap.get(student.studentId) ?? null,
+        });
+      } else {
+        row.absent++;
+        row.sessionsExpected++;
+        row.days.push({ sessionId: session.id, sessionDate: session.sessionDate, status: "absent", exemptReason: null });
+      }
+    }
+  }
+
+  for (const row of rows.values()) {
+    const attended = row.present + row.late;
+    row.attendRate = row.sessionsExpected === 0 ? null : attended / row.sessionsExpected;
+    if (row.attendRate === null || row.attendRate >= 0.95 || row.absent === 0) row.band = "regular";
+    else if (row.attendRate < 0.8) row.band = "frequent-absent";
+    else row.band = "normal";
+  }
+
+  return [...rows.values()];
 }
 
 export type ReportDayRow = {

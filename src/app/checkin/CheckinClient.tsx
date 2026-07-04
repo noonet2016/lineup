@@ -295,7 +295,7 @@ export default function CheckinClient({
 
   return (
     <main className="flex-grow flex items-center justify-center">
-      <div className="w-full max-w-xl space-y-6">
+      <div className="w-full max-w-full mx-auto space-y-6">
         <div className="glass-panel rounded-2xl p-6 flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-xl font-bold">
             {fullName.slice(0, 1)}

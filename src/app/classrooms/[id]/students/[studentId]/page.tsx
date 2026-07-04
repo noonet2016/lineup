@@ -82,7 +82,7 @@ export default async function StudentHistoryPage({
   const pageHref = (pg: number) => `?${rangeQS}&p=${pg}#daily`;
 
   const content = (
-    <main className="max-w-xl mx-auto safe-px py-8 space-y-6">
+    <main className="max-w-full mx-auto safe-px py-8 space-y-6">
       <Link href={`/classrooms/${classroomId}`} className="text-sm text-slate-400 hover:text-white">
         ← กลับไปหน้าห้องเรียน
       </Link>
