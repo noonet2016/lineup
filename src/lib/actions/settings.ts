@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireTeacherClassroom } from "@/lib/teacher";
+import { requireOwner, requireTeacherClassroom } from "@/lib/teacher";
 import { holidayBlockReason } from "@/lib/dashboard";
 import { nowInBangkok } from "@/lib/time";
 
@@ -55,7 +55,7 @@ export async function openTodaySession(): Promise<ActionResult> {
  *  dome_lat/dome_lng/radius_m are no longer editable here — the locations tab replaces them; those keys stay in
  *  the DB untouched as the fallback `getActiveLocation()` uses when a classroom has no active checkin_location. */
 export async function updateSystemSettings(formData: FormData): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+  const teacher = await requireOwner();
 
   const fields = ["check_start", "late_after", "check_end"] as const;
   const values: Record<string, string> = {};
@@ -101,7 +101,7 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
 
 /** Mirrors legacy action=add_holiday (upsert by date). */
 export async function addHoliday(formData: FormData): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+  const teacher = await requireOwner();
   const dateStr = String(formData.get("holiday_date") ?? "").trim();
   const name = String(formData.get("holiday_name") ?? "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return { ok: false, message: "รูปแบบวันที่ไม่ถูกต้อง" };
@@ -122,7 +122,7 @@ export async function addHoliday(formData: FormData): Promise<ActionResult> {
 
 /** Mirrors legacy action=delete_holiday. Global (not classroom-scoped), matching legacy. */
 export async function deleteHoliday(dateStr: string): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+  const teacher = await requireOwner();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return { ok: false, message: "รูปแบบวันที่ไม่ถูกต้อง" };
   const [y, m, d] = dateStr.split("-").map(Number);
   const holidayDate = new Date(Date.UTC(y, m - 1, d));

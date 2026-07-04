@@ -28,6 +28,7 @@ export default function SettingsClient({
   holiday,
   holidays,
   locations,
+  isOwner,
 }: {
   classroomId: number;
   roomName: string;
@@ -37,6 +38,7 @@ export default function SettingsClient({
   holiday: string | null;
   holidays: Holiday[];
   locations: Location[];
+  isOwner: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -165,6 +167,11 @@ export default function SettingsClient({
             </div>
           )}
         </div>
+        <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-semibold">🏫 ค่าส่วนกลาง</span>
+          <span>เวลาเข้าแถว/รัศมี ใช้ร่วมกันทั้งโรงเรียน{isOwner ? "" : " — เฉพาะเจ้าของระบบแก้ได้"}</span>
+        </div>
+        {isOwner ? (
         <form
           action={(formData) => run(() => updateSystemSettings(formData))}
           className="space-y-6"
@@ -203,6 +210,20 @@ export default function SettingsClient({
             บันทึกการตั้งค่า
           </button>
         </form>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { label: "เริ่มเช็ค", value: settings.check_start.slice(0, 5) },
+              { label: "บันทึกสาย", value: settings.late_after.slice(0, 5) },
+              { label: "สิ้นสุด", value: settings.check_end.slice(0, 5) },
+            ].map((f) => (
+              <div key={f.label} className="rounded-xl bg-slate-900/60 border border-slate-800 px-3 py-2">
+                <span className="block text-xs text-slate-500">{f.label}</span>
+                <span className="block text-lg font-bold text-slate-200 font-mono">{f.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Holidays */}
@@ -211,7 +232,10 @@ export default function SettingsClient({
           <h2 className="text-xl font-bold text-white">วันหยุด</h2>
           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">📅 วันหยุด</span>
         </div>
-        <p className="text-slate-400 text-sm mb-6">เพิ่มวันหยุดพิเศษเพื่อไม่บันทึกการขาดเข้าแถวในวันนั้น</p>
+        <p className="text-slate-400 text-sm mb-4">
+          ปฏิทินวันหยุดใช้ร่วมกันทั้งโรงเรียน{isOwner ? " — เพิ่มวันหยุดพิเศษเพื่อไม่บันทึกการขาดเข้าแถวในวันนั้น" : " · เฉพาะเจ้าของระบบเพิ่ม/ลบได้"}
+        </p>
+        {isOwner && (
         <form action={(formData) => run(() => addHoliday(formData))} className="flex flex-col sm:flex-row gap-3 mb-6">
           <input type="date" name="holiday_date" required className="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
           <input name="holiday_name" placeholder="ชื่อวันหยุด เช่น วันมาฆบูชา" required className="flex-grow bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
@@ -219,6 +243,7 @@ export default function SettingsClient({
             + เพิ่ม
           </button>
         </form>
+        )}
         <ul className="divide-y divide-slate-900/60 border border-slate-900 rounded-xl overflow-y-auto max-h-72">
           {holidays.length === 0 && <li className="px-4 py-6 text-center text-slate-500 text-sm">ยังไม่มีวันหยุดที่จะถึงในรายการ</li>}
           {holidays.map((h) => (
@@ -227,13 +252,15 @@ export default function SettingsClient({
                 <span className="text-sm font-semibold text-white">{h.name}</span>
                 <span className="block text-xs text-slate-500 font-mono">{h.label}</span>
               </div>
-              <button
-                disabled={pending}
-                onClick={() => run(() => deleteHoliday(h.dateStr))}
-                className="text-rose-400 hover:text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-rose-500/10 transition-all"
-              >
-                ลบ
-              </button>
+              {isOwner && (
+                <button
+                  disabled={pending}
+                  onClick={() => run(() => deleteHoliday(h.dateStr))}
+                  className="text-rose-400 hover:text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-rose-500/10 transition-all"
+                >
+                  ลบ
+                </button>
+              )}
             </li>
           ))}
         </ul>

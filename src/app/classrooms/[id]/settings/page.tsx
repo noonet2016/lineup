@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { holidayBlockReason } from "@/lib/dashboard";
+import { isOwner as checkIsOwner } from "@/lib/teacher";
 import { formatWallClockDate, nowInBangkok } from "@/lib/time";
 import SettingsClient from "./SettingsClient";
 
@@ -29,9 +30,11 @@ export default async function ClassroomSettingsPage({ params }: { params: Promis
   ]);
 
   const settings = Object.fromEntries(settingsRows.map((s) => [s.settingKey, s.settingValue]));
+  const owner = await checkIsOwner();
 
   return (
     <SettingsClient
+      isOwner={owner}
       classroomId={classroomId}
       roomName={classroom.roomName}
       fullName={classroom.advisor?.fullName ?? ""}
