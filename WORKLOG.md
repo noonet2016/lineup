@@ -496,3 +496,20 @@ Large feature-build session on top of the live M6 deploy. All work is LOCAL-ONLY
 - (mysqldump not installed on this Mac — no table backup taken; column add is additive/nullable so rollback = DROP COLUMN.)
 
 ### Reminder — address the Trainer as นู๋เน็ตเวิร์ค on this machine (NOT เติ้ล). See auto-memory trainer-identity-macbook.
+
+## 2026-07-04 — Session 2: multi-teacher onboarding (same school) — commits 9707cb9, f433a6c, dacd914
+Goal: let other teachers in the SAME school use the app (Trainer decision: same school, help a few colleagues — NOT multi-tenant, NOT a commercial product). Shared holiday calendar + assembly times are correct for one school.
+
+- **9707cb9 — SECURITY (read IDOR closed):** Tomi audit found teacher dashboard read path leaked other classrooms. Fixed:
+  - `classrooms/[id]/page.tsx`: enforce session + advisorId ownership BEFORE loading data; non-advisor teacher → redirect to own classroom, student → /checkin (removed old read-only cross-classroom view).
+  - `actions/dashboardLive.ts:fetchDashboardSnapshot`: added session + advisorId gate (had NO auth check before).
+  - Audit verdict: all write-side actions already advisor-scoped (OK). Only the dashboard read path was leaking.
+- **f433a6c — owner role:** `Teacher.role='owner'` gates school-wide settings. `requireOwner()`/`isOwner()` in `lib/teacher.ts`. `updateSystemSettings`/`addHoliday`/`deleteHoliday` now owner-only (were any-teacher). SettingsClient shows those sections read-only to non-owners.
+- **dacd914 — /admin page (owner-only):** onboard teachers. `createTeacherWithClassroom` (teacher+homeroom in one $transaction, bcrypt pw), `updateTeacher`, `resetTeacherPassword`, `deleteTeacher` (refuses if room has students/sessions — data-loss guard; cannot delete owner). Entry link on settings page for owner.
+- Verified in dev: created advisor52 / ม.5/2 via /admin ($transaction works with mariadb adapter). advisor1 (id=1) set role='owner' in dev DB.
+
+### PROD DEPLOY LOOSE ENDS — ADDED THIS SESSION (do before deploying these commits)
+1. **`scan_fail_reports.acknowledged_at`** — `ALTER TABLE scan_fail_reports ADD COLUMN acknowledged_at DATETIME NULL;` on prod (`thatnara_lineup_prod`). (From session 1.)
+2. **owner role on prod** — `UPDATE teachers SET role='owner' WHERE username='<Trainer's prod account>';` — WITHOUT this, NO ONE can edit school-wide settings (assembly times / holidays / scan-fail radius) on prod.
+3. (Still open from before) remove `[LOGIN DEBUG]` console.error in `src/lib/actions/auth.ts`; restore `.env` LINE_REDIRECT_URI for non-tunnel.
+4. Dev-only test data: teacher `advisor52` (ม.5/2, empty) — delete via /admin when done testing.
