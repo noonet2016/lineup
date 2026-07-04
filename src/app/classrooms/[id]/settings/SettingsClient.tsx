@@ -125,6 +125,15 @@ export default function SettingsClient({
       <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
 
       <div className="max-w-3xl mx-auto">
+        {isOwner && (
+          <a
+            href="/admin"
+            className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 hover:bg-amber-500/15 transition-colors"
+          >
+            <span className="text-sm font-bold text-amber-200">👥 จัดการครู &amp; ห้องเรียน</span>
+            <span className="text-xs text-amber-300/80">เจ้าของระบบ · เพิ่มบัญชีครู →</span>
+          </a>
+        )}
         <div className="flex gap-2 mb-5 overflow-x-auto whitespace-nowrap no-scrollbar">
           <TabButton active={activeTab === "main"} onClick={() => setActiveTab("main")} color="indigo">⚙️ ตั้งค่าหลัก</TabButton>
           <TabButton active={activeTab === "locations"} onClick={() => setActiveTab("locations")} color="cyan">📍 จุดเข้าแถว</TabButton>
