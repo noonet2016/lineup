@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import PollRefresh from "@/app/_components/PollRefresh";
 import ScanFailListClient from "./ScanFailListClient";
 import { getUnmatchedScanFailReports } from "@/lib/actions/scanfail";
+import { formatWallClockDate, nowInBangkok } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function ClassroomScanFailPage({ params }: { params: Promis
   if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
 
   const reports = await getUnmatchedScanFailReports(classroomId);
+  const todayLabel = formatWallClockDate(nowInBangkok().dateOnly);
 
   return (
     <>
@@ -34,6 +36,7 @@ export default async function ClassroomScanFailPage({ params }: { params: Promis
         roomName={classroom.roomName}
         fullName={classroom.advisor?.fullName ?? ""}
         reports={reports}
+        todayLabel={todayLabel}
       />
     </>
   );

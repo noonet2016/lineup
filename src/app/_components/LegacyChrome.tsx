@@ -1,5 +1,6 @@
 import { logout } from "@/lib/actions/auth";
 import { TeacherMobileNav } from "@/app/_components/TeacherMobileNav";
+import PullToRefresh from "@/app/_components/PullToRefresh";
 
 type TeacherActive = "dashboard" | "devices" | "exemptions" | "leave" | "scanfail" | "settings" | "report" | "students";
 type StudentActive = "checkin" | "history" | "profile" | "leave";
@@ -176,18 +177,16 @@ export function TeacherShell({
 
 export function StudentHeader() {
   return (
-    <header className="max-w-xl w-full mx-auto flex justify-between items-center py-4 mb-4">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-          <span className="text-sm font-semibold tracking-wider text-cyan-400">STUDENT PORTAL</span>
-        </div>
-        <a href="/account" className="inline-flex items-center gap-1.5 text-xs font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400/50 px-3 py-1.5 rounded-full shadow-sm shadow-cyan-500/10 transition-all active:scale-95">
-          ลงทะเบียนอุปกรณ์
-        </a>
+    <header className="sticky top-0 z-30 mb-3 flex items-center justify-between h-12 px-4 safe-px safe-pt bg-slate-950/90 backdrop-blur border-b border-slate-900">
+      <div className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+        <span className="text-sm font-semibold tracking-wider text-cyan-400">STUDENT PORTAL</span>
       </div>
       <form action={logout}>
-        <button type="submit" className="text-sm text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1">
+        <button type="submit" className="text-sm font-semibold text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+          </svg>
           ออกจากระบบ
         </button>
       </form>
@@ -217,8 +216,9 @@ export function StudentShell({ active, children }: { active: StudentActive; chil
   return (
     <>
       <BackgroundGlow variant="cyan" />
-      <div className="min-h-full flex flex-1 flex-col p-4 pb-24 safe-px relative overflow-x-hidden">
-        <StudentHeader />
+      <PullToRefresh />
+      <StudentHeader />
+      <div className="min-h-full flex flex-1 flex-col px-4 pt-1 pb-24 safe-px relative">
         {children}
       </div>
       <StudentNav active={active} />

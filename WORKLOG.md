@@ -476,3 +476,7 @@ Large feature-build session on top of the live M6 deploy. All work is LOCAL-ONLY
 - cloudflared tunnel → localhost:3000
 - `next dev` on :3000
 (Trainer fell asleep mid-test; leave running or they can Ctrl-C later.)
+
+## 2026-07-04 — NOTE (deferred)
+- **Holiday guard for scan-fail + check-in:** currently a student CAN report "สแกนหน้าไม่ติด" (and check in) even on a holiday. Left ENABLED on purpose so we can test the flow now. TODO before prod: block scan-fail report + check-in when today is a holiday (no assembly session). Decided with Trainer 2026-07-04.
+- Scan-fail report now has persisted reported-state + self-cancel (`cancelMyScanFail`); green "แจ้งแล้ว" card in CheckinClient.

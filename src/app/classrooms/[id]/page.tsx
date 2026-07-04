@@ -5,7 +5,7 @@ import { formatWallClockDate, todayInBangkok } from "@/lib/time";
 import { getSession } from "@/lib/session";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import DashboardLive from "./DashboardLive";
-import RefreshButton from "./RefreshButton";
+import PullToRefresh from "@/app/_components/PullToRefresh";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +54,7 @@ export default async function ClassroomDashboardPage({
 
   const page = (
     <main className="max-w-full mx-auto safe-px py-8 space-y-6">
+      <PullToRefresh />
       {success && (
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">{success}</div>
       )}
@@ -79,7 +80,6 @@ export default async function ClassroomDashboardPage({
           {!isAdvisor && <p className="text-xs text-slate-500 mt-1">มุมมองอ่านอย่างเดียว (read-only)</p>}
         </div>
         <div className="flex items-center gap-2">
-          <RefreshButton />
           {isAdvisor && !sessionOpen && (
             <a
               href={`/classrooms/${classroomId}/settings`}

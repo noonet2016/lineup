@@ -14,7 +14,7 @@ export type StudentHistory = {
   todayStatus: HistoryStatus;
   todayTime: Date | null;
   todayHasSession: boolean;
-  month: { year: number; month: number };
+  range: { startYear: number; startMonth: number; endYear: number; endMonth: number };
   totalSessions: number;
   presentDays: number;
   lateDays: number;
@@ -22,13 +22,21 @@ export type StudentHistory = {
   pendingDays: number;
   rate: number;
   history: HistoryDay[];
+  historyTotal: number;
+  historyPage: number;
+  historyPageSize: number;
 };
+
+export const HISTORY_PAGE_SIZE = 30;
 
 /** Mirrors legacy student/history.php: today's status + monthly summary + last-90 daily history for one student. */
 export async function loadStudentHistory(
   studentId: string,
-  year: number,
-  month: number,
+  startYear: number,
+  startMonth: number,
+  endYear: number = startYear,
+  endMonth: number = startMonth,
+  historyPage: number = 1,
 ): Promise<StudentHistory | null> {
   const student = await prisma.student.findUnique({
     where: { studentId },
@@ -58,10 +66,11 @@ export async function loadStudentHistory(
     }
   }
 
-  const monthStart = new Date(Date.UTC(year, month - 1, 1));
-  const monthEnd = new Date(Date.UTC(year, month, 0));
+  const monthStart = new Date(Date.UTC(startYear, startMonth - 1, 1));
+  const monthEnd = new Date(Date.UTC(endYear, endMonth, 0));
 
-  const [totalSessions, statusCounts, history] = await Promise.all([
+  const page = Math.max(1, historyPage);
+  const [totalSessions, statusCounts, historyTotal, history] = await Promise.all([
     prisma.attendanceSession.count({
       where: { classroomId: student.classroomId, sessionDate: { gte: monthStart, lte: monthEnd } },
     }),
@@ -73,10 +82,14 @@ export async function loadStudentHistory(
       },
       _count: { _all: true },
     }),
+    prisma.attendanceSession.count({
+      where: { classroomId: student.classroomId },
+    }),
     prisma.attendanceSession.findMany({
       where: { classroomId: student.classroomId },
       orderBy: { sessionDate: "desc" },
-      take: 90,
+      skip: (page - 1) * HISTORY_PAGE_SIZE,
+      take: HISTORY_PAGE_SIZE,
       select: {
         sessionDate: true,
         attendanceRecords: {
@@ -102,13 +115,16 @@ export async function loadStudentHistory(
     todayStatus,
     todayTime,
     todayHasSession,
-    month: { year, month },
+    range: { startYear, startMonth, endYear, endMonth },
     totalSessions,
     presentDays,
     lateDays,
     absentDays,
     pendingDays: cnt.pending + cnt.flagged,
     rate,
+    historyTotal,
+    historyPage: page,
+    historyPageSize: HISTORY_PAGE_SIZE,
     history: history.map((h) => {
       const record = h.attendanceRecords[0];
       return {

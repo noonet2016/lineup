@@ -20,21 +20,35 @@ export default async function AccountPage({
     session.role === "student"
       ? await prisma.student.findUnique({
           where: { studentId: session.id },
-          select: { fullName: true, nickname: true, lineUserId: true, classroomId: true },
+          select: {
+            studentId: true,
+            numberInClass: true,
+            fullName: true,
+            nickname: true,
+            lineUserId: true,
+            lineDisplayName: true,
+            linePictureUrl: true,
+            classroomId: true,
+          },
         })
       : await prisma.teacher.findUnique({
           where: { id: Number(session.id) },
-          select: { fullName: true, lineUserId: true },
+          select: { fullName: true, lineUserId: true, lineDisplayName: true, linePictureUrl: true },
         });
 
   if (!account) redirect("/login");
+
+  const studentAccount =
+    session.role === "student"
+      ? (account as unknown as { studentId: string; numberInClass: number | null; fullName: string; nickname: string | null })
+      : null;
 
   const advisedClassroom =
     session.role === "teacher" ? await prisma.classroom.findFirst({ where: { advisorId: Number(session.id) } }) : null;
 
   const content = (
-    <main className="max-w-md mx-auto safe-px py-10 space-y-6">
-      <h1 className="text-2xl font-extrabold text-white">บัญชีของฉัน</h1>
+    <main className="max-w-md mx-auto safe-px py-2 space-y-3">
+      <h1 className="text-xl font-extrabold text-white">บัญชีของฉัน</h1>
 
       {bound === "1" && (
         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm text-center">
@@ -47,18 +61,50 @@ export default async function AccountPage({
         </div>
       )}
 
-      <div className="glass-panel rounded-2xl p-5 space-y-2">
+      <div className="glass-panel rounded-2xl p-4 space-y-2">
         <p className="text-xs text-slate-400">{session.role === "student" ? "นักเรียน" : "ครู"}</p>
-        <p className="text-lg font-bold text-white">
-          {account.fullName}
-          {"nickname" in account && account.nickname ? ` (${account.nickname})` : ""}
-        </p>
+        {studentAccount ? (
+          <dl className="space-y-1.5 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-slate-400">เลขที่</dt>
+              <dd className="text-white font-semibold">{studentAccount.numberInClass ?? "-"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-slate-400">เลขประจำตัว</dt>
+              <dd className="text-white font-mono">{studentAccount.studentId}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-slate-400 shrink-0">ชื่อ-นามสกุล</dt>
+              <dd className="text-white font-semibold text-right break-words">{studentAccount.fullName}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-slate-400">ชื่อเล่น</dt>
+              <dd className="text-white">{studentAccount.nickname || "-"}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="text-lg font-bold text-white break-words">{account.fullName}</p>
+        )}
       </div>
 
-      <div className="glass-panel rounded-2xl p-5 space-y-3">
+      <div className="glass-panel rounded-2xl p-4 space-y-2">
         <p className="text-sm font-semibold text-white">การเชื่อมบัญชี LINE</p>
         {account.lineUserId ? (
-          <p className="text-sm text-emerald-400">✅ เชื่อมบัญชี LINE แล้ว</p>
+          <div className="space-y-3">
+            <p className="text-sm text-emerald-400">✅ เชื่อมบัญชี LINE แล้ว</p>
+            <div className="flex items-center gap-3">
+              {account.linePictureUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={account.linePictureUrl} alt="" className="w-14 h-14 rounded-full object-cover border border-slate-700 shrink-0" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">?</div>
+              )}
+              <div className="min-w-0">
+                <p className="text-sm text-white font-semibold break-words">{account.lineDisplayName || "(ไม่ทราบชื่อ LINE)"}</p>
+                <p className="text-[11px] text-slate-500 font-mono break-all">ID: {account.lineUserId}</p>
+              </div>
+            </div>
+          </div>
         ) : (
           <>
             <p className="text-sm text-slate-400">ยังไม่ได้เชื่อมบัญชี LINE</p>
@@ -106,11 +152,13 @@ export default async function AccountPage({
         </>
       )}
 
-      <form action={logout}>
-        <button type="submit" className="w-full text-center text-rose-400 text-sm py-2">
-          ออกจากระบบ
-        </button>
-      </form>
+      {session.role !== "student" && (
+        <form action={logout}>
+          <button type="submit" className="w-full text-center text-rose-400 text-sm py-2">
+            ออกจากระบบ
+          </button>
+        </form>
+      )}
     </main>
   );
 

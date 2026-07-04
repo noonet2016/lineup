@@ -4,6 +4,9 @@ import { getActiveLocation } from "@/lib/checkin";
 import { getSession } from "@/lib/session";
 import { StudentShell } from "../_components/LegacyChrome";
 import CheckinClient from "./CheckinClient";
+import { computeScanFailGeo } from "@/lib/actions/scanfail";
+import { holidayBlockReason } from "@/lib/dashboard";
+import { formatWallClockDate } from "@/lib/time";
 
 const TZ = "Asia/Bangkok";
 
@@ -39,6 +42,21 @@ export default async function CheckinPage() {
 
   const location = await getActiveLocation(student.classroomId);
 
+  const scanFailReport = await prisma.scanFailReport.findUnique({
+    where: { studentId_sessionDate: { studentId: student.studentId, sessionDate: today } },
+    select: { reportedAt: true, latitude: true, longitude: true },
+  });
+  const scanFailReportedAt = scanFailReport
+    ? scanFailReport.reportedAt
+        .toLocaleTimeString("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
+    : null;
+  const scanFailGeo = scanFailReport
+    ? await computeScanFailGeo(student.classroomId, scanFailReport.latitude, scanFailReport.longitude)
+    : null;
+
+  const holidayName = await holidayBlockReason(today);
+  const todayLabel = formatWallClockDate(today);
+
   return (
     <StudentShell active="checkin">
       <CheckinClient
@@ -51,6 +69,10 @@ export default async function CheckinPage() {
         alreadyCheckedIn={Boolean(existingRecord)}
         existingStatus={existingRecord?.status ?? null}
         existingCheckTime={existingRecord?.checkTime?.toISOString() ?? null}
+        scanFailReportedAt={scanFailReportedAt}
+        scanFailGeo={scanFailGeo}
+        holidayName={holidayName}
+        todayLabel={todayLabel}
       />
     </StudentShell>
   );

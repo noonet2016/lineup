@@ -29,7 +29,7 @@ export default async function StudentHistoryPage({
   searchParams,
 }: {
   params: Promise<{ id: string; studentId: string }>;
-  searchParams: Promise<{ y?: string; m?: string }>;
+  searchParams: Promise<{ sy?: string; sm?: string; ey?: string; em?: string; p?: string }>;
 }) {
   const { id, studentId } = await params;
   const classroomId = Number(id);
@@ -38,11 +38,23 @@ export default async function StudentHistoryPage({
   const now = new Date();
   const bangkokNow = nowInBangkok();
   const bangkokYear = bangkokNow.dateOnly.getUTCFullYear();
-  const { y, m } = await searchParams;
-  const year = /^\d{4}$/.test(y ?? "") ? Number(y) : bangkokYear;
-  const month = /^(?:[1-9]|1[0-2])$/.test(m ?? "") ? Number(m) : bangkokNow.dateOnly.getUTCMonth() + 1;
+  const bangkokMonth = bangkokNow.dateOnly.getUTCMonth() + 1;
+  const { sy, sm, ey, em, p } = await searchParams;
+  const historyPage = /^\d+$/.test(p ?? "") ? Math.max(1, Number(p)) : 1;
+  const parseYear = (v?: string) => (/^\d{4}$/.test(v ?? "") ? Number(v) : bangkokYear);
+  const parseMonth = (v?: string) => (/^(?:[1-9]|1[0-2])$/.test(v ?? "") ? Number(v) : bangkokMonth);
 
-  const data = await loadStudentHistory(studentId, year, month);
+  let startYear = parseYear(sy);
+  let startMonth = parseMonth(sm);
+  let endYear = parseYear(ey);
+  let endMonth = parseMonth(em);
+  // ensure start <= end
+  if (startYear * 12 + startMonth > endYear * 12 + endMonth) {
+    [startYear, endYear] = [endYear, startYear];
+    [startMonth, endMonth] = [endMonth, startMonth];
+  }
+
+  const data = await loadStudentHistory(studentId, startYear, startMonth, endYear, endMonth, historyPage);
   if (!data || data.student.classroomId !== classroomId) notFound();
   const session = await getSession();
   if (!session) redirect("/login");
@@ -59,8 +71,15 @@ export default async function StudentHistoryPage({
   const todayBadge = historyStatusMeta(
     data.todayStatus === "notyet" || data.todayStatus === "none" ? "none" : data.todayStatus,
   );
-  const monthLabel = `${MONTHS_TH[month]} ${year + 543}`;
+  const startLabel = `${MONTHS_TH[startMonth]} ${startYear + 543}`;
+  const endLabel = `${MONTHS_TH[endMonth]} ${endYear + 543}`;
+  const monthLabel = startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
   const years = [bangkokYear - 2, bangkokYear - 1, bangkokYear];
+
+  const totalPages = Math.max(1, Math.ceil(data.historyTotal / data.historyPageSize));
+  const curPage = Math.min(data.historyPage, totalPages);
+  const rangeQS = `sm=${startMonth}&sy=${startYear}&em=${endMonth}&ey=${endYear}`;
+  const pageHref = (pg: number) => `?${rangeQS}&p=${pg}#daily`;
 
   const content = (
     <main className="max-w-xl mx-auto safe-px py-8 space-y-6">
@@ -93,33 +112,61 @@ export default async function StudentHistoryPage({
       </div>
 
       <div className="glass-panel rounded-2xl p-5 space-y-5">
-        <div className="flex items-center justify-between gap-3">
+        <div className="space-y-3">
           <h2 className="text-base font-bold text-white">สรุปการเข้าแถว</h2>
-          <form method="GET" className="shrink-0 flex items-center gap-2">
-            <select
-              name="m"
-              defaultValue={month}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200"
-            >
-              {MONTHS_TH.slice(1).map((label, idx) => (
-                <option key={idx + 1} value={idx + 1}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <select
-              name="y"
-              defaultValue={year}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200"
-            >
-              {years.map((yr) => (
-                <option key={yr} value={yr}>
-                  {yr + 543}
-                </option>
-              ))}
-            </select>
-            <button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-1.5 rounded-lg">
-              ดู
+          <form method="GET" className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 w-14 shrink-0">ตั้งแต่</span>
+              <select
+                name="sm"
+                defaultValue={startMonth}
+                className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200"
+              >
+                {MONTHS_TH.slice(1).map((label, idx) => (
+                  <option key={idx + 1} value={idx + 1}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="sy"
+                defaultValue={startYear}
+                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200"
+              >
+                {years.map((yr) => (
+                  <option key={yr} value={yr}>
+                    {yr + 543}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 w-14 shrink-0">ถึง</span>
+              <select
+                name="em"
+                defaultValue={endMonth}
+                className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200"
+              >
+                {MONTHS_TH.slice(1).map((label, idx) => (
+                  <option key={idx + 1} value={idx + 1}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="ey"
+                defaultValue={endYear}
+                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200"
+              >
+                {years.map((yr) => (
+                  <option key={yr} value={yr}>
+                    {yr + 543}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" className="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">
+              ดูช่วงที่เลือก
             </button>
           </form>
         </div>
@@ -160,10 +207,13 @@ export default async function StudentHistoryPage({
         </div>
       </div>
 
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      <div id="daily" className="glass-panel rounded-2xl overflow-hidden scroll-mt-16">
         <div className="px-5 py-4 border-b border-slate-900">
           <h2 className="text-base font-bold text-white">ประวัติรายวัน</h2>
-          <p className="text-xs text-slate-500 mt-0.5">เรียงจากใหม่ไปเก่า (สูงสุด 90 รายการ)</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            เรียงจากใหม่ไปเก่า · ทั้งหมด {data.historyTotal} วัน
+            {totalPages > 1 ? ` · หน้า ${curPage}/${totalPages}` : ""}
+          </p>
         </div>
         {data.history.length === 0 ? (
           <div className="px-5 py-10 text-center text-slate-500 text-sm">ยังไม่มีประวัติการเช็คชื่อ</div>
@@ -184,6 +234,25 @@ export default async function StudentHistoryPage({
               );
             })}
           </ul>
+        )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-slate-900">
+            {curPage > 1 ? (
+              <Link href={pageHref(curPage - 1)} className="bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-200 text-sm font-semibold px-4 py-2 rounded-lg">
+                ← ก่อนหน้า
+              </Link>
+            ) : (
+              <span className="text-slate-600 text-sm px-4 py-2">← ก่อนหน้า</span>
+            )}
+            <span className="text-xs text-slate-500">หน้า {curPage} / {totalPages}</span>
+            {curPage < totalPages ? (
+              <Link href={pageHref(curPage + 1)} className="bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-200 text-sm font-semibold px-4 py-2 rounded-lg">
+                ถัดไป →
+              </Link>
+            ) : (
+              <span className="text-slate-600 text-sm px-4 py-2">ถัดไป →</span>
+            )}
+          </div>
         )}
       </div>
     </main>

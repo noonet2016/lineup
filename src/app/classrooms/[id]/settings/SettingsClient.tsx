@@ -14,7 +14,7 @@ import {
   updateSystemSettings,
 } from "@/lib/actions/settings";
 import { changeTeacherPassword } from "@/lib/actions/teacherAccount";
-type Settings = { dome_lat: string; dome_lng: string; radius_m: string; check_start: string; late_after: string; check_end: string };
+type Settings = { dome_lat: string; dome_lng: string; radius_m: string; check_start: string; late_after: string; check_end: string; scanfail_alert_radius_m: string };
 type Holiday = { dateStr: string; label: string; name: string };
 type Location = { id: number; name: string; lat: number; lng: number; radius: number; isActive: boolean };
 
@@ -178,7 +178,7 @@ export default function SettingsClient({
           action={(formData) => run(() => updateSystemSettings(formData))}
           className="space-y-6"
         >
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label>
               <span className="block text-xs font-semibold text-slate-400 mb-2">เริ่มเช็คเวลา (Start)</span>
               <input type="time" name="check_start" required defaultValue={settings.check_start.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
@@ -192,6 +192,22 @@ export default function SettingsClient({
               <input type="time" name="check_end" required defaultValue={settings.check_end.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
             </label>
           </div>
+          <label className="block">
+            <span className="block text-xs font-semibold text-slate-400 mb-2">
+              รัศมีแจ้งเตือน &ldquo;สแกนหน้าไม่ติด&rdquo; (เมตร)
+            </span>
+            <input
+              type="number"
+              min={1}
+              name="scanfail_alert_radius_m"
+              defaultValue={settings.scanfail_alert_radius_m}
+              placeholder="เว้นว่าง = ใช้รัศมีจุดเช็คอินของห้อง"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            />
+            <span className="block text-[11px] text-slate-500 mt-1.5">
+              ถ้านักเรียนแจ้งจากระยะไกลเกินค่านี้ ครูจะเห็น badge &ldquo;นอกรัศมี&rdquo; (ไม่บล็อกการแจ้ง)
+            </span>
+          </label>
           <button type="submit" disabled={pending} className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]">
             บันทึกการตั้งค่า
           </button>

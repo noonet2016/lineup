@@ -65,8 +65,19 @@ export async function updateSystemSettings(formData: FormData): Promise<ActionRe
     values[f] = v;
   }
 
+  // Optional: scan-fail alert radius (meters). Empty = fall back to the classroom check-in radius.
+  const scanRadiusRaw = String(formData.get("scanfail_alert_radius_m") ?? "").trim();
+  if (scanRadiusRaw !== "") {
+    const scanRadius = Number(scanRadiusRaw);
+    if (!Number.isInteger(scanRadius) || scanRadius <= 0) {
+      return { ok: false, message: "รัศมีแจ้งสแกนหน้าต้องเป็นจำนวนเต็มบวก" };
+    }
+    values.scanfail_alert_radius_m = String(scanRadius);
+  }
+
+  const keysToSave = scanRadiusRaw !== "" ? [...fields, "scanfail_alert_radius_m"] : [...fields];
   await Promise.all(
-    fields.map((f) => prisma.systemSetting.upsert({ where: { settingKey: f }, update: { settingValue: values[f] }, create: { settingKey: f, settingValue: values[f] } })),
+    keysToSave.map((f) => prisma.systemSetting.upsert({ where: { settingKey: f }, update: { settingValue: values[f] }, create: { settingKey: f, settingValue: values[f] } })),
   );
 
   const { dateOnly: today } = nowInBangkok();

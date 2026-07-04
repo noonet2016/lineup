@@ -42,6 +42,7 @@ export default async function ClassroomSettingsPage({ params }: { params: Promis
         check_start: settings.check_start ?? "07:45",
         late_after: settings.late_after ?? "08:00",
         check_end: settings.check_end ?? "08:15",
+        scanfail_alert_radius_m: settings.scanfail_alert_radius_m ?? "",
       }}
       sessionOpen={Boolean(todaySession)}
       holiday={holiday}

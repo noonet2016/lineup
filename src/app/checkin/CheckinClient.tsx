@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { locateCheckin, submitCheckin } from "@/lib/checkin";
-import { reportScanFail } from "@/lib/actions/scanfail";
+import { cancelMyScanFail, reportScanFail, type ScanFailGeo } from "@/lib/actions/scanfail";
 
 const STATUS_LABEL: Record<string, string> = {
   present: "มาปกติ",
@@ -21,6 +21,10 @@ type Props = {
   alreadyCheckedIn: boolean;
   existingStatus: string | null;
   existingCheckTime: string | null;
+  scanFailReportedAt: string | null;
+  scanFailGeo: ScanFailGeo | null;
+  holidayName: string | null;
+  todayLabel: string;
 };
 
 type Step = "locate" | "confirm" | "done";
@@ -36,12 +40,18 @@ export default function CheckinClient({
   alreadyCheckedIn,
   existingStatus,
   existingCheckTime,
+  scanFailReportedAt,
+  scanFailGeo,
+  holidayName,
+  todayLabel,
 }: Props) {
   const [step, setStep] = useState<Step>(alreadyCheckedIn ? "done" : "locate");
   const [gpsStatus, setGpsStatus] = useState("สถานะ GPS: รอตรวจพิกัด");
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [scanFailPending, startScanFailTransition] = useTransition();
+  const [scanFailReported, setScanFailReported] = useState<string | null>(scanFailReportedAt);
+  const [scanFailGeoState, setScanFailGeoState] = useState<ScanFailGeo | null>(scanFailGeo);
   const [alert, setAlert] = useState<Alert>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(120);
@@ -112,7 +122,7 @@ export default function CheckinClient({
 
   async function finishLocating(latitude: number, longitude: number, accuracy: number) {
     coordsRef.current = { lat: latitude, lng: longitude, accuracy };
-    setGpsStatus(`พิกัดปัจจุบัน: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (คลาดเคลื่อน ±${Math.round(accuracy)} ม.)`);
+    setGpsStatus(`พิกัดปัจจุบัน: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}\n(คลาดเคลื่อน ±${Math.round(accuracy)} ม.)`);
 
     try {
       const result = await locateCheckin(latitude, longitude, accuracy);
@@ -223,6 +233,14 @@ export default function CheckinClient({
         const result = coords
           ? await reportScanFail(coords.lat, coords.lng, coords.accuracy)
           : await reportScanFail(null, null, null);
+        if (result.ok) {
+          setScanFailReported(result.reportedAt);
+          setScanFailGeoState({
+            distanceMeters: result.distanceMeters,
+            outsideRadius: result.outsideRadius,
+            radius: result.radius,
+          });
+        }
         setAlert({
           type: result.ok ? "success" : "error",
           message: result.message,
@@ -236,12 +254,31 @@ export default function CheckinClient({
     });
   }
 
-  const alertClass =
+  function cancelScanFailReport() {
+    setAlert(null);
+    startScanFailTransition(async () => {
+      try {
+        const result = await cancelMyScanFail();
+        if (result.ok) {
+          setScanFailReported(null);
+          setScanFailGeoState(null);
+        }
+        setAlert({ type: result.ok ? "success" : "error", message: result.message });
+      } catch (err) {
+        setAlert({
+          type: "error",
+          message: `เกิดข้อผิดพลาด: ${err instanceof Error ? err.message : "unknown"}`,
+        });
+      }
+    });
+  }
+
+  const alertMeta =
     alert?.type === "error"
-      ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
+      ? { icon: "✕", ring: "bg-rose-500/15 border-rose-500/30 text-rose-300", title: "ไม่สำเร็จ" }
       : alert?.type === "success"
-        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-        : "bg-amber-500/10 border-amber-500/20 text-amber-400";
+        ? { icon: "✓", ring: "bg-emerald-500/15 border-emerald-500/30 text-emerald-300", title: "สำเร็จ" }
+        : { icon: "!", ring: "bg-amber-500/15 border-amber-500/30 text-amber-300", title: "แจ้งเตือน" };
 
   return (
     <main className="flex-grow flex items-center justify-center">
@@ -261,21 +298,56 @@ export default function CheckinClient({
           </div>
         </div>
 
+        {holidayName && (
+          <div className="glass-panel rounded-2xl p-5 border-l-4 border-l-indigo-500 flex items-center gap-4">
+            <span className="text-3xl shrink-0">🏖️</span>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-white break-words">วันนี้เป็นวันหยุด · {holidayName}</h2>
+              <p className="text-slate-400 text-sm mt-0.5">{todayLabel}</p>
+              <p className="text-slate-400 text-sm">ไม่มีการเปิดรอบเช็คชื่อเข้าแถวในวันนี้</p>
+            </div>
+          </div>
+        )}
+
         {alert && (
-          <div className={`p-4 rounded-xl text-sm border ${alertClass}`} dangerouslySetInnerHTML={{ __html: alert.message }} />
+          <div
+            className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+            onClick={() => setAlert(null)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={`mx-auto mb-4 w-14 h-14 rounded-full border flex items-center justify-center text-2xl font-bold ${alertMeta.ring}`}>
+                {alertMeta.icon}
+              </div>
+              <h4 className="text-white font-bold text-lg mb-1.5">{alertMeta.title}</h4>
+              <p className="text-slate-300 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: alert.message }} />
+              <button
+                type="button"
+                onClick={() => setAlert(null)}
+                className="mt-5 w-full rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 transition-colors"
+              >
+                ตกลง
+              </button>
+            </div>
+          </div>
         )}
 
         {step === "locate" && (
           <div className="glass-panel rounded-2xl p-8 space-y-6 text-center">
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">ขั้นตอนที่ 1: ตรวจสอบตำแหน่งของคุณ</h3>
+              <h3 className="text-xl font-bold text-white">ตรวจสอบตำแหน่งของคุณ</h3>
               <p className="text-slate-400 text-sm">กดปุ่มด้านล่างเพื่อดึงพิกัด GPS เพื่อยืนยันว่าคุณอยู่บริเวณจุดเช็คชื่อเข้าแถว</p>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold mt-1">
-                📍 จุดเข้าแถววันนี้: {locationName} (รัศมี {radius} ม.)
+              <div className="inline-flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold mt-1">
+                <span>📍 จุดเข้าแถววันนี้: {locationName}</span>
+                <span className="text-cyan-400/80">(รัศมี {radius} ม.)</span>
               </div>
             </div>
             <div className="py-4">
-              <div className="text-sm text-slate-500 mb-4">{gpsStatus}</div>
+              <div className="text-sm text-slate-500 mb-4 whitespace-pre-line">{gpsStatus}</div>
               <button
                 onClick={requestLocation}
                 disabled={locating}
@@ -330,27 +402,66 @@ export default function CheckinClient({
           </div>
         )}
 
-        <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-slate-800/80 bg-slate-950/30 space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
-              !
+        {scanFailReported ? (
+          <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-emerald-500/30 bg-emerald-500/5 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-300 shrink-0">
+                ✓
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-white font-bold">แจ้งสแกนหน้าไม่ติดแล้ว</h4>
+                <p className="text-emerald-300/90 text-sm">
+                  เมื่อเวลา {scanFailReported} น. · ครูจะตรวจสอบให้
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h4 className="text-white font-bold">สแกนหน้าไม่ติดใช่ไหม?</h4>
-              <p className="text-slate-400 text-sm">
-                กดแจ้งได้ทันที ระบบจะพยายามดึงพิกัดแบบดีที่สุดเท่าที่ทำได้ แต่ GPS ไม่บังคับ
-              </p>
-            </div>
+            {scanFailGeoState &&
+              (scanFailGeoState.distanceMeters === null ? (
+                <div className="rounded-xl border border-slate-700 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
+                  📍 ไม่มีพิกัด (ดึง GPS ไม่ได้ตอนแจ้ง)
+                </div>
+              ) : scanFailGeoState.outsideRadius ? (
+                <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+                  ⚠️ แจ้งจาก<strong>นอกรัศมี</strong> ~{scanFailGeoState.distanceMeters} ม.
+                  {" "}(เกินกำหนด {scanFailGeoState.radius} ม.)
+                </div>
+              ) : (
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+                  📍 แจ้งจาก<strong>ในรัศมี</strong> (~{scanFailGeoState.distanceMeters} ม. · กำหนด {scanFailGeoState.radius} ม.)
+                </div>
+              ))}
+            <button
+              type="button"
+              onClick={cancelScanFailReport}
+              disabled={scanFailPending}
+              className="w-full rounded-2xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-300 font-semibold py-3 px-5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {scanFailPending ? "กำลังยกเลิก..." : "ยกเลิกการแจ้ง"}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={submitScanFailReport}
-            disabled={scanFailPending}
-            className="w-full rounded-2xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 text-amber-200 font-bold py-4 px-5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {scanFailPending ? "กำลังส่งรายงาน..." : "สแกนหน้าไม่ติด? แจ้งที่นี่"}
-          </button>
-        </div>
+        ) : (
+          <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-slate-800/80 bg-slate-950/30 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
+                !
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-white font-bold">สแกนหน้าไม่ติดใช่ไหม?</h4>
+                <p className="text-slate-400 text-sm">
+                  กดแจ้งได้ทันที ระบบจะพยายามดึงพิกัดแบบดีที่สุดเท่าที่ทำได้ แต่ GPS ไม่บังคับ
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={submitScanFailReport}
+              disabled={scanFailPending}
+              className="w-full rounded-2xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 text-amber-200 font-bold py-4 px-5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {scanFailPending ? "กำลังส่งรายงาน..." : "สแกนหน้าไม่ติด? แจ้งที่นี่"}
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );
