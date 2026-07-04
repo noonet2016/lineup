@@ -44,11 +44,14 @@ export default async function CheckinPage() {
 
   const scanFailReport = await prisma.scanFailReport.findUnique({
     where: { studentId_sessionDate: { studentId: student.studentId, sessionDate: today } },
-    select: { reportedAt: true, latitude: true, longitude: true },
+    select: { reportedAt: true, latitude: true, longitude: true, acknowledgedAt: true },
   });
   const scanFailReportedAt = scanFailReport
     ? scanFailReport.reportedAt
         .toLocaleTimeString("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
+    : null;
+  const scanFailAcknowledgedAt = scanFailReport?.acknowledgedAt
+    ? scanFailReport.acknowledgedAt.toLocaleTimeString("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
     : null;
   const scanFailGeo = scanFailReport
     ? await computeScanFailGeo(student.classroomId, scanFailReport.latitude, scanFailReport.longitude)
@@ -70,6 +73,7 @@ export default async function CheckinPage() {
         existingStatus={existingRecord?.status ?? null}
         existingCheckTime={existingRecord?.checkTime?.toISOString() ?? null}
         scanFailReportedAt={scanFailReportedAt}
+        scanFailAcknowledgedAt={scanFailAcknowledgedAt}
         scanFailGeo={scanFailGeo}
         holidayName={holidayName}
         todayLabel={todayLabel}

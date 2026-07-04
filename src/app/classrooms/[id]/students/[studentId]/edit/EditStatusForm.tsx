@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { resetStudentPassword, updateStudentStatus } from "@/lib/actions/attendance";
+import { PopupAlertModal } from "@/app/_components/PopupAlert";
 
 const STATUS_OPTIONS = [
   { value: "present", label: "มาปกติ", accent: "accent-emerald-500", text: "text-emerald-400", hover: "hover:border-emerald-500/40", wide: false },
@@ -52,9 +53,7 @@ export default function EditStatusForm({ studentId, classroomId, currentStatus }
 
   return (
     <div className="space-y-6">
-      {message && (
-        <div className={`p-4 rounded-xl text-sm border ${message.type === "error" ? "bg-rose-500/10 border-rose-500/20 text-rose-400" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"}`}>{message.text}</div>
-      )}
+      <PopupAlertModal alert={message ? { type: message.type, message: message.text } : null} onClose={() => setMessage(null)} />
       <div className="glass-panel rounded-2xl p-8 shadow-2xl relative">
       <form onSubmit={submitStatus} className="space-y-6">
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs flex justify-between">

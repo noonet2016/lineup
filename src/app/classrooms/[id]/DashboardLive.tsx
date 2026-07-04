@@ -30,6 +30,7 @@ export default function DashboardLive({
   todayLabel: string;
 }) {
   const [data, setData] = useState(initialData);
+  const [query, setQuery] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [quickLeaveStudent, setQuickLeaveStudent] = useState<{ studentId: string; fullName: string } | null>(null);
   const [quickLeavePending, startQuickLeaveTransition] = useTransition();
@@ -75,6 +76,16 @@ export default function DashboardLive({
   }, [classroomId, filter]);
 
   const { students, stats, allCount } = data;
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? students.filter(
+        (s) =>
+          s.fullName.toLowerCase().includes(q) ||
+          (s.nickname ?? "").toLowerCase().includes(q) ||
+          s.studentId.toLowerCase().includes(q) ||
+          String(s.numberInClass ?? "").includes(q),
+      )
+    : students;
 
   return (
     <>
@@ -107,6 +118,29 @@ export default function DashboardLive({
         </FilterTab>
       </div>
 
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="🔍 ค้นหาชื่อ / ชื่อเล่น / รหัส / เลขที่"
+          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="ล้างคำค้นหา"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm flex items-center justify-center"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+      {q && (
+        <p className="text-xs text-slate-500 -mt-2">พบ {visible.length} จาก {students.length} คน</p>
+      )}
+
       <div className="hidden md:block glass-panel rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-auto max-h-[65vh]">
           <table className="min-w-full divide-y divide-slate-900 text-left text-sm">
@@ -123,14 +157,14 @@ export default function DashboardLive({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-900/40">
-              {students.length === 0 && (
+              {visible.length === 0 && (
                 <tr>
                   <td colSpan={isAdvisor ? 8 : 7} className="px-6 py-12 text-center text-slate-500">
-                    ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้
+                    {q ? `ไม่พบนักเรียนที่ตรงกับ "${query}"` : "ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้"}
                   </td>
                 </tr>
               )}
-              {students.map((student) => {
+              {visible.map((student) => {
                 const badge = dashBadge(student.displayStatus);
                 return (
                   <tr key={student.studentId} className="hover:bg-slate-900/10 transition-colors">
@@ -202,10 +236,12 @@ export default function DashboardLive({
       </div>
 
       <div className="block md:hidden space-y-4 max-h-[65vh] overflow-y-auto pr-1">
-        {students.length === 0 && (
-          <div className="glass-panel p-8 text-center text-slate-500 rounded-2xl">ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้</div>
+        {visible.length === 0 && (
+          <div className="glass-panel p-8 text-center text-slate-500 rounded-2xl">
+            {q ? `ไม่พบนักเรียนที่ตรงกับ "${query}"` : "ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้"}
+          </div>
         )}
-        {students.map((student) => {
+        {visible.map((student) => {
           const badge = dashBadge(student.displayStatus);
           const leftColor =
             student.displayStatus === "present"

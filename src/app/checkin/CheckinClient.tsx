@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { locateCheckin, submitCheckin } from "@/lib/checkin";
 import { cancelMyScanFail, reportScanFail, type ScanFailGeo } from "@/lib/actions/scanfail";
 
@@ -22,6 +23,7 @@ type Props = {
   existingStatus: string | null;
   existingCheckTime: string | null;
   scanFailReportedAt: string | null;
+  scanFailAcknowledgedAt: string | null;
   scanFailGeo: ScanFailGeo | null;
   holidayName: string | null;
   todayLabel: string;
@@ -41,10 +43,12 @@ export default function CheckinClient({
   existingStatus,
   existingCheckTime,
   scanFailReportedAt,
+  scanFailAcknowledgedAt,
   scanFailGeo,
   holidayName,
   todayLabel,
 }: Props) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>(alreadyCheckedIn ? "done" : "locate");
   const [gpsStatus, setGpsStatus] = useState("สถานะ GPS: รอตรวจพิกัด");
   const [locating, setLocating] = useState(false);
@@ -53,6 +57,15 @@ export default function CheckinClient({
   const [scanFailReported, setScanFailReported] = useState<string | null>(scanFailReportedAt);
   const [scanFailGeoState, setScanFailGeoState] = useState<ScanFailGeo | null>(scanFailGeo);
   const [alert, setAlert] = useState<Alert>(null);
+
+  // Poll for the teacher's acknowledgment so the student sees it without a manual refresh.
+  useEffect(() => {
+    if (!scanFailReported || scanFailAcknowledgedAt) return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") router.refresh();
+    }, 12000);
+    return () => clearInterval(id);
+  }, [scanFailReported, scanFailAcknowledgedAt, router]);
   const [distance, setDistance] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(120);
   const [completeMessage, setCompleteMessage] = useState<string>(
@@ -411,10 +424,19 @@ export default function CheckinClient({
               <div className="min-w-0">
                 <h4 className="text-white font-bold">แจ้งสแกนหน้าไม่ติดแล้ว</h4>
                 <p className="text-emerald-300/90 text-sm">
-                  เมื่อเวลา {scanFailReported} น. · ครูจะตรวจสอบให้
+                  เมื่อเวลา {scanFailReported} น. · {scanFailAcknowledgedAt ? "ครูยืนยันแล้ว" : "ครูจะตรวจสอบให้"}
                 </p>
               </div>
             </div>
+            {scanFailAcknowledgedAt && (
+              <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-4 py-3 flex items-center gap-3">
+                <span className="text-2xl shrink-0">✅</span>
+                <div className="min-w-0">
+                  <p className="text-emerald-200 font-bold text-sm">ครูรับทราบแล้ว</p>
+                  <p className="text-emerald-300/80 text-xs">ครูยืนยันว่าคุณอยู่ในบริเวณโรงเรียนจริง · เวลา {scanFailAcknowledgedAt} น.</p>
+                </div>
+              </div>
+            )}
             {scanFailGeoState &&
               (scanFailGeoState.distanceMeters === null ? (
                 <div className="rounded-xl border border-slate-700 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
@@ -430,14 +452,16 @@ export default function CheckinClient({
                   📍 แจ้งจาก<strong>ในรัศมี</strong> (~{scanFailGeoState.distanceMeters} ม. · กำหนด {scanFailGeoState.radius} ม.)
                 </div>
               ))}
-            <button
-              type="button"
-              onClick={cancelScanFailReport}
-              disabled={scanFailPending}
-              className="w-full rounded-2xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-300 font-semibold py-3 px-5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {scanFailPending ? "กำลังยกเลิก..." : "ยกเลิกการแจ้ง"}
-            </button>
+            {!scanFailAcknowledgedAt && (
+              <button
+                type="button"
+                onClick={cancelScanFailReport}
+                disabled={scanFailPending}
+                className="w-full rounded-2xl border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-300 font-semibold py-3 px-5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {scanFailPending ? "กำลังยกเลิก..." : "ยกเลิกการแจ้ง"}
+              </button>
+            )}
           </div>
         ) : (
           <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-slate-800/80 bg-slate-950/30 space-y-3">

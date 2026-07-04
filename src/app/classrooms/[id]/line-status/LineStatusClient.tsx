@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
+import { PopupAlertModal } from "@/app/_components/PopupAlert";
+import { LightboxProvider, LightboxThumb } from "@/app/_components/ImageLightbox";
 import { unlinkStudentLine } from "@/lib/actions/lineStatus";
 
 type StudentRow = {
@@ -14,16 +16,6 @@ type StudentRow = {
   lineDisplayName: string | null;
   linePictureUrl: string | null;
 };
-
-function Banner({ text, kind }: { text: string; kind: "success" | "error" }) {
-  return (
-    <div
-      className={`p-3 rounded-xl text-sm border ${kind === "success" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"}`}
-    >
-      {text}
-    </div>
-  );
-}
 
 export default function LineStatusClient({
   classroomId,
@@ -65,12 +57,13 @@ export default function LineStatusClient({
 
   return (
     <TeacherShell active="devices" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+      <LightboxProvider>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-white">🔗 สถานะผูก LINE</h1>
           <p className="text-slate-400 text-sm mt-1">ห้องที่ปรึกษา ม.{roomName}</p>
         </div>
-        {banner && <div className="max-w-3xl mx-auto"><Banner text={banner.text} kind={banner.kind} /></div>}
+        <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
 
         <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
           <div className="flex justify-between items-center mb-4">
@@ -98,8 +91,12 @@ export default function LineStatusClient({
               {visible.map((s) => (
                 <li key={s.studentId} className="flex items-start gap-3 px-4 py-3 rounded-xl border border-slate-900 bg-slate-950/30">
                   {s.linked && s.linePictureUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={s.linePictureUrl} alt="" className="w-9 h-9 rounded-full object-cover shrink-0 border border-slate-800 mt-0.5" />
+                    <LightboxThumb
+                      src={s.linePictureUrl}
+                      alt={s.fullName}
+                      caption={`${s.numberInClass ?? "-"}. ${s.fullName}${s.nickname ? ` (${s.nickname})` : ""}`}
+                      className="w-9 h-9 border border-slate-800 mt-0.5"
+                    />
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-xs text-slate-500 shrink-0 mt-0.5">?</div>
                   )}
@@ -129,6 +126,7 @@ export default function LineStatusClient({
           )}
         </section>
       </main>
+      </LightboxProvider>
     </TeacherShell>
   );
 }

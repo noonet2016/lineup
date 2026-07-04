@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createStudent, deactivateStudent, renumberStudents, updateStudent } from "@/lib/actions/students";
+import { PopupAlertModal } from "@/app/_components/PopupAlert";
 
 type Student = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null };
 
@@ -112,18 +113,8 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
     "w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-650 focus:outline-none focus:ring-2 focus:ring-indigo-500/50";
 
   return (
-    <div className="space-y-6">      {message ? (
-        <div
-          className={
-            "p-4 rounded-xl text-sm border " +
-            (message.type === "error"
-              ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
-              : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400")
-          }
-        >
-          {message.text}
-        </div>
-      ) : null}
+    <div className="space-y-6">
+      <PopupAlertModal alert={message ? { type: message.type, message: message.text } : null} onClose={() => setMessage(null)} />
 
       <div className="glass-panel rounded-2xl p-5">
         {!showAdd ? (

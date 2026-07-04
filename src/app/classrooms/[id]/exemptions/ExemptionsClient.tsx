@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
+import { PopupAlertModal } from "@/app/_components/PopupAlert";
 import { addExemption, deleteExemption, toggleExemptionActive } from "@/lib/actions/exemptions";
 
 const WEEKDAY_LABEL: Record<number, string> = { 1: "จันทร์", 2: "อังคาร", 3: "พุธ", 4: "พฤหัสบดี", 5: "ศุกร์", 6: "เสาร์", 7: "อาทิตย์" };
@@ -20,16 +21,6 @@ type Exemption = {
   endDate: string | null;
   isActive: boolean;
 };
-
-function Banner({ text, kind }: { text: string; kind: "success" | "error" }) {
-  return (
-    <div
-      className={`p-3 rounded-xl text-sm border ${kind === "success" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"}`}
-    >
-      {text}
-    </div>
-  );
-}
 
 export default function ExemptionsClient({
   classroomId,
@@ -67,7 +58,7 @@ export default function ExemptionsClient({
           <h1 className="text-3xl font-extrabold text-white">🎌 ยกเว้นเข้าแถว</h1>
           <p className="text-slate-400 text-sm mt-1">ห้องที่ปรึกษา ม.{roomName}</p>
         </div>
-        {banner && <div className="max-w-3xl mx-auto"><Banner text={banner.text} kind={banner.kind} /></div>}
+        <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
 
         <div className="grid lg:grid-cols-2 gap-6 items-stretch">
         <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">

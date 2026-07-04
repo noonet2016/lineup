@@ -1,7 +1,11 @@
 "use client";
 
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
-import type { UnmatchedScanFailReport } from "@/lib/actions/scanfail";
+import { LightboxProvider, LightboxThumb } from "@/app/_components/ImageLightbox";
+import { PopupAlertModal, usePopupAlert } from "@/app/_components/PopupAlert";
+import { acknowledgeScanFail, type UnmatchedScanFailReport } from "@/lib/actions/scanfail";
 
 type Props = {
   classroomId: number;
@@ -12,8 +16,22 @@ type Props = {
 };
 
 export default function ScanFailListClient({ classroomId, roomName, fullName, reports, todayLabel }: Props) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const { alert, setAlert, showResult } = usePopupAlert();
+
+  function handleAck(studentId: string, acknowledged: boolean) {
+    startTransition(async () => {
+      const result = await acknowledgeScanFail(studentId, acknowledged);
+      showResult(result);
+      router.refresh();
+    });
+  }
+
   return (
     <TeacherShell active="dashboard" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+      <LightboxProvider>
+      <PopupAlertModal alert={alert} onClose={() => setAlert(null)} />
       <main className="max-w-5xl mx-auto safe-px py-8 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-xl sm:text-3xl font-extrabold text-white">📷 รายงานสแกนหน้าไม่ติด</h1>
@@ -25,7 +43,7 @@ export default function ScanFailListClient({ classroomId, roomName, fullName, re
           {reports.length === 0 ? (
             <div className="text-center text-slate-500 text-sm py-10">ไม่มีรายการ</div>
           ) : (
-            <ul className="divide-y divide-slate-900/60 border border-slate-900 rounded-xl overflow-hidden">
+            <ul className="divide-y divide-slate-900/60">
               {reports.map((report) => {
                 const studentLabel = `${report.numberInClass ?? "-"}. ${report.fullName}${report.nickname ? ` (${report.nickname})` : ""}`;
                 const mapsUrl =
@@ -33,9 +51,24 @@ export default function ScanFailListClient({ classroomId, roomName, fullName, re
                     ? `https://www.google.com/maps?q=${report.latitude},${report.longitude}`
                     : null;
 
+                const initial = report.fullName.trim().slice(0, 1) || "?";
+
                 return (
-                  <li key={report.studentId} className="bg-slate-950/30 px-4 py-4 sm:px-5">
-                    <div className="flex flex-col gap-2">
+                  <li key={report.studentId} className="py-4 first:pt-0 last:pb-0">
+                    <div className="flex items-start gap-3">
+                      {report.linePictureUrl ? (
+                        <LightboxThumb
+                          src={report.linePictureUrl}
+                          alt={report.fullName}
+                          caption={studentLabel}
+                          className="w-11 h-11 border border-slate-700"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-full shrink-0 bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-base font-bold">
+                          {initial}
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-2 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-white">{studentLabel}</p>
                         {report.outsideRadius ? (
@@ -52,6 +85,11 @@ export default function ScanFailListClient({ classroomId, roomName, fullName, re
                           </span>
                         )}
                       </div>
+                      {report.lineDisplayName && (
+                        <p className="text-[11px] text-slate-400">
+                          <span className="text-emerald-400 font-semibold">LINE:</span> {report.lineDisplayName}
+                        </p>
+                      )}
                       <p className="text-xs text-slate-400">แจ้งเวลา {report.reportedAt}</p>
                       {mapsUrl && (
                         <a
@@ -63,6 +101,31 @@ export default function ScanFailListClient({ classroomId, roomName, fullName, re
                           เปิดพิกัดบน Google Maps
                         </a>
                       )}
+                      <div className="pt-1">
+                        {report.acknowledgedAt ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                              ✓ รับทราบแล้ว · {report.acknowledgedAt} น.
+                            </span>
+                            <button
+                              disabled={pending}
+                              onClick={() => handleAck(report.studentId, false)}
+                              className="text-xs font-semibold text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded-lg hover:bg-slate-800 transition-all disabled:opacity-60"
+                            >
+                              ยกเลิกรับทราบ
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            disabled={pending}
+                            onClick={() => handleAck(report.studentId, true)}
+                            className="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all active:scale-95 disabled:opacity-60"
+                          >
+                            ✓ รับทราบ (ยืนยันอยู่ในบริเวณ)
+                          </button>
+                        )}
+                      </div>
+                      </div>
                     </div>
                   </li>
                 );
@@ -71,6 +134,7 @@ export default function ScanFailListClient({ classroomId, roomName, fullName, re
           )}
         </section>
       </main>
+      </LightboxProvider>
     </TeacherShell>
   );
 }

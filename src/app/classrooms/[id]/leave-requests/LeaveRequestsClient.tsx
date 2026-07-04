@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import { approveLeave, rejectLeave, revertLeaveToPending } from "@/lib/actions/exemptions";
+import { PopupAlertModal } from "@/app/_components/PopupAlert";
 
 type RequestStatus = "pending" | "approved" | "rejected";
 
@@ -23,18 +24,6 @@ type LeaveRequest = {
     numberInClass: number | null;
   };
 };
-
-function Banner({ text, kind }: { text: string; kind: "success" | "error" }) {
-  return (
-    <div
-      className={`p-3 rounded-xl text-sm border ${
-        kind === "success" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"
-      }`}
-    >
-      {text}
-    </div>
-  );
-}
 
 function StatusBadge({ status }: { status: RequestStatus | string }) {
   const map: Record<RequestStatus, { label: string; className: string }> = {
@@ -125,11 +114,7 @@ export default function LeaveRequestsClient({
           <p className="text-slate-400 text-sm mt-1">ห้องที่ปรึกษา ม.{roomName}</p>
         </div>
 
-        {banner && (
-          <div className="max-w-3xl mx-auto">
-            <Banner text={banner.text} kind={banner.kind} />
-          </div>
-        )}
+        <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
 
         <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-5">

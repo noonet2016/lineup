@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ThaiDatePicker from "@/app/_components/ThaiDatePicker";
 import { requestLeave, cancelMyLeave } from "@/lib/actions/leave";
+import { PopupAlertModal } from "@/app/_components/PopupAlert";
 
 type LeaveRequest = {
   id: number;
@@ -90,18 +91,7 @@ export default function LeaveClient({ requests }: { requests: LeaveRequest[] }) 
     <main className="max-w-md mx-auto safe-px py-10 space-y-6">
       <h1 className="text-2xl font-extrabold text-white">ยื่นขอลา / ขอยกเว้นเข้าแถว</h1>
 
-      {message && (
-        <div
-          className={
-            "p-3 rounded-xl text-sm border text-center " +
-            (message.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-              : "bg-rose-500/10 border-rose-500/20 text-rose-400")
-          }
-        >
-          {message.text}
-        </div>
-      )}
+      <PopupAlertModal alert={message ? { type: message.type, message: message.text } : null} onClose={() => setMessage(null)} />
 
       <form onSubmit={submit} className="glass-panel rounded-2xl p-5 space-y-4">
         <div className="space-y-2">

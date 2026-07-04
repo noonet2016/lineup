@@ -129,6 +129,7 @@ model ScanFailReport {
   latitude    Float?   @db.Double
   longitude   Float?   @db.Double
   accuracy    Float?   @db.Double
+  acknowledgedAt DateTime? @map("acknowledged_at") @db.DateTime(0)
 
   @@unique([studentId, sessionDate])
   @@index([sessionDate])

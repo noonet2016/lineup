@@ -22,12 +22,16 @@ export type UnmatchedScanFailReport = {
   fullName: string;
   nickname: string | null;
   numberInClass: number | null;
+  lineUserId: string | null;
+  lineDisplayName: string | null;
+  linePictureUrl: string | null;
   reportedAt: string;
   latitude: number | null;
   longitude: number | null;
   distanceMeters: number | null;
   outsideRadius: boolean;
   radius: number;
+  acknowledgedAt: string | null;
 };
 
 function cleanCoordinate(value: number | null | undefined): number | null {
@@ -149,6 +153,42 @@ export async function cancelMyScanFail(): Promise<ActionResult> {
   return { ok: true, message: "ยกเลิกการแจ้งสแกนหน้าไม่ติดแล้ว" };
 }
 
+/** Teacher confirms a student's scan-fail report (acknowledges they were genuinely on-site). */
+export async function acknowledgeScanFail(studentId: string, acknowledged: boolean): Promise<ActionResult> {
+  const session = await requireSession();
+  if (session.role !== "teacher") return { ok: false, message: "เฉพาะครูเท่านั้น" };
+
+  const student = await prisma.student.findUnique({
+    where: { studentId },
+    select: { classroomId: true, classroom: { select: { advisorId: true } } },
+  });
+  if (!student) return { ok: false, message: "ไม่พบนักเรียน" };
+  if (student.classroom.advisorId !== Number(session.id)) return { ok: false, message: "ไม่มีสิทธิ์ในห้องเรียนนี้" };
+
+  const { dateOnly: today } = nowInBangkok();
+  const existing = await prisma.scanFailReport.findUnique({
+    where: { studentId_sessionDate: { studentId, sessionDate: today } },
+    select: { id: true },
+  });
+  if (!existing) return { ok: false, message: "ไม่พบการแจ้งสแกนหน้าไม่ติดของวันนี้" };
+
+  await prisma.scanFailReport.update({
+    where: { id: existing.id },
+    data: { acknowledgedAt: acknowledged ? new Date() : null },
+  });
+  await prisma.attendanceLog.create({
+    data: {
+      studentId,
+      eventType: "settings_changed",
+      detail: acknowledged ? "ครูรับทราบการแจ้งสแกนหน้าไม่ติด (ยืนยันอยู่ในบริเวณ)" : "ครูยกเลิกการรับทราบสแกนหน้าไม่ติด",
+    },
+  });
+
+  revalidatePath(`/classrooms/${student.classroomId}/scan-fail`);
+  revalidatePath("/checkin");
+  return { ok: true, message: acknowledged ? "รับทราบแล้ว แจ้งให้นักเรียนทราบเรียบร้อย" : "ยกเลิกการรับทราบแล้ว" };
+}
+
 export async function getScanFailMap(classroomId: number): Promise<ScanFailBadgeMap> {
   const { dateOnly: today } = nowInBangkok();
   const reports = await prisma.scanFailReport.findMany({
@@ -184,7 +224,17 @@ export async function getUnmatchedScanFailReports(classroomId: number): Promise<
       reportedAt: true,
       latitude: true,
       longitude: true,
-      student: { select: { fullName: true, nickname: true, numberInClass: true } },
+      acknowledgedAt: true,
+      student: {
+        select: {
+          fullName: true,
+          nickname: true,
+          numberInClass: true,
+          lineUserId: true,
+          lineDisplayName: true,
+          linePictureUrl: true,
+        },
+      },
     },
   });
 
@@ -204,12 +254,16 @@ export async function getUnmatchedScanFailReports(classroomId: number): Promise<
       fullName: report.student.fullName,
       nickname: report.student.nickname,
       numberInClass: report.student.numberInClass,
+      lineUserId: report.student.lineUserId,
+      lineDisplayName: report.student.lineDisplayName,
+      linePictureUrl: report.student.linePictureUrl,
       reportedAt: formatScanFailTime(report.reportedAt),
       latitude: report.latitude,
       longitude: report.longitude,
       distanceMeters,
       outsideRadius: distanceMeters !== null && distanceMeters > alertRadius,
       radius: alertRadius,
+      acknowledgedAt: report.acknowledgedAt ? formatScanFailTime(report.acknowledgedAt) : null,
     };
   });
 }

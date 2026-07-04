@@ -14,19 +14,10 @@ import {
   updateSystemSettings,
 } from "@/lib/actions/settings";
 import { changeTeacherPassword } from "@/lib/actions/teacherAccount";
+import { PopupAlertModal } from "@/app/_components/PopupAlert";
 type Settings = { dome_lat: string; dome_lng: string; radius_m: string; check_start: string; late_after: string; check_end: string; scanfail_alert_radius_m: string };
 type Holiday = { dateStr: string; label: string; name: string };
 type Location = { id: number; name: string; lat: number; lng: number; radius: number; isActive: boolean };
-
-function Banner({ text, kind }: { text: string; kind: "success" | "error" }) {
-  return (
-    <div
-      className={`p-3 rounded-xl text-sm border ${kind === "success" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"}`}
-    >
-      {text}
-    </div>
-  );
-}
 
 export default function SettingsClient({
   classroomId,
@@ -129,7 +120,7 @@ export default function SettingsClient({
         <h1 className="text-3xl font-extrabold text-white">จัดการการตั้งค่า</h1>
         <p className="text-slate-400 text-sm mt-1">ห้องที่ปรึกษา ม.{roomName}</p>
       </div>
-      {banner && <div className="max-w-3xl mx-auto"><Banner text={banner.text} kind={banner.kind} /></div>}
+      <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
 
       <div className="max-w-3xl mx-auto">
         <div className="flex gap-2 mb-5 overflow-x-auto whitespace-nowrap no-scrollbar">
@@ -250,9 +241,9 @@ export default function SettingsClient({
 
       {/* Check-in locations */}
       <section className={`col-start-1 row-start-1 ${activeTab === "locations" ? "visible" : "invisible pointer-events-none"} glass-panel rounded-2xl p-8 shadow-2xl relative`}>
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-bold text-white">จุดเข้าแถว (ห้อง ม.{roomName})</h2>
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold">📍 หลายจุด</span>
+        <div className="flex justify-between items-center gap-2 mb-2">
+          <h2 className="text-lg sm:text-xl font-bold text-white min-w-0 truncate whitespace-nowrap">จุดเข้าแถว ม.{roomName}</h2>
+          <span className="shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold whitespace-nowrap">📍 หลายจุด</span>
         </div>
         <p className="text-slate-400 text-sm mb-4">ตั้งได้หลายจุด แล้ว <strong className="text-cyan-300">เลือกจุดที่ใช้งาน</strong> การเช็คอินจะคำนวณระยะเทียบจุดที่เลือกทันที</p>
         <button
@@ -267,27 +258,29 @@ export default function SettingsClient({
         ) : (
           <div className="space-y-3 mb-6 overflow-y-auto max-h-72 pr-1">
             {locations.map((loc) => (
-              <div key={loc.id} className={`rounded-xl border ${loc.isActive ? "bg-cyan-500/5 border-cyan-500/30" : "bg-slate-950/30 border-slate-900"}`}>
-                <div className="flex items-center justify-between gap-3 p-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white truncate">{loc.name}</span>
-                      {loc.isActive && <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">ใช้งานอยู่</span>}
+              <div key={loc.id} className={`relative rounded-xl border ${loc.isActive ? "bg-cyan-500/5 border-cyan-500/30" : "bg-slate-950/30 border-slate-900"}`}>
+                {loc.isActive ? (
+                  <span className="absolute top-2 right-3 z-10 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">ใช้งานอยู่</span>
+                ) : (
+                  <button disabled={pending} onClick={() => run(() => setActiveLocation(loc.id))} className="absolute top-2 right-3 z-10 bg-cyan-500 hover:bg-cyan-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all active:scale-95">
+                    ใช้จุดนี้
+                  </button>
+                )}
+                <div className="p-3">
+                  <span className="block text-sm font-bold text-white break-words pr-24">{loc.name}</span>
+                  <div className="flex items-end justify-between gap-3 mt-1.5">
+                    <div className="min-w-0">
+                      <span className="block text-[11px] text-slate-500 font-mono">{loc.lat}, {loc.lng}</span>
+                      <span className="block text-[11px] text-slate-500 font-mono">รัศมี {loc.radius} ม.</span>
                     </div>
-                    <span className="block text-[11px] text-slate-500 font-mono mt-0.5">{loc.lat}, {loc.lng} · รัศมี {loc.radius} ม.</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {!loc.isActive && (
-                      <button disabled={pending} onClick={() => run(() => setActiveLocation(loc.id))} className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95">
-                        ใช้จุดนี้
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button onClick={() => openEditLocation(loc.id)} className="text-amber-300 hover:text-amber-200 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition-all">
+                        แก้ไข
                       </button>
-                    )}
-                    <button onClick={() => openEditLocation(loc.id)} className="text-amber-300 hover:text-amber-200 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition-all">
-                      แก้ไข
-                    </button>
-                    <button disabled={pending} onClick={() => run(() => deleteLocation(loc.id))} className="text-rose-400 hover:text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-rose-500/10 transition-all">
-                      ลบ
-                    </button>
+                      <button disabled={pending} onClick={() => run(() => deleteLocation(loc.id))} className="text-rose-400 hover:text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-rose-500/10 transition-all">
+                        ลบ
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
