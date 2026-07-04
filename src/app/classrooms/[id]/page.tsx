@@ -37,20 +37,29 @@ export default async function ClassroomDashboardPage({
   });
   if (!classroom) notFound();
 
+  // Ownership gate BEFORE loading any data — a teacher may only view the classroom they advise.
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (session.role !== "teacher") redirect("/checkin");
+  if (classroom.advisorId !== Number(session.id)) {
+    const own = await prisma.classroom.findFirst({
+      where: { advisorId: Number(session.id) },
+      select: { id: true },
+    });
+    redirect(own ? `/classrooms/${own.id}` : "/account");
+  }
+
   const { filter: rawFilter, success } = await searchParams;
   const filter: DashboardFilter = isValidFilter(rawFilter) ? rawFilter : "absent";
 
   const today = todayInBangkok();
-  const [holiday, data, session] = await Promise.all([
+  const [holiday, data] = await Promise.all([
     holidayBlockReason(today),
     loadDashboard(classroomId, filter),
-    getSession(),
   ]);
 
-  if (!session) redirect("/login");
-
   const { sessionOpen } = data;
-  const isAdvisor = session.role === "teacher" && classroom.advisorId === Number(session.id);
+  const isAdvisor = true; // only the advisor of this classroom reaches this point
 
   const page = (
     <main className="max-w-full mx-auto safe-px py-8 space-y-6">
