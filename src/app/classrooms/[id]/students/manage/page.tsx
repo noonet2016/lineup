@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { isOwner } from "@/lib/teacher";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import ManageStudentsClient from "./ManageStudentsClient";
 
@@ -16,7 +17,9 @@ export default async function ManageStudentsPage({ params }: { params: Promise<{
   if (session.role !== "teacher") redirect(`/classrooms/${classroomId}`);
 
   const classroom = await prisma.classroom.findUnique({ where: { id: classroomId }, include: { advisor: { select: { fullName: true } } } });
-  if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
+  if (!classroom) redirect(`/classrooms/${classroomId}`);
+  const canManage = classroom.advisorId === Number(session.id) || (await isOwner());
+  if (!canManage) redirect(`/classrooms/${classroomId}`);
 
   const students = await prisma.student.findMany({
     where: { classroomId, status: 1 },

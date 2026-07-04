@@ -34,3 +34,22 @@ export async function requireTeacherClassroom(): Promise<TeacherContext> {
 
   return { teacherId: teacher.id, classroomId: classroom.id, fullName: teacher.fullName };
 }
+
+/** Allows the classroom advisor or the owner teacher to manage one target classroom. */
+export async function requireClassroomManager(classroomId: number): Promise<TeacherContext> {
+  const session = await requireSession();
+  if (session.role !== "teacher") throw new Error("เฉพาะครูเท่านั้น");
+
+  const [teacher, classroom] = await Promise.all([
+    prisma.teacher.findUnique({ where: { id: Number(session.id) }, select: { id: true, fullName: true, role: true } }),
+    prisma.classroom.findUnique({ where: { id: classroomId }, select: { advisorId: true, roomName: true } }),
+  ]);
+  if (!teacher) throw new Error("ไม่พบบัญชีครู");
+  if (!classroom) throw new Error("ไม่พบห้องเรียน");
+
+  if (teacher.role !== "owner" && classroom.advisorId !== teacher.id) {
+    throw new Error("คุณไม่มีสิทธิ์จัดการห้องเรียนนี้");
+  }
+
+  return { teacherId: teacher.id, classroomId, fullName: teacher.fullName };
+}

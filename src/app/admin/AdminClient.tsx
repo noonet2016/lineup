@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PopupAlertModal, usePopupAlert } from "@/app/_components/PopupAlert";
 import { createTeacherWithClassroom, deleteTeacher, resetTeacherPassword, updateTeacher } from "@/lib/actions/admin";
@@ -11,6 +12,7 @@ type TeacherRow = {
   fullName: string;
   role: string;
   rooms: string[];
+  roomsDetailed: { id: number; roomName: string }[];
   studentCount: number;
   sessionCount: number;
 };
@@ -141,6 +143,19 @@ export default function AdminClient({ ownerId, teachers }: { ownerId: number; te
                 </div>
                 <p className="text-[11px] text-slate-500 font-mono">@{t.username}</p>
                 <p className="text-[11px] text-slate-400">ห้อง: {t.rooms.length ? t.rooms.map((r) => `ม.${r}`).join(", ") : "— ยังไม่มีห้อง"}</p>
+                {t.roomsDetailed.length ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {t.roomsDetailed.map((room) => (
+                      <Link
+                        key={room.id}
+                        href={`/classrooms/${room.id}/students/manage`}
+                        className="inline-flex items-center rounded-lg bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-200 hover:bg-cyan-500/20"
+                      >
+                        จัดการนักเรียน ม.{room.roomName}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <div className="shrink-0 flex items-center gap-1.5">
                 {t.id !== ownerId && (

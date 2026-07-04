@@ -51,6 +51,7 @@ export default async function AdminPage() {
           fullName: t.fullName,
           role: t.role,
           rooms: t.advisedClassrooms.map((c) => c.roomName),
+          roomsDetailed: t.advisedClassrooms.map((c) => ({ id: c.id, roomName: c.roomName })),
           studentCount: t.advisedClassrooms.reduce((n, c) => n + c._count.students, 0),
           sessionCount: t.advisedClassrooms.reduce((n, c) => n + c._count.sessions, 0),
         }))}

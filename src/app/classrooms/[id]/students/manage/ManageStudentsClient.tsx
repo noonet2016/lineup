@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createStudent, deactivateStudent, renumberStudents, updateStudent } from "@/lib/actions/students";
+import { useRouter } from "next/navigation";
+import { bulkImportStudents, createStudent, deactivateStudent, renumberStudents, updateStudent } from "@/lib/actions/students";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
 
 type Student = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null };
@@ -21,9 +22,21 @@ function sortStudents(items: Student[]): Student[] {
   return copy;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export default function ManageStudentsClient({ classroomId, students }: { classroomId: number; students: Student[] }) {
+  const router = useRouter();
   const [list, setList] = useState<Student[]>(students);
   const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState("");
   const [addForm, setAddForm] = useState<FormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(EMPTY_FORM);
@@ -47,7 +60,7 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
-      const result = await createStudent(addForm);
+      const result = await createStudent({ ...addForm, classroomId });
       if (result.ok) {
         const newStudent: Student = {
           studentId: addForm.studentId.trim(),
@@ -63,11 +76,31 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
     });
   }
 
+  function submitImport(e: React.FormEvent) {
+    e.preventDefault();
+    setMessage(null);
+    startTransition(async () => {
+      const result = await bulkImportStudents(importText, classroomId);
+      if (result.ok) {
+        const skippedPreview = result.skipped.slice(0, 15).map((item) => `${escapeHtml(item.line)} — ${escapeHtml(item.reason)}`);
+        const more = result.skipped.length > 15 ? ["..."] : [];
+        const details = skippedPreview.length ? `<br>${skippedPreview.concat(more).join("<br>")}` : "";
+        setImportText("");
+        setShowImport(false);
+        router.refresh();
+        setMessage({ type: "success", text: result.message + details });
+        return;
+      }
+
+      setMessage({ type: "error", text: result.message });
+    });
+  }
+
   function submitEdit(e: React.FormEvent) {
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
-      const result = await updateStudent(editForm.studentId, editForm);
+      const result = await updateStudent(editForm.studentId, { ...editForm, classroomId });
       if (result.ok) {
         const updated = list.map((s) => {
           if (s.studentId !== editForm.studentId) return s;
@@ -88,7 +121,7 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
   function doRenumber() {
     setMessage(null);
     startTransition(async () => {
-      const result = await renumberStudents();
+      const result = await renumberStudents(classroomId);
       if (result.ok) {
         setList(sortStudents(list).map((student, index) => ({ ...student, numberInClass: index + 1 })));
       }
@@ -100,7 +133,7 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
   function doDelete(studentId: string) {
     setMessage(null);
     startTransition(async () => {
-      const result = await deactivateStudent(studentId);
+      const result = await deactivateStudent(studentId, classroomId);
       if (result.ok) {
         setList(list.filter((s) => s.studentId !== studentId));
       }
@@ -118,13 +151,22 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
 
       <div className="glass-panel rounded-2xl p-5">
         {!showAdd ? (
-          <button
-            type="button"
-            onClick={() => setShowAdd(true)}
-            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl transition-all active:scale-[0.98]"
-          >
-            + เพิ่มนักเรียนใหม่
-          </button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setShowAdd(true)}
+              className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl transition-all active:scale-[0.98]"
+            >
+              + เพิ่มนักเรียนใหม่
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowImport(true)}
+              className="w-full bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-100 font-bold py-3 px-4 rounded-xl transition-all active:scale-[0.98]"
+            >
+              📋 นำเข้าเป็นชุด
+            </button>
+          </div>
         ) : (
           <form onSubmit={submitAdd} className="space-y-3">
             <h3 className="text-base font-bold text-white">เพิ่มนักเรียนใหม่</h3>
@@ -175,6 +217,47 @@ export default function ManageStudentsClient({ classroomId, students }: { classr
           </form>
         )}
       </div>
+
+      {showImport ? (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+          onClick={() => setShowImport(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <form
+            onSubmit={submitImport}
+            className="w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-white mb-2">นำเข้านักเรียนเป็นชุด</h3>
+            <p className="text-xs text-slate-400 mb-3">เลขที่ [Tab] รหัส [Tab] ชื่อ-นามสกุล [Tab] ชื่อเล่น(เว้นได้) — วางจาก Excel ได้เลย</p>
+            <textarea
+              rows={8}
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder={"1\t12345\tสมชาย ใจดี\tชาย"}
+              className={`${inputClass} font-mono resize-y min-h-48`}
+            />
+            <div className="mt-4 flex gap-2">
+              <button
+                type="submit"
+                disabled={pending || importText.trim() === ""}
+                className="flex-1 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl text-sm"
+              >
+                นำเข้า
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowImport(false)}
+                className="flex-1 bg-slate-950 border border-slate-800 text-slate-300 font-semibold py-2.5 rounded-xl text-sm"
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       <div className="glass-panel rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-900 flex items-center justify-between gap-3">
