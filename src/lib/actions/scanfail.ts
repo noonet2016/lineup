@@ -165,7 +165,7 @@ export async function acknowledgeScanFail(studentId: string, acknowledged: boole
   if (!student) return { ok: false, message: "ไม่พบนักเรียน" };
   if (student.classroom.advisorId !== Number(session.id)) return { ok: false, message: "ไม่มีสิทธิ์ในห้องเรียนนี้" };
 
-  const { dateOnly: today } = nowInBangkok();
+  const { dateOnly: today, wallClock: now } = nowInBangkok();
   const existing = await prisma.scanFailReport.findUnique({
     where: { studentId_sessionDate: { studentId, sessionDate: today } },
     select: { id: true },
@@ -174,7 +174,9 @@ export async function acknowledgeScanFail(studentId: string, acknowledged: boole
 
   await prisma.scanFailReport.update({
     where: { id: existing.id },
-    data: { acknowledgedAt: acknowledged ? new Date() : null },
+    // Store Bangkok wall-clock (same convention as reportedAt) so formatWallClockTime
+    // reads it back correctly; `new Date()` was UTC → displayed 7h behind.
+    data: { acknowledgedAt: acknowledged ? now : null },
   });
   await prisma.attendanceLog.create({
     data: {
