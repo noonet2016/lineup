@@ -96,7 +96,7 @@ export async function locateCheckin(lat: number | null, lng: number | null, accu
   return { inRadius: false, gpsWeak: false, distance: Math.round(distance), message: "คุณไม่ได้อยู่ในรัศมีที่กำหนด" };
 }
 
-export type SubmitResult = { ok: true; message: string } | { ok: false; message: string };
+export type SubmitResult = { ok: true; message: string; status?: string } | { ok: false; message: string };
 
 const STATUS_LABEL: Record<string, string> = {
   present: "มาปกติ",
@@ -158,6 +158,7 @@ export async function submitCheckin(lat: number | null, lng: number | null, accu
     const label = STATUS_LABEL[existing.status] ?? existing.status;
     return {
       ok: true,
+      status: existing.status,
       message: `คุณได้ทำการเช็คชื่อเข้าแถวในวันนี้เรียบร้อยแล้ว<br>สถานะ: <strong>${label}</strong>${existing.checkTime ? `<br><span class="text-sm text-emerald-400 font-semibold mt-2 block">เมื่อ: ${formatThaiDateTime(existing.checkTime)}</span>` : ""}`,
     };
   }
@@ -216,6 +217,7 @@ export async function submitCheckin(lat: number | null, lng: number | null, accu
   const label = STATUS_LABEL[finalStatus] ?? finalStatus;
   return {
     ok: true,
+    status: finalStatus,
     message: `บันทึกเช็คชื่อเข้าแถวสำเร็จ: สถานะของคุณคือ "<strong>${label}</strong>"<br><span class="text-sm text-emerald-400 font-semibold mt-2 block">เมื่อ: ${formatThaiDateTime(checkTime)}</span>`,
   };
 }

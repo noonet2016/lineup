@@ -12,6 +12,27 @@ const STATUS_LABEL: Record<string, string> = {
   flagged: "รอตรวจสอบ (อยู่นอกรัศมีที่ตั้งไว้)",
 };
 
+// Prominent status badge — distinct color per status so "สาย"/"รอตรวจสอบ" stand out.
+const STATUS_BADGE: Record<string, { label: string; className: string; icon: string }> = {
+  present: { label: "มาปกติ", icon: "✓", className: "bg-emerald-500/15 border-emerald-500/40 text-emerald-300" },
+  late: { label: "สาย", icon: "⏰", className: "bg-amber-500/15 border-amber-500/40 text-amber-300" },
+  pending: { label: "รอตรวจสอบ", icon: "⋯", className: "bg-sky-500/15 border-sky-500/40 text-sky-300" },
+  flagged: { label: "รอตรวจสอบ", icon: "⚠", className: "bg-rose-500/15 border-rose-500/40 text-rose-300" },
+};
+
+function StatusBadge({ status }: { status: string | null }) {
+  if (!status) return null;
+  const b = STATUS_BADGE[status] ?? { label: status, icon: "•", className: "bg-slate-600/30 border-slate-500/40 text-slate-200" };
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-base font-bold ${b.className}`}
+    >
+      <span className="text-lg leading-none">{b.icon}</span>
+      สถานะ: {b.label}
+    </span>
+  );
+}
+
 type Props = {
   fullName: string;
   nickname: string | null;
@@ -52,6 +73,7 @@ export default function CheckinClient({
 }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<Step>(alreadyCheckedIn ? "done" : "locate");
+  const [doneStatus, setDoneStatus] = useState<string | null>(existingStatus);
   const [gpsStatus, setGpsStatus] = useState("สถานะ GPS: รอตรวจพิกัด");
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -229,6 +251,7 @@ export default function CheckinClient({
       if (result.ok) {
         if (timerRef.current) clearInterval(timerRef.current);
         setCompleteMessage(result.message);
+        if ("status" in result && typeof result.status === "string") setDoneStatus(result.status);
         setStep("done");
       } else {
         setAlert({ type: "error", message: result.message });
@@ -421,8 +444,9 @@ export default function CheckinClient({
             <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-full flex items-center justify-center mx-auto scale-110 text-3xl">
               ✓
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h3 className="text-2xl font-bold text-white">เช็คชื่อสำเร็จ!</h3>
+              <StatusBadge status={doneStatus} />
               <p className="text-slate-300 text-base" dangerouslySetInnerHTML={{ __html: completeMessage }} />
             </div>
           </div>
