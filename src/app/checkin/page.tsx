@@ -48,9 +48,12 @@ export default async function CheckinPage() {
   });
   // These columns store Bangkok wall-clock in UTC fields; read them with formatWallClockTime
   // (no TZ shift). Using toLocaleTimeString({timeZone:'Asia/Bangkok'}) here double-added +7h.
-  const scanFailReportedAt = scanFailReport ? formatWallClockTime(scanFailReport.reportedAt) : null;
+  // Strip the " น." suffix — the CheckinClient badge templates append their own " น.".
+  const scanFailReportedAt = scanFailReport
+    ? formatWallClockTime(scanFailReport.reportedAt).replace(" น.", "")
+    : null;
   const scanFailAcknowledgedAt = scanFailReport?.acknowledgedAt
-    ? formatWallClockTime(scanFailReport.acknowledgedAt)
+    ? formatWallClockTime(scanFailReport.acknowledgedAt).replace(" น.", "")
     : null;
   const scanFailGeo = scanFailReport
     ? await computeScanFailGeo(student.classroomId, scanFailReport.latitude, scanFailReport.longitude)
