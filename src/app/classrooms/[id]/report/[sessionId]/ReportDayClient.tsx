@@ -121,7 +121,7 @@ export default function ReportDayClient({
                       <td className="px-6 py-4 text-slate-400 font-mono">{st.studentId}</td>
                       <td className="px-6 py-4 text-white font-semibold">
                         {st.fullName}
-                        {st.nickname && <span className="text-slate-400 font-normal"> ({st.nickname})</span>}
+                        {st.nickname && <span className="block text-slate-400 font-normal">({st.nickname})</span>}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badge.className}`}>{badge.text}</span>
@@ -178,7 +178,7 @@ export default function ReportDayClient({
                     <div>
                       <h4 className="text-sm font-bold text-white leading-tight">
                         {st.fullName}
-                        {st.nickname && <span className="text-slate-400 font-normal"> ({st.nickname})</span>}
+                        {st.nickname && <span className="block text-slate-400 font-normal">({st.nickname})</span>}
                       </h4>
                       <span className="text-[10px] text-slate-500 font-mono">รหัส: {st.studentId}</span>
                     </div>
