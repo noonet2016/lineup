@@ -2,8 +2,16 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import PollRefresh from "@/app/_components/PollRefresh";
-import { formatWallClockThaiDate, formatWallClockTime } from "@/lib/time";
+import { formatWallClockTime } from "@/lib/time";
 import LeaveRequestsClient from "./LeaveRequestsClient";
+
+// Short Thai date "dd/mm/พ.ศ." from a wall-clock-carried Date (UTC fields, no TZ shift).
+function thaiShortDate(date: Date): string {
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const be = date.getUTCFullYear() + 543;
+  return `${dd}/${mm}/${be}`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -63,12 +71,12 @@ export default async function ClassroomLeaveRequestsPage({ params }: { params: P
         requests={sortedRequests.map((request) => ({
           id: request.id,
           reason: request.reason,
-          startDate: request.startDate ? formatWallClockThaiDate(request.startDate) : null,
-          endDate: request.endDate ? formatWallClockThaiDate(request.endDate) : null,
+          startDate: request.startDate ? thaiShortDate(request.startDate) : null,
+          endDate: request.endDate ? thaiShortDate(request.endDate) : null,
           status: request.status,
           reviewNote: request.reviewNote,
           reviewedAt: request.reviewedAt
-            ? `${formatWallClockThaiDate(request.reviewedAt)} ${formatWallClockTime(request.reviewedAt, true)}`
+            ? `${thaiShortDate(request.reviewedAt)} เวลา ${formatWallClockTime(request.reviewedAt, true)}`
             : null,
           createdAt: request.createdAt.toISOString(),
           student: {

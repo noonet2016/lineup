@@ -136,14 +136,19 @@ export default function LeaveRequestsClient({
                   <li key={request.id} className="bg-slate-950/30 px-4 py-4 sm:px-5">
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                       <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-start gap-2">
-                          <p className="text-sm font-semibold text-white">
-                            {request.student.numberInClass ?? "-"}. {request.student.fullName}
-                            {request.student.nickname && (
-                              <span className="block text-slate-400 font-normal">({request.student.nickname})</span>
-                            )}
-                          </p>
-                          <StatusBadge status={request.status} />
+                        <div className="text-sm font-semibold text-white">
+                          {request.student.numberInClass ?? "-"}. {request.student.fullName}
+                          {request.student.nickname && (
+                            <span className="block text-slate-400 font-normal">
+                              ({request.student.nickname}) <StatusBadge status={request.status} />
+                            </span>
+                          )}
+                          {!request.student.nickname && (
+                            <>
+                              {" "}
+                              <StatusBadge status={request.status} />
+                            </>
+                          )}
                         </div>
                         <p className="text-sm text-slate-300">
                           <span className="text-sky-400 font-medium">เหตุผล:</span> {request.reason}
