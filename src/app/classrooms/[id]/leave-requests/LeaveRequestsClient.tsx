@@ -132,13 +132,17 @@ export default function LeaveRequestsClient({
                 const isPending = request.status === "pending";
                 const isApproved = request.status === "approved";
                 const isRejected = request.status === "rejected";
-                const studentLabel = `${request.student.numberInClass ?? "-"}. ${request.student.fullName}${request.student.nickname ? ` (${request.student.nickname})` : ""}`;
                 return (
                   <li key={request.id} className="bg-slate-950/30 px-4 py-4 sm:px-5">
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                       <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-white truncate">{studentLabel}</p>
+                        <div className="flex flex-wrap items-start gap-2">
+                          <p className="text-sm font-semibold text-white">
+                            {request.student.numberInClass ?? "-"}. {request.student.fullName}
+                            {request.student.nickname && (
+                              <span className="block text-slate-400 font-normal">({request.student.nickname})</span>
+                            )}
+                          </p>
                           <StatusBadge status={request.status} />
                         </div>
                         <p className="text-sm text-slate-300">
@@ -149,7 +153,7 @@ export default function LeaveRequestsClient({
                         </p>
                         {!isPending && request.reviewedAt && (
                           <p className="text-xs text-slate-500">
-                            <span className="text-slate-600">พิจารณาเมื่อ:</span> {request.reviewedAt.slice(0, 10)} {request.reviewedAt.slice(11, 19)}
+                            <span className="text-slate-600">พิจารณาเมื่อ:</span> {request.reviewedAt}
                           </p>
                         )}
                         {!isPending && request.reviewNote && (

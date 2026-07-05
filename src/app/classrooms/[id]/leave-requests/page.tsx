@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import PollRefresh from "@/app/_components/PollRefresh";
+import { formatWallClockThaiDate, formatWallClockTime } from "@/lib/time";
 import LeaveRequestsClient from "./LeaveRequestsClient";
 
 export const dynamic = "force-dynamic";
@@ -62,11 +63,13 @@ export default async function ClassroomLeaveRequestsPage({ params }: { params: P
         requests={sortedRequests.map((request) => ({
           id: request.id,
           reason: request.reason,
-          startDate: request.startDate ? request.startDate.toISOString().slice(0, 10) : null,
-          endDate: request.endDate ? request.endDate.toISOString().slice(0, 10) : null,
+          startDate: request.startDate ? formatWallClockThaiDate(request.startDate) : null,
+          endDate: request.endDate ? formatWallClockThaiDate(request.endDate) : null,
           status: request.status,
           reviewNote: request.reviewNote,
-          reviewedAt: request.reviewedAt ? request.reviewedAt.toISOString() : null,
+          reviewedAt: request.reviewedAt
+            ? `${formatWallClockThaiDate(request.reviewedAt)} ${formatWallClockTime(request.reviewedAt, true)}`
+            : null,
           createdAt: request.createdAt.toISOString(),
           student: {
             studentId: request.student.studentId,
