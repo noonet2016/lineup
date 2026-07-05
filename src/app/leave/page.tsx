@@ -24,7 +24,7 @@ export default async function LeavePage() {
   }));
 
   return (
-    <StudentShell active="profile">
+    <StudentShell active="leave">
       <PollRefresh />
       <LeaveClient requests={requests} />
     </StudentShell>
