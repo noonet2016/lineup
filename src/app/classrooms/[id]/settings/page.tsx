@@ -39,19 +39,11 @@ export default async function ClassroomSettingsPage({ params }: { params: Promis
       classroomId={classroomId}
       roomName={classroom.roomName}
       fullName={classroom.advisor?.fullName ?? ""}
-      settings={{
-        dome_lat: settings.dome_lat ?? "17.1968614",
-        dome_lng: settings.dome_lng ?? "104.0849387",
-        radius_m: settings.radius_m ?? "400",
-        check_start: settings.check_start ?? "07:45",
-        late_after: settings.late_after ?? "08:00",
-        check_end: settings.check_end ?? "08:15",
-        scanfail_alert_radius_m: settings.scanfail_alert_radius_m ?? "",
-      }}
       classroomTimes={{
         check_start: classroom.checkStart ?? settings.check_start ?? "07:45",
         late_after: classroom.lateAfter ?? settings.late_after ?? "08:00",
         check_end: classroom.checkEnd ?? settings.check_end ?? "08:15",
+        scanfailAlertRadiusM: classroom.scanfailAlertRadiusM === null ? "" : String(classroom.scanfailAlertRadiusM),
       }}
       sessionOpen={Boolean(todaySession)}
       holiday={holiday}

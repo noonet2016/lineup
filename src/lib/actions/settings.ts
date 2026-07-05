@@ -74,54 +74,6 @@ export async function openTodaySession(): Promise<ActionResult> {
   return { ok: true, message: "เปิดรอบเช็คชื่อเข้าแถวประจำวันนี้สำเร็จ!" };
 }
 
-/** Mirrors legacy action=update_settings. Global (school-wide), not per-classroom, matching legacy system_settings.
- *  dome_lat/dome_lng/radius_m are no longer editable here — the locations tab replaces them; those keys stay in
- *  the DB untouched as the fallback `getActiveLocation()` uses when a classroom has no active checkin_location. */
-export async function updateSystemSettings(formData: FormData): Promise<ActionResult> {
-  const teacher = await requireOwner();
-
-  const values: Record<string, string> = {};
-  for (const f of TIME_FIELDS) {
-    const v = String(formData.get(f) ?? "").trim();
-    if (!v) return { ok: false, message: "กรุณากรอกข้อมูลให้ครบทุกช่อง" };
-    if (normalizeTime(v) === "__INVALID__") return { ok: false, message: "รูปแบบเวลาต้องเป็น HH:MM หรือ HH:MM:SS" };
-    values[f] = v;
-  }
-
-  // Optional: scan-fail alert radius (meters). Empty = fall back to the classroom check-in radius.
-  const scanRadiusRaw = String(formData.get("scanfail_alert_radius_m") ?? "").trim();
-  if (scanRadiusRaw !== "") {
-    const scanRadius = Number(scanRadiusRaw);
-    if (!Number.isInteger(scanRadius) || scanRadius <= 0) {
-      return { ok: false, message: "รัศมีแจ้งสแกนหน้าต้องเป็นจำนวนเต็มบวก" };
-    }
-    values.scanfail_alert_radius_m = String(scanRadius);
-  }
-
-  const keysToSave = scanRadiusRaw !== "" ? [...TIME_FIELDS, "scanfail_alert_radius_m"] : [...TIME_FIELDS];
-  await Promise.all(
-    keysToSave.map((f) => prisma.systemSetting.upsert({ where: { settingKey: f }, update: { settingValue: values[f] }, create: { settingKey: f, settingValue: values[f] } })),
-  );
-
-  const { dateOnly: today } = nowInBangkok();
-  const session = await prisma.attendanceSession.findUnique({
-    where: { sessionDate_classroomId: { sessionDate: today, classroomId: teacher.classroomId } },
-  });
-  if (session) {
-    await prisma.attendanceSession.update({
-      where: { id: session.id },
-      data: {
-        startTime: hmsToDate(values.check_start),
-        lateAfter: hmsToDate(values.late_after),
-        endTime: hmsToDate(values.check_end),
-      },
-    });
-  }
-
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
-  return { ok: true, message: "บันทึกข้อมูลตั้งค่าระบบและรอบเช็คชื่อวันนี้สำเร็จ!" };
-}
-
 export async function updateClassroomTimes(formData: FormData): Promise<ActionResult> {
   const teacher = await requireTeacherClassroom();
 
@@ -129,7 +81,8 @@ export async function updateClassroomTimes(formData: FormData): Promise<ActionRe
     checkStart: string | null;
     lateAfter: string | null;
     checkEnd: string | null;
-  } = { checkStart: null, lateAfter: null, checkEnd: null };
+    scanfailAlertRadiusM: number | null;
+  } = { checkStart: null, lateAfter: null, checkEnd: null, scanfailAlertRadiusM: null };
 
   const start = normalizeTime(String(formData.get("check_start") ?? ""));
   const late = normalizeTime(String(formData.get("late_after") ?? ""));
@@ -140,6 +93,17 @@ export async function updateClassroomTimes(formData: FormData): Promise<ActionRe
   values.checkStart = start;
   values.lateAfter = late;
   values.checkEnd = end;
+
+  const scanRadiusRaw = String(formData.get("scanfail_alert_radius_m") ?? "").trim();
+  if (scanRadiusRaw === "") {
+    values.scanfailAlertRadiusM = null;
+  } else {
+    const scanRadius = Number(scanRadiusRaw);
+    if (!Number.isInteger(scanRadius) || scanRadius <= 0) {
+      return { ok: false, message: "รัศมีแจ้งเตือนต้องเป็นจำนวนเต็มบวก" };
+    }
+    values.scanfailAlertRadiusM = scanRadius;
+  }
 
   await prisma.classroom.update({
     where: { id: teacher.classroomId },

@@ -19,6 +19,7 @@ model Classroom {
   checkStart String?   @map("check_start") @db.VarChar(8)
   lateAfter  String?   @map("late_after") @db.VarChar(8)
   checkEnd   String?   @map("check_end") @db.VarChar(8)
+  scanfailAlertRadiusM Int? @map("scanfail_alert_radius_m")
   students   Student[]
   sessions   AttendanceSession[]
   locations  CheckinLocation[]

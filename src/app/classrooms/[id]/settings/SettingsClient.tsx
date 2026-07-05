@@ -12,13 +12,11 @@ import {
   openTodaySession,
   setActiveLocation,
   updateClassroomTimes,
-  updateSystemSettings,
 } from "@/lib/actions/settings";
 import { importCentralLocation } from "@/lib/actions/centralLocations";
 import { changeTeacherPassword } from "@/lib/actions/teacherAccount";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
-type Settings = { dome_lat: string; dome_lng: string; radius_m: string; check_start: string; late_after: string; check_end: string; scanfail_alert_radius_m: string };
-type ClassroomTimes = { check_start: string; late_after: string; check_end: string };
+type ClassroomTimes = { check_start: string; late_after: string; check_end: string; scanfailAlertRadiusM: string };
 type Holiday = { dateStr: string; label: string; name: string };
 type Location = { id: number; name: string; lat: number; lng: number; radius: number; isActive: boolean };
 type CentralLocation = { id: number; name: string; lat: number; lng: number; radius: number };
@@ -27,7 +25,6 @@ export default function SettingsClient({
   classroomId,
   roomName,
   fullName,
-  settings,
   classroomTimes,
   sessionOpen,
   holiday,
@@ -39,7 +36,6 @@ export default function SettingsClient({
   classroomId: number;
   roomName: string;
   fullName: string;
-  settings: Settings;
   classroomTimes: ClassroomTimes;
   sessionOpen: boolean;
   holiday: string | null;
@@ -203,34 +199,6 @@ export default function SettingsClient({
               <input type="time" name="check_end" defaultValue={classroomTimes.check_end.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
             </label>
           </div>
-          <button type="submit" disabled={pending} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]">
-            บันทึกเวลาของห้อง
-          </button>
-        </form>
-        {isOwner ? (
-        <>
-        <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-semibold">🏫 เวลาเริ่มต้นของโรงเรียน</span>
-          <span>ค่า default สำหรับห้องที่เว้นเวลาว่างไว้</span>
-        </div>
-        <form
-          action={(formData) => run(() => updateSystemSettings(formData))}
-          className="space-y-6"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label>
-              <span className="block text-xs font-semibold text-slate-400 mb-2">เริ่มเช็คเวลา (Start)</span>
-              <input type="time" name="check_start" required defaultValue={settings.check_start.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-            </label>
-            <label>
-              <span className="block text-xs font-semibold text-slate-400 mb-2">บันทึกสาย (Late)</span>
-              <input type="time" name="late_after" required defaultValue={settings.late_after.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-            </label>
-            <label>
-              <span className="block text-xs font-semibold text-slate-400 mb-2">สิ้นสุดการเข้าแถวเวลา (End)</span>
-              <input type="time" name="check_end" required defaultValue={settings.check_end.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-            </label>
-          </div>
           <label className="block">
             <span className="block text-xs font-semibold text-slate-400 mb-2">
               รัศมีแจ้งเตือน &ldquo;สแกนหน้าไม่ติด&rdquo; (เมตร)
@@ -239,20 +207,18 @@ export default function SettingsClient({
               type="number"
               min={1}
               name="scanfail_alert_radius_m"
-              defaultValue={settings.scanfail_alert_radius_m}
+              defaultValue={classroomTimes.scanfailAlertRadiusM}
               placeholder="เว้นว่าง = ใช้รัศมีจุดเช็คอินของห้อง"
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             />
             <span className="block text-[11px] text-slate-500 mt-1.5">
               ถ้านักเรียนแจ้งจากระยะไกลเกินค่านี้ ครูจะเห็น badge &ldquo;นอกรัศมี&rdquo; (ไม่บล็อกการแจ้ง)
             </span>
           </label>
-          <button type="submit" disabled={pending} className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]">
-            บันทึกเวลาเริ่มต้นของโรงเรียน
+          <button type="submit" disabled={pending} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]">
+            บันทึกเวลาของห้อง
           </button>
         </form>
-        </>
-        ) : null}
       </section>
 
       {/* Holidays */}

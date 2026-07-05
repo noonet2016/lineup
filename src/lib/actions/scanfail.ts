@@ -49,9 +49,8 @@ export async function computeScanFailGeo(
   lng: number | null,
 ): Promise<ScanFailGeo> {
   const location = await getActiveLocation(classroomId);
-  const alertSetting = await prisma.systemSetting.findUnique({ where: { settingKey: "scanfail_alert_radius_m" } });
-  const parsedAlert = Number(alertSetting?.settingValue);
-  const alertRadius = Number.isFinite(parsedAlert) && parsedAlert > 0 ? parsedAlert : location.radius;
+  const c = await prisma.classroom.findUnique({ where: { id: classroomId }, select: { scanfailAlertRadiusM: true } });
+  const alertRadius = c?.scanfailAlertRadiusM && c.scanfailAlertRadiusM > 0 ? c.scanfailAlertRadiusM : location.radius;
   const distanceMeters =
     lat !== null && lng !== null ? Math.round(haversineDistance(lat, lng, location.lat, location.lng)) : null;
   return { distanceMeters, outsideRadius: distanceMeters !== null && distanceMeters > alertRadius, radius: alertRadius };
@@ -242,9 +241,8 @@ export async function getUnmatchedScanFailReports(classroomId: number): Promise<
 
   const location = await getActiveLocation(classroomId);
   // Separate, configurable alert radius; empty/invalid falls back to the classroom check-in radius.
-  const alertSetting = await prisma.systemSetting.findUnique({ where: { settingKey: "scanfail_alert_radius_m" } });
-  const parsedAlert = Number(alertSetting?.settingValue);
-  const alertRadius = Number.isFinite(parsedAlert) && parsedAlert > 0 ? parsedAlert : location.radius;
+  const c = await prisma.classroom.findUnique({ where: { id: classroomId }, select: { scanfailAlertRadiusM: true } });
+  const alertRadius = c?.scanfailAlertRadiusM && c.scanfailAlertRadiusM > 0 ? c.scanfailAlertRadiusM : location.radius;
 
   return reports.map((report) => {
     const hasCoords = report.latitude !== null && report.longitude !== null;
