@@ -39,13 +39,25 @@ export async function getActiveLocation(classroomId: number): Promise<ActiveLoca
   };
 }
 
-async function getTimeWindow(): Promise<{ start: string; lateAfter: string; end: string }> {
-  const settings = await prisma.systemSetting.findMany();
+/**
+ * Effective time window for a classroom: per-room override (classrooms.check_start/late_after/check_end)
+ * falls back to the school-wide system_settings, then hard defaults. Mirrors resolveClassroomTimes() in
+ * settings.ts so auto-opening a session on student check-in uses the SAME room times as the teacher's
+ * manual "open round" — previously this read only the school defaults, ignoring per-room times.
+ */
+async function getTimeWindow(classroomId: number): Promise<{ start: string; lateAfter: string; end: string }> {
+  const [classroom, settings] = await Promise.all([
+    prisma.classroom.findUnique({
+      where: { id: classroomId },
+      select: { checkStart: true, lateAfter: true, checkEnd: true },
+    }),
+    prisma.systemSetting.findMany(),
+  ]);
   const map = new Map(settings.map((s) => [s.settingKey, s.settingValue]));
   return {
-    start: map.get("check_start") ?? "07:45",
-    lateAfter: map.get("late_after") ?? "08:00",
-    end: map.get("check_end") ?? "08:15",
+    start: classroom?.checkStart ?? map.get("check_start") ?? "07:45",
+    lateAfter: classroom?.lateAfter ?? map.get("late_after") ?? "08:00",
+    end: classroom?.checkEnd ?? map.get("check_end") ?? "08:15",
   };
 }
 
@@ -122,7 +134,7 @@ export async function submitCheckin(lat: number | null, lng: number | null, accu
       return { ok: false, message: `วันนี้เป็นวันหยุด (${holiday}) จึงไม่มีการเช็คชื่อเข้าแถว` };
     }
 
-    const { start, lateAfter, end } = await getTimeWindow();
+    const { start, lateAfter, end } = await getTimeWindow(student.classroomId);
     if (nowHms < start) return { ok: false, message: `ยังไม่ถึงเวลาเริ่มบันทึกเข้าแถว (${start.slice(0, 5)} น.)` };
     if (nowHms > end) return { ok: false, message: `หมดเวลาเช็คชื่อเข้าแถวของวันนี้แล้ว ปิดระบบเมื่อเวลา ${end.slice(0, 5)} น.` };
 
