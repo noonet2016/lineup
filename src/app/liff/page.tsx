@@ -96,7 +96,23 @@ export default function LiffEntryPage() {
   return (
     <div className="min-h-dvh flex items-center justify-center bg-slate-950 safe-px py-8">
       <div className="glass-panel rounded-2xl p-8 max-w-sm w-full text-center space-y-4">
-        <div className="text-4xl">🟢</div>
+        <div className="mx-auto w-16 h-16 rounded-[22%] bg-[#06C755] flex items-center justify-center shadow-lg shadow-[#06C755]/20">
+          <svg viewBox="0 0 64 64" className="w-16 h-16" role="img" aria-label="LINE">
+            <text
+              x="32"
+              y="34"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontFamily="Helvetica, Arial, sans-serif"
+              fontWeight="800"
+              fontSize="19"
+              letterSpacing="-0.5"
+              fill="#fff"
+            >
+              LINE
+            </text>
+          </svg>
+        </div>
 
         {phase === "loading" && (
           <>
