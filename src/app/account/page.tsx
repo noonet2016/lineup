@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { logout } from "@/lib/actions/auth";
 import { BackgroundGlow, Footer, StudentShell, TeacherShell } from "../_components/LegacyChrome";
+import LineChatIdForm from "./LineChatIdForm";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function AccountPage({
             lineUserId: true,
             lineDisplayName: true,
             linePictureUrl: true,
+            lineChatId: true,
             classroomId: true,
           },
         })
@@ -40,7 +42,14 @@ export default async function AccountPage({
 
   const studentAccount =
     session.role === "student"
-      ? (account as unknown as { studentId: string; numberInClass: number | null; fullName: string; nickname: string | null })
+      ? (account as unknown as {
+          studentId: string;
+          numberInClass: number | null;
+          fullName: string;
+          nickname: string | null;
+          lineChatId: string | null;
+          classroomId: number;
+        })
       : null;
 
   const advisedClassroom =
@@ -116,9 +125,10 @@ export default async function AccountPage({
             </a>
           </>
         )}
+        {studentAccount && <LineChatIdForm initialLineChatId={studentAccount.lineChatId} />}
       </div>
 
-      {session.role === "student" && "classroomId" in account && (
+      {studentAccount && (
         <>
           <a
             href="/checkin"
@@ -127,7 +137,7 @@ export default async function AccountPage({
             เช็คชื่อเข้าแถว
           </a>
           <a
-            href={`/classrooms/${account.classroomId}/students/${session.id}`}
+            href={`/classrooms/${studentAccount.classroomId}/students/${session.id}`}
             className="block text-center bg-slate-900 border border-slate-800 text-slate-200 font-semibold py-2.5 rounded-xl text-sm"
           >
             ดูประวัติการเช็คชื่อ

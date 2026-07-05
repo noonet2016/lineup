@@ -7,6 +7,7 @@ import { fetchDashboardSnapshot } from "@/lib/actions/dashboardLive";
 import { addExemption } from "@/lib/actions/exemptions";
 import { formatWallClockTime } from "@/lib/time";
 import ActivityBadge from "@/app/_components/ActivityBadge";
+import { lineChatUrl } from "@/lib/lineChatId";
 
 const FILTERS: { value: DashboardFilter; label: string; color: string }[] = [
   { value: "present", label: "มาปกติ", color: "border-l-emerald-500 text-emerald-400 ring-emerald-500/50" },
@@ -217,6 +218,23 @@ export default function DashboardLive({
                     {isAdvisor && (
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {student.lineChatId ? (
+                            <a
+                              href={lineChatUrl(student.lineChatId)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 bg-[#06C755]/10 border border-[#06C755]/40 hover:bg-[#06C755]/20 text-[#06C755] px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              💬 ทักไลน์
+                            </a>
+                          ) : (
+                            <span
+                              title="ยังไม่มี LINE ID — เพิ่มได้ที่หน้าสถานะผูก LINE"
+                              className="inline-flex items-center gap-1 bg-slate-900/50 border border-slate-800 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-not-allowed"
+                            >
+                              💬 ทักไลน์
+                            </span>
+                          )}
                           {!student.exemptReason && (
                             <button
                               type="button"
@@ -316,6 +334,23 @@ export default function DashboardLive({
                 </div>
                 {isAdvisor && (
                   <div className="text-right flex items-center gap-1.5">
+                    {student.lineChatId ? (
+                      <a
+                        href={lineChatUrl(student.lineChatId)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block bg-[#06C755]/10 border border-[#06C755]/45 hover:bg-[#06C755]/20 text-[#06C755] font-bold px-3 py-1.5 rounded-lg text-[10px] transition-all"
+                      >
+                        💬 ทักไลน์
+                      </a>
+                    ) : (
+                      <span
+                        title="ยังไม่มี LINE ID — เพิ่มได้ที่หน้าสถานะผูก LINE"
+                        className="inline-block bg-slate-900/50 border border-slate-800 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-[10px] cursor-not-allowed"
+                      >
+                        💬 ทักไลน์
+                      </span>
+                    )}
                     {!student.exemptReason && (
                       <button
                         type="button"

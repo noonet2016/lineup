@@ -72,6 +72,7 @@ model Student {
   lineUserId       String?              @unique @map("line_user_id") @db.VarChar(64)
   lineDisplayName  String?              @map("line_display_name") @db.VarChar(150)
   linePictureUrl   String?              @map("line_picture_url") @db.VarChar(500)
+  lineChatId       String?              @map("line_chat_id") @db.VarChar(50)
   attendanceRecords AttendanceRecord[]
   attendanceLogs   AttendanceLog[]
   exemptions       StudentExemption[]

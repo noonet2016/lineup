@@ -41,6 +41,7 @@ export default async function ClassroomLineStatusPage({ params }: { params: Prom
           linked: Boolean(s.lineUserId),
           lineDisplayName: s.lineDisplayName,
           linePictureUrl: s.linePictureUrl,
+          lineChatId: s.lineChatId,
         }))}
       />
     </>

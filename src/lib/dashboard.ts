@@ -24,6 +24,7 @@ export type DashboardRow = {
   nickname: string | null;
   numberInClass: number | null;
   activities: ActivityTag[];
+  lineChatId: string | null;
   displayStatus: DashboardStatus;
   checkTime: Date | null;
   distanceM: number | null;
@@ -151,6 +152,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
         fullName: true,
         nickname: true,
         numberInClass: true,
+        lineChatId: true,
         attendanceRecords: {
           where: { sessionId },
           select: {
@@ -216,6 +218,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
         nickname: student.nickname,
         numberInClass: student.numberInClass,
         activities: activityTagMap.get(student.studentId) ?? [],
+        lineChatId: student.lineChatId,
         displayStatus,
         checkTime: record?.checkTime ?? null,
         distanceM: record?.distanceM ?? null,

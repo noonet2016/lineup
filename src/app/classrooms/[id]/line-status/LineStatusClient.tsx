@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
 import { LightboxProvider, LightboxThumb } from "@/app/_components/ImageLightbox";
-import { unlinkStudentLine } from "@/lib/actions/lineStatus";
+import { setStudentLineChatId, unlinkStudentLine } from "@/lib/actions/lineStatus";
+import { lineChatUrl } from "@/lib/lineChatId";
 
 type StudentRow = {
   studentId: string;
@@ -15,6 +16,7 @@ type StudentRow = {
   linked: boolean;
   lineDisplayName: string | null;
   linePictureUrl: string | null;
+  lineChatId: string | null;
 };
 
 export default function LineStatusClient({
@@ -32,6 +34,8 @@ export default function LineStatusClient({
   const [pending, startTransition] = useTransition();
   const [banner, setBanner] = useState<{ text: string; kind: "success" | "error" } | null>(null);
   const [query, setQuery] = useState("");
+  const [editingLineChatId, setEditingLineChatId] = useState<string | null>(null);
+  const [lineChatValue, setLineChatValue] = useState("");
 
   const q = query.trim().toLowerCase();
   const visible = q
@@ -39,10 +43,27 @@ export default function LineStatusClient({
         (s) =>
           s.fullName.toLowerCase().includes(q) ||
           (s.nickname ?? "").toLowerCase().includes(q) ||
+          (s.lineChatId ?? "").toLowerCase().includes(q) ||
           s.studentId.toLowerCase().includes(q) ||
           String(s.numberInClass ?? "").includes(q),
       )
     : students;
+
+  function startLineChatEdit(student: StudentRow) {
+    setBanner(null);
+    setEditingLineChatId(student.studentId);
+    setLineChatValue(student.lineChatId ?? "");
+  }
+
+  function handleSaveLineChatId(studentId: string) {
+    setBanner(null);
+    startTransition(async () => {
+      const result = await setStudentLineChatId(studentId, lineChatValue);
+      setBanner({ text: result.message, kind: result.ok ? "success" : "error" });
+      if (result.ok) setEditingLineChatId(null);
+      router.refresh();
+    });
+  }
 
   function handleUnlink(studentId: string) {
     setBanner(null);
@@ -113,6 +134,67 @@ export default function LineStatusClient({
                     <div className="text-[11px] text-slate-500 font-mono break-words">เลขประจำตัว {s.studentId}{s.nickname ? ` · ชื่อเล่น ${s.nickname}` : ""}</div>
                     <div className="text-xs text-slate-500 break-words">
                       {s.linked ? `LINE: ${s.lineDisplayName ?? "(ไม่ทราบชื่อ)"}` : "ยังไม่ได้ผูกบัญชี LINE"}
+                    </div>
+                    <div className="mt-2">
+                      {editingLineChatId === s.studentId ? (
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="text"
+                            value={lineChatValue}
+                            onChange={(e) => setLineChatValue(e.target.value)}
+                            placeholder="LINE ID เช่น jao.nakubb"
+                            className="min-w-0 flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => handleSaveLineChatId(s.studentId)}
+                              className="px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-bold disabled:opacity-60"
+                            >
+                              บันทึก
+                            </button>
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => setEditingLineChatId(null)}
+                              className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold disabled:opacity-60"
+                            >
+                              ยกเลิก
+                            </button>
+                          </div>
+                        </div>
+                      ) : s.lineChatId ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <a
+                            href={lineChatUrl(s.lineChatId)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-emerald-200"
+                          >
+                            💬 LINE ID: {s.lineChatId}
+                          </a>
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => startLineChatEdit(s)}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 disabled:opacity-60"
+                            aria-label={`แก้ไข LINE ID ของ ${s.fullName}`}
+                            title="แก้ไข LINE ID"
+                          >
+                            ✎
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => startLineChatEdit(s)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-xs font-semibold disabled:opacity-60"
+                        >
+                          ＋ เพิ่ม LINE ID
+                        </button>
+                      )}
                     </div>
                     {s.linked && (
                       <button disabled={pending} onClick={() => handleUnlink(s.studentId)} className="mt-1.5 text-rose-400 hover:text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-all">
