@@ -115,6 +115,10 @@ async function getExemptLabels(classroomId: number): Promise<Map<string, string>
 
 /** Mirrors legacy lib/holiday.php holiday_block_reason(): Sat/Sun auto, else lookup `holidays` table. */
 export async function holidayBlockReason(date: Date): Promise<string | null> {
+  // TEST-ONLY switch: when set, ignore weekend/holiday blocking so check-in can be
+  // exercised on a Sat/Sun/holiday. Runtime env (set in Plesk panel, no rebuild).
+  // MUST be unset again after testing, or weekends would allow real check-ins.
+  if (process.env.TEST_ALLOW_CHECKIN_ANYDAY === "1") return null;
   const weekday = isoWeekday(date);
   if (weekday === 6) return "วันเสาร์";
   if (weekday === 7) return "วันอาทิตย์";
