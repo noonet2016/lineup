@@ -81,10 +81,11 @@ export function formatWallClockTime(date: Date | null, withSeconds = false): str
 }
 
 /**
- * Format a wall-clock-carried DateTime column as a full Thai date+time, e.g.
- * "วันอาทิตย์ ที่ 5 เดือนกรกฎาคม พ.ศ.2569 16:14:31 น." — timeZone UTC so no +7 shift.
+ * Format a wall-clock-carried DateTime column as a Thai long date, e.g.
+ * "วันอาทิตย์ ที่ 5 เดือนกรกฎาคม พ.ศ.2569" — timeZone UTC so no +7 shift.
+ * Pair with formatWallClockTime(date, true) for the "เวลา HH:mm:ss น." line.
  */
-export function formatWallClockThaiFull(date: Date): string {
+export function formatWallClockThaiDate(date: Date): string {
   const parts = new Intl.DateTimeFormat("th-TH-u-ca-buddhist", {
     timeZone: "UTC",
     weekday: "long",
@@ -93,13 +94,7 @@ export function formatWallClockThaiFull(date: Date): string {
     year: "numeric",
   }).formatToParts(date);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  const time = new Intl.DateTimeFormat("th-TH", {
-    timeZone: "UTC",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
-  return `${get("weekday")} ที่ ${get("day")} เดือน${get("month")} พ.ศ.${get("year")} ${time} น.`;
+  return `${get("weekday")} ที่ ${get("day")} เดือน${get("month")} พ.ศ.${get("year")}`;
 }
 
 /** Format a real instant (e.g. "now") as a Thai long date, genuinely converted to Bangkok time. */
