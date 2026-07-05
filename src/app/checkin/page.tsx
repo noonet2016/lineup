@@ -6,7 +6,7 @@ import { StudentShell } from "../_components/LegacyChrome";
 import CheckinClient from "./CheckinClient";
 import { computeScanFailGeo } from "@/lib/actions/scanfail";
 import { holidayBlockReason } from "@/lib/dashboard";
-import { formatWallClockDate } from "@/lib/time";
+import { formatWallClockDate, formatWallClockTime } from "@/lib/time";
 
 const TZ = "Asia/Bangkok";
 
@@ -46,12 +46,11 @@ export default async function CheckinPage() {
     where: { studentId_sessionDate: { studentId: student.studentId, sessionDate: today } },
     select: { reportedAt: true, latitude: true, longitude: true, acknowledgedAt: true },
   });
-  const scanFailReportedAt = scanFailReport
-    ? scanFailReport.reportedAt
-        .toLocaleTimeString("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
-    : null;
+  // These columns store Bangkok wall-clock in UTC fields; read them with formatWallClockTime
+  // (no TZ shift). Using toLocaleTimeString({timeZone:'Asia/Bangkok'}) here double-added +7h.
+  const scanFailReportedAt = scanFailReport ? formatWallClockTime(scanFailReport.reportedAt) : null;
   const scanFailAcknowledgedAt = scanFailReport?.acknowledgedAt
-    ? scanFailReport.acknowledgedAt.toLocaleTimeString("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
+    ? formatWallClockTime(scanFailReport.acknowledgedAt)
     : null;
   const scanFailGeo = scanFailReport
     ? await computeScanFailGeo(student.classroomId, scanFailReport.latitude, scanFailReport.longitude)
