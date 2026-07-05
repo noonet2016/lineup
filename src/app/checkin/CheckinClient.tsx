@@ -383,8 +383,10 @@ export default function CheckinClient({
             </div>
             {distance !== null && (
               <div className="flex items-center justify-center gap-2 text-cyan-300 text-sm bg-cyan-500/5 py-2 px-4 rounded-xl border border-cyan-500/15 w-fit mx-auto">
-                <span>
-                  📍 คุณอยู่ห่างจากจุดเช็คอิน <strong>{distance}</strong> เมตร (รัศมีที่กำหนด {radius} เมตร)
+                <span className="text-center">
+                  📍 คุณอยู่ห่างจากจุดเช็คอิน <strong>{distance}</strong> เมตร
+                  <br />
+                  (รัศมีที่กำหนด {radius} เมตร)
                 </span>
               </div>
             )}
