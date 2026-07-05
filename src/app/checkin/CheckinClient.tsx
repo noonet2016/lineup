@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<string, string> = {
 type Props = {
   fullName: string;
   nickname: string | null;
+  linePictureUrl: string | null;
   studentId: string;
   roomName: string;
   locationName: string;
@@ -35,6 +36,7 @@ type Alert = { type: "error" | "success" | "warning"; message: string } | null;
 export default function CheckinClient({
   fullName,
   nickname,
+  linePictureUrl,
   studentId,
   roomName,
   locationName,
@@ -297,13 +299,22 @@ export default function CheckinClient({
     <main className="flex-grow flex items-center justify-center">
       <div className="w-full max-w-full mx-auto space-y-6">
         <div className="glass-panel rounded-2xl p-6 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-xl font-bold">
-            {fullName.slice(0, 1)}
-          </div>
+          {linePictureUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={linePictureUrl}
+              alt={fullName}
+              className="w-14 h-14 rounded-full object-cover border border-slate-700 shrink-0"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-xl font-bold shrink-0">
+              {fullName.slice(0, 1)}
+            </div>
+          )}
           <div>
             <h2 className="text-lg font-bold text-white">
               {fullName}
-              {nickname ? ` (${nickname})` : ""}
+              {nickname ? <span className="block text-slate-300 font-semibold">({nickname})</span> : null}
             </h2>
             <p className="text-slate-400 text-sm">
               รหัสนักเรียน: {studentId} • ห้องเรียน: {roomName}

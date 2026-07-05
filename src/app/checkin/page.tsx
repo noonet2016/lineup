@@ -67,6 +67,7 @@ export default async function CheckinPage() {
       <CheckinClient
         fullName={student.fullName}
         nickname={student.nickname}
+        linePictureUrl={student.linePictureUrl}
         studentId={student.studentId}
         roomName={student.classroom.roomName}
         locationName={location.name}
