@@ -74,6 +74,7 @@ export default async function CheckinPage() {
         radius={location.radius}
         alreadyCheckedIn={Boolean(existingRecord)}
         existingStatus={existingRecord?.status ?? null}
+        existingDistance={existingRecord?.distanceM ?? null}
         existingCheckTime={
           existingRecord?.checkTime
             ? `${formatWallClockThaiDate(existingRecord.checkTime)}<br>เวลา ${formatWallClockTime(existingRecord.checkTime, true)}`

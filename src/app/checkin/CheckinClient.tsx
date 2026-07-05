@@ -20,6 +20,23 @@ const STATUS_BADGE: Record<string, { label: string; className: string; icon: str
   flagged: { label: "รอตรวจสอบ", icon: "⚠", className: "bg-rose-500/15 border-rose-500/40 text-rose-300" },
 };
 
+// Distance-vs-radius badge for the result card: green when inside, rose when outside.
+function GeoBadge({ distance, radius }: { distance: number | null; radius: number }) {
+  if (distance === null) return null;
+  const outside = distance > radius;
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${
+        outside
+          ? "bg-rose-500/10 border-rose-500/30 text-rose-300"
+          : "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+      }`}
+    >
+      📍 {outside ? "เช็คจากนอกรัศมี" : "เช็คจากในรัศมี"} (~{distance} ม. · กำหนด {radius} ม.)
+    </span>
+  );
+}
+
 function StatusBadge({ status }: { status: string | null }) {
   if (!status) return null;
   const b = STATUS_BADGE[status] ?? { label: status, icon: "•", className: "bg-slate-600/30 border-slate-500/40 text-slate-200" };
@@ -43,6 +60,7 @@ type Props = {
   radius: number;
   alreadyCheckedIn: boolean;
   existingStatus: string | null;
+  existingDistance: number | null;
   existingCheckTime: string | null;
   scanFailReportedAt: string | null;
   scanFailAcknowledgedAt: string | null;
@@ -64,6 +82,7 @@ export default function CheckinClient({
   radius,
   alreadyCheckedIn,
   existingStatus,
+  existingDistance,
   existingCheckTime,
   scanFailReportedAt,
   scanFailAcknowledgedAt,
@@ -90,7 +109,7 @@ export default function CheckinClient({
     }, 12000);
     return () => clearInterval(id);
   }, [scanFailReported, scanFailAcknowledgedAt, router]);
-  const [distance, setDistance] = useState<number | null>(null);
+  const [distance, setDistance] = useState<number | null>(existingDistance);
   const [countdown, setCountdown] = useState(120);
   const [completeMessage, setCompleteMessage] = useState<string>(
     alreadyCheckedIn && existingCheckTime
@@ -446,7 +465,10 @@ export default function CheckinClient({
             </div>
             <div className="space-y-3">
               <h3 className="text-2xl font-bold text-white">เช็คชื่อสำเร็จ!</h3>
-              <StatusBadge status={doneStatus} />
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <StatusBadge status={doneStatus} />
+                <GeoBadge distance={distance} radius={radius} />
+              </div>
               <p className="text-slate-300 text-base" dangerouslySetInnerHTML={{ __html: completeMessage }} />
             </div>
           </div>
