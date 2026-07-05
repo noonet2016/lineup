@@ -6,7 +6,7 @@ import { StudentShell } from "../_components/LegacyChrome";
 import CheckinClient from "./CheckinClient";
 import { computeScanFailGeo } from "@/lib/actions/scanfail";
 import { holidayBlockReason } from "@/lib/dashboard";
-import { formatWallClockDate, formatWallClockTime } from "@/lib/time";
+import { formatWallClockDate, formatWallClockTime, formatWallClockThaiFull } from "@/lib/time";
 
 const TZ = "Asia/Bangkok";
 
@@ -74,7 +74,7 @@ export default async function CheckinPage() {
         radius={location.radius}
         alreadyCheckedIn={Boolean(existingRecord)}
         existingStatus={existingRecord?.status ?? null}
-        existingCheckTime={existingRecord?.checkTime?.toISOString() ?? null}
+        existingCheckTime={existingRecord?.checkTime ? formatWallClockThaiFull(existingRecord.checkTime) : null}
         scanFailReportedAt={scanFailReportedAt}
         scanFailAcknowledgedAt={scanFailAcknowledgedAt}
         scanFailGeo={scanFailGeo}

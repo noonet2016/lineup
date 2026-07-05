@@ -72,7 +72,7 @@ export default function CheckinClient({
   const [countdown, setCountdown] = useState(120);
   const [completeMessage, setCompleteMessage] = useState<string>(
     alreadyCheckedIn && existingCheckTime
-      ? `คุณได้ทำการเช็คชื่อเข้าแถวในวันนี้เรียบร้อยแล้ว<br>สถานะ: <strong>${STATUS_LABEL[existingStatus ?? ""] ?? existingStatus}</strong><br><span class="text-sm text-emerald-400 font-semibold mt-2 block">เมื่อ: ${new Date(existingCheckTime).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })} น.</span>`
+      ? `คุณได้ทำการเช็คชื่อเข้าแถวในวันนี้เรียบร้อยแล้ว<br>สถานะ: <strong>${STATUS_LABEL[existingStatus ?? ""] ?? existingStatus}</strong><br><span class="text-sm text-emerald-400 font-semibold mt-2 block">เมื่อ: ${existingCheckTime}</span>`
       : "",
   );
   const coordsRef = useRef<{ lat: number | null; lng: number | null; accuracy: number | null }>({
