@@ -12,6 +12,7 @@
     "diag": "node -e \"console.log('cwd:', process.cwd()); console.log(require('fs').readdirSync('.').join('\\n'))\""
   },
   "dependencies": {
+    "@line/liff": "^2.29.1",
     "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "bcryptjs": "^3.0.3",

@@ -3,6 +3,7 @@ import crypto from "crypto";
 const AUTHORIZE_URL = "https://access.line.me/oauth2/v2.1/authorize";
 const TOKEN_URL = "https://api.line.me/oauth2/v2.1/token";
 const PROFILE_URL = "https://api.line.me/v2/profile";
+const VERIFY_URL = "https://api.line.me/oauth2/v2.1/verify";
 
 function channelId(): string {
   const id = process.env.LINE_CHANNEL_ID;
@@ -61,6 +62,26 @@ export function buildAuthorizeUrl(state: string): string {
     scope: "profile openid",
   });
   return `${AUTHORIZE_URL}?${params.toString()}`;
+}
+
+/**
+ * Verify a LIFF-issued OpenID Connect ID token server-side against LINE, and return the
+ * trusted identity. NEVER trust a client-sent userId — only the `sub` from a token that
+ * LINE confirms. `client_id` MUST be the channel that issued the token; the LIFF app is
+ * created under the SAME channel as LINE Login (LINE_CHANNEL_ID), so this reuses that id.
+ */
+export async function verifyLiffIdToken(idToken: string): Promise<LineProfile> {
+  const res = await fetch(VERIFY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ id_token: idToken, client_id: channelId() }),
+  });
+  if (!res.ok) {
+    throw new Error(`LINE id_token verify failed: ${res.status} ${await res.text()}`);
+  }
+  const data = (await res.json()) as { sub?: string; name?: string; picture?: string };
+  if (!data.sub) throw new Error("LINE id_token verify: missing sub");
+  return { userId: data.sub, displayName: data.name ?? "", pictureUrl: data.picture };
 }
 
 export type LineProfile = { userId: string; displayName: string; pictureUrl?: string };
