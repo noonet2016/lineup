@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { resetStudentPassword, updateStudentStatus } from "@/lib/actions/attendance";
+import { updateStudentStatus } from "@/lib/actions/attendance";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
 
 const STATUS_OPTIONS = [
@@ -21,13 +21,12 @@ const STATUS_NAMES: Record<string, string> = {
   flagged: "นอกรัศมี (Flagged)",
 };
 
-export default function EditStatusForm({ studentId, classroomId, currentStatus }: { studentId: string; classroomId: number; currentStatus: string }) {
+export default function EditStatusForm({ studentId, classroomId, currentStatus, returnFilter }: { studentId: string; classroomId: number; currentStatus: string; returnFilter?: string }) {
   const router = useRouter();
   const [status, setStatus] = useState(currentStatus);
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
-  const [confirmingReset, setConfirmingReset] = useState(false);
 
   function submitStatus(e: React.FormEvent) {
     e.preventDefault();
@@ -35,19 +34,13 @@ export default function EditStatusForm({ studentId, classroomId, currentStatus }
     startTransition(async () => {
       const result = await updateStudentStatus(studentId, status, reason);
       if (result.ok) {
-        router.push(`/classrooms/${classroomId}?success=${encodeURIComponent(result.message)}`);
+        const params = new URLSearchParams();
+        if (returnFilter) params.set("filter", returnFilter);
+        params.set("success", result.message);
+        router.push(`/classrooms/${classroomId}?${params.toString()}`);
       } else {
         setMessage({ type: "error", text: result.message });
       }
-    });
-  }
-
-  function doResetPassword() {
-    setMessage(null);
-    startTransition(async () => {
-      const result = await resetStudentPassword(studentId);
-      setMessage({ type: result.ok ? "success" : "error", text: result.message });
-      setConfirmingReset(false);
     });
   }
 
@@ -92,38 +85,6 @@ export default function EditStatusForm({ studentId, classroomId, currentStatus }
           {pending ? "กำลังบันทึก..." : "บันทึกการแก้ไขสถานะ"}
         </button>
       </form>
-      </div>
-
-      <div className="glass-panel rounded-2xl p-6 border-l-4 border-l-amber-500">
-        <h3 className="text-base font-bold text-white mb-1">รีเซ็ตรหัสผ่าน</h3>
-        <p className="text-slate-400 text-sm mb-4">หากนักเรียนลืมรหัสผ่าน กดเพื่อตั้งรหัสกลับเป็น <strong className="text-amber-300">รหัสนักเรียน</strong> ({studentId}) ระบบจะบังคับให้เปลี่ยนรหัสใหม่เมื่อล็อกอินครั้งถัดไป</p>
-        {!confirmingReset ? (
-          <button
-            type="button"
-            onClick={() => setConfirmingReset(true)}
-            className="w-full sm:w-auto bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold py-2.5 px-6 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            รีเซ็ตรหัสผ่านนักเรียน
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={doResetPassword}
-              disabled={pending}
-              className="flex-1 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl text-sm"
-            >
-              ยืนยันรีเซ็ต
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingReset(false)}
-              className="flex-1 bg-slate-900 border border-slate-800 text-slate-300 font-semibold py-2.5 rounded-xl text-sm"
-            >
-              ยกเลิก
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

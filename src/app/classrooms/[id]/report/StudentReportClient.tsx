@@ -185,7 +185,14 @@ export default function StudentReportClient({
     [hasSessionData, rows],
   );
 
-  const frequentRows = useMemo(() => rows.filter((row) => row.band === "frequent-absent").sort(compareRateDesc), [rows]);
+  // "ขาดบ่อย" section: sort most-absent -> least-absent (tie-break: lower attendance rate first).
+  const frequentRows = useMemo(
+    () =>
+      rows
+        .filter((row) => row.band === "frequent-absent")
+        .sort((a, b) => (b.absent ?? 0) - (a.absent ?? 0) || compareRateDesc(b, a)),
+    [rows],
+  );
   const regularRows = useMemo(() => rows.filter((row) => row.band === "regular").sort(compareRateDesc), [rows]);
   const normalRows = useMemo(() => rows.filter((row) => row.band === "normal").sort(compareRateDesc), [rows]);
   const bandSections: { band: StudentReportBand; title: string; rows: StudentReportRow[] }[] = [
@@ -215,7 +222,8 @@ export default function StudentReportClient({
   return (
     <TeacherShell active="report" fullName={fullName} roomName={roomName} classroomId={classroomId}>
      <LightboxProvider>
-      <main className="max-w-full! mx-auto safe-px py-8 space-y-6">
+      <main className="max-w-full safe-px py-8">
+        <div className="mx-auto w-full max-w-3xl space-y-6">
         <div>
           <h1 className="text-3xl font-extrabold text-white">รายงานผลการเข้าแถว</h1>
           <p className="text-slate-400 text-sm mt-1">สรุปข้อมูลรายคนของนักเรียนในห้องที่ปรึกษา ม.{roomName}</p>
@@ -347,6 +355,7 @@ export default function StudentReportClient({
             </section>
           </>
         )}
+        </div>
       </main>
 
       {selected && (

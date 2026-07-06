@@ -6,6 +6,7 @@ import ActivityBadge from "@/app/_components/ActivityBadge";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
 import { bulkImportStudents, createStudent, deactivateStudent, renumberStudents, updateStudent } from "@/lib/actions/students";
 import { setStudentActivities } from "@/lib/actions/activities";
+import { resetStudentPassword } from "@/lib/actions/attendance";
 
 type StudentActivity = { name: string; color: string };
 type ActivityOption = { id: number; name: string; color: string; isActive: number };
@@ -46,12 +47,25 @@ export default function ManageStudentsClient({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(EMPTY_FORM);
   const [activityEditor, setActivityEditor] = useState<ActivityEditorState>(null);
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ studentId: string; fullName: string } | null>(null);
+  const [resetTarget, setResetTarget] = useState<{ studentId: string; fullName: string } | null>(null);
   const [confirmingRenumber, setConfirmingRenumber] = useState(false);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();
 
   const activityById = useMemo(() => new Map(activities.map((activity) => [activity.id, activity])), [activities]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((student) =>
+      student.fullName.toLowerCase().includes(q) ||
+      (student.nickname ? student.nickname.toLowerCase().includes(q) : false) ||
+      student.studentId.toLowerCase().includes(q) ||
+      (student.numberInClass !== null && String(student.numberInClass).includes(q)),
+    );
+  }, [list, query]);
 
   function startEdit(student: Student) {
     setEditingId(student.studentId);
@@ -61,7 +75,8 @@ export default function ManageStudentsClient({
       nickname: student.nickname || "",
       numberInClass: student.numberInClass === null ? "" : String(student.numberInClass),
     });
-    setConfirmingDeleteId(null);
+    setDeleteTarget(null);
+    setResetTarget(null);
   }
 
   function openActivityEditor(student: Student) {
@@ -181,7 +196,16 @@ export default function ManageStudentsClient({
       if (result.ok) {
         setList((current) => current.filter((student) => student.studentId !== studentId));
       }
-      setConfirmingDeleteId(null);
+      setDeleteTarget(null);
+      setMessage({ type: result.ok ? "success" : "error", text: result.message });
+    });
+  }
+
+  function doResetPassword(studentId: string) {
+    setMessage(null);
+    startTransition(async () => {
+      const result = await resetStudentPassword(studentId);
+      setResetTarget(null);
       setMessage({ type: result.ok ? "success" : "error", text: result.message });
     });
   }
@@ -330,7 +354,7 @@ export default function ManageStudentsClient({
               disabled={pending || list.length === 0}
               onClick={() => {
                 setConfirmingRenumber(true);
-                setConfirmingDeleteId(null);
+                setDeleteTarget(null);
               }}
               className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-lg"
             >
@@ -338,11 +362,39 @@ export default function ManageStudentsClient({
             </button>
           )}
         </div>
+        {list.length > 0 && (
+          <div className="px-5 py-3 border-b border-slate-900">
+            <div className="relative">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="🔍 ค้นหาชื่อ / ชื่อเล่น / รหัส / เลขที่"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label="ล้างคำค้นหา"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm flex items-center justify-center"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {query.trim() && (
+              <p className="text-xs text-slate-500 mt-2">พบ {visible.length} จาก {list.length} คน</p>
+            )}
+          </div>
+        )}
         {list.length === 0 ? (
           <div className="px-5 py-10 text-center text-slate-500 text-sm">ยังไม่มีนักเรียนในห้องนี้</div>
+        ) : visible.length === 0 ? (
+          <div className="px-5 py-10 text-center text-slate-500 text-sm">ไม่พบนักเรียนที่ตรงกับคำค้นหา</div>
         ) : (
           <ul className="divide-y divide-slate-900/60 overflow-y-auto max-h-[60vh]">
-            {list.map((student) => {
+            {visible.map((student) => {
               if (editingId === student.studentId) {
                 return (
                   <li key={student.studentId} className="px-5 py-4">
@@ -400,25 +452,6 @@ export default function ManageStudentsClient({
                         </div>
                       )}
                     </div>
-                    {confirmingDeleteId === student.studentId ? (
-                      <div className="flex gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          disabled={pending}
-                          onClick={() => doDelete(student.studentId)}
-                          className="bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg"
-                        >
-                          ยืนยันลบ
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmingDeleteId(null)}
-                          className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
-                        >
-                          ยกเลิก
-                        </button>
-                      </div>
-                    ) : null}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     <button
@@ -437,7 +470,20 @@ export default function ManageStudentsClient({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setConfirmingDeleteId(student.studentId)}
+                      onClick={() => {
+                        setResetTarget({ studentId: student.studentId, fullName: student.fullName });
+                        setDeleteTarget(null);
+                      }}
+                      className="bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 text-amber-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                    >
+                      รีเซ็ตรหัส
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteTarget({ studentId: student.studentId, fullName: student.fullName });
+                        setResetTarget(null);
+                      }}
                       className="bg-slate-900 border border-slate-800 hover:border-rose-500/40 text-rose-400 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
                     >
                       ลบ
@@ -492,6 +538,69 @@ export default function ManageStudentsClient({
                 {pending ? "กำลังบันทึก..." : "บันทึกกิจกรรม"}
               </button>
               <button onClick={() => setActivityEditor(null)} className="rounded-2xl bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 transition-colors">
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]" onClick={() => setDeleteTarget(null)} role="dialog" aria-modal="true">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-4 w-14 h-14 rounded-full border flex items-center justify-center text-2xl font-bold bg-rose-500/15 border-rose-500/30 text-rose-300">
+              ✕
+            </div>
+            <h4 className="text-white font-bold text-lg mb-1.5">ลบนักเรียน</h4>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              ต้องการลบ <strong className="text-white">{deleteTarget.fullName}</strong> (รหัส {deleteTarget.studentId}) ออกจากห้องเรียนใช่หรือไม่
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => doDelete(deleteTarget.studentId)}
+                className="flex-1 rounded-2xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-semibold py-3 transition-colors"
+              >
+                {pending ? "กำลังลบ..." : "ยืนยันลบ"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="rounded-2xl bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-5 transition-colors"
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resetTarget && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]" onClick={() => setResetTarget(null)} role="dialog" aria-modal="true">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-4 w-14 h-14 rounded-full border flex items-center justify-center text-2xl font-bold bg-amber-500/15 border-amber-500/30 text-amber-300">
+              !
+            </div>
+            <h4 className="text-white font-bold text-lg mb-1.5">รีเซ็ตรหัสผ่าน</h4>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              ตั้งรหัสของ <strong className="text-white">{resetTarget.fullName}</strong> กลับเป็น <strong className="text-amber-300">รหัสนักเรียน</strong> ({resetTarget.studentId})<br />
+              ระบบจะบังคับให้เปลี่ยนรหัสใหม่เมื่อล็อกอินครั้งถัดไป
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => doResetPassword(resetTarget.studentId)}
+                className="flex-1 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold py-3 transition-colors"
+              >
+                {pending ? "กำลังรีเซ็ต..." : "ยืนยันรีเซ็ต"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setResetTarget(null)}
+                className="rounded-2xl bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-5 transition-colors"
+              >
                 ยกเลิก
               </button>
             </div>

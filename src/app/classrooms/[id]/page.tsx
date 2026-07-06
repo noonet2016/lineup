@@ -18,6 +18,7 @@ const isValidFilter = (value: string | undefined): value is DashboardFilter =>
   value === "flagged" ||
   value === "excused" ||
   value === "edited" ||
+  value === "scanfail" ||
   value === "pending_review";
 
 export default async function ClassroomDashboardPage({

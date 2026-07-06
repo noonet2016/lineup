@@ -44,24 +44,26 @@ export default async function ManageStudentsPage({ params }: { params: Promise<{
 
   return (
     <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId}>
-      <main className="max-w-full mx-auto safe-px py-8 space-y-6">
-        <div>
-          <a href={`/classrooms/${classroomId}`} className="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1">
-            &larr; กลับหน้าแดชบอร์ดสรุปผล
-          </a>
-          <h1 className="text-2xl font-extrabold text-white mt-2">จัดการรายชื่อนักเรียน ห้อง ม.{classroom.roomName}</h1>
+      <main className="max-w-full safe-px py-8">
+        <div className="mx-auto w-full max-w-3xl space-y-6">
+          <div>
+            <a href={`/classrooms/${classroomId}`} className="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1">
+              &larr; กลับหน้าแดชบอร์ดสรุปผล
+            </a>
+            <h1 className="text-2xl font-extrabold text-white mt-2">จัดการรายชื่อนักเรียน ห้อง ม.{classroom.roomName}</h1>
+          </div>
+          <ManageStudentsClient
+            classroomId={classroomId}
+            students={students.map((student) => ({
+              studentId: student.studentId,
+              fullName: student.fullName,
+              nickname: student.nickname,
+              numberInClass: student.numberInClass,
+              activities: student.activities.map((item) => ({ name: item.activity.name, color: item.activity.color })),
+            }))}
+            activities={activities}
+          />
         </div>
-        <ManageStudentsClient
-          classroomId={classroomId}
-          students={students.map((student) => ({
-            studentId: student.studentId,
-            fullName: student.fullName,
-            nickname: student.nickname,
-            numberInClass: student.numberInClass,
-            activities: student.activities.map((item) => ({ name: item.activity.name, color: item.activity.color })),
-          }))}
-          activities={activities}
-        />
       </main>
     </TeacherShell>
   );

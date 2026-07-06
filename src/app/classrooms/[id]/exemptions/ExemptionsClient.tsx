@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
@@ -41,6 +41,19 @@ export default function ExemptionsClient({
   const [pending, startTransition] = useTransition();
   const [banner, setBanner] = useState<{ text: string; kind: "success" | "error" } | null>(null);
   const [exemptWeekday, setExemptWeekday] = useState("today");
+  const [query, setQuery] = useState("");
+
+  const visibleExemptions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return exemptions;
+    return exemptions.filter((e) =>
+      e.studentName.toLowerCase().includes(q) ||
+      (e.nickname ? e.nickname.toLowerCase().includes(q) : false) ||
+      e.studentId.toLowerCase().includes(q) ||
+      (e.numberInClass !== null && String(e.numberInClass).includes(q)) ||
+      e.reason.toLowerCase().includes(q),
+    );
+  }, [exemptions, query]);
 
   function run(action: () => Promise<{ ok: boolean; message: string }>) {
     setBanner(null);
@@ -111,11 +124,34 @@ export default function ExemptionsClient({
 
         <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">
           <h2 className="text-lg font-bold text-white mb-4">รายการยกเว้น ({exemptions.length})</h2>
+          {exemptions.length > 0 && (
+            <div className="relative mb-4">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="🔍 ค้นหาชื่อ / ชื่อเล่น / รหัส / เลขที่ / เหตุผล"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label="ล้างคำค้นหา"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm flex items-center justify-center"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
           {exemptions.length === 0 ? (
             <div className="text-center text-slate-500 text-sm py-6">ยังไม่มีนักเรียนที่ยกเว้น</div>
+          ) : visibleExemptions.length === 0 ? (
+            <div className="text-center text-slate-500 text-sm py-6">ไม่พบรายการที่ตรงกับคำค้นหา</div>
           ) : (
             <ul className="flex-grow divide-y divide-slate-900/60 border border-slate-900 rounded-xl overflow-y-auto max-h-[60vh]">
-              {exemptions.map((e) => (
+              {visibleExemptions.map((e) => (
                 <li key={e.id} className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-950/30">
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-white truncate">

@@ -13,13 +13,11 @@ import {
   setActiveLocation,
   updateClassroomTimes,
 } from "@/lib/actions/settings";
-import { importCentralLocation } from "@/lib/actions/centralLocations";
 import { changeTeacherPassword } from "@/lib/actions/teacherAccount";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
 type ClassroomTimes = { check_start: string; late_after: string; check_end: string; scanfailAlertRadiusM: string };
 type Holiday = { dateStr: string; label: string; name: string };
 type Location = { id: number; name: string; lat: number; lng: number; radius: number; isActive: boolean };
-type CentralLocation = { id: number; name: string; lat: number; lng: number; radius: number };
 
 export default function SettingsClient({
   classroomId,
@@ -30,7 +28,6 @@ export default function SettingsClient({
   holiday,
   holidays,
   locations,
-  centralLocations,
   isOwner,
 }: {
   classroomId: number;
@@ -41,7 +38,6 @@ export default function SettingsClient({
   holiday: string | null;
   holidays: Holiday[];
   locations: Location[];
-  centralLocations: CentralLocation[];
   isOwner: boolean;
 }) {
   const router = useRouter();
@@ -275,31 +271,6 @@ export default function SettingsClient({
         >
           + เพิ่มจุดใหม่
         </button>
-        <div className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/30 p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-            <div>
-              <h3 className="text-sm font-bold text-white">ดึงจากส่วนกลาง</h3>
-              <p className="text-xs text-slate-500 mt-0.5">คัดลอกเข้าห้องเป็นจุดใหม่ แล้วค่อยเลือกใช้งานได้</p>
-            </div>
-          </div>
-          {centralLocations.length === 0 ? (
-            <p className="text-sm text-slate-500">ยังไม่มีจุดส่วนกลางที่เปิดใช้งาน</p>
-          ) : (
-            <ul className="space-y-2">
-              {centralLocations.map((loc) => (
-                <li key={loc.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-slate-900/70 border border-slate-800 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white break-words">{loc.name}</p>
-                    <p className="text-[11px] text-slate-500 font-mono">{loc.lat}, {loc.lng} · รัศมี {loc.radius} ม.</p>
-                  </div>
-                  <button disabled={pending} onClick={() => run(() => importCentralLocation(loc.id))} className="shrink-0 text-xs font-bold text-cyan-200 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 px-3 py-1.5 rounded-lg">
-                    ดึงจากส่วนกลาง
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
         {locations.length === 0 ? (
           <div className="text-center text-slate-500 text-sm py-4 mb-4">ยังไม่มีจุดเข้าแถว กดปุ่ม “+ เพิ่มจุดใหม่” ด้านบน</div>
         ) : (

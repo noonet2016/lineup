@@ -17,6 +17,16 @@ export async function loginStudent(_prev: LoginResult | null, formData: FormData
   const valid = await bcrypt.compare(password, student.passwordHash);
   if (!valid) return { ok: false, error: "รหัสผ่านไม่ถูกต้อง" };
 
+  // Anti-proxy-checkin gate: once a student has bound their LINE account, the normal
+  // password form must NOT mint a student session (that path bypasses LINE identity, so a
+  // friend who knows the password could check in for them). Bound students enter only via
+  // LINE LIFF. Checked AFTER the password verification so this never leaks bind-status to
+  // someone who doesn't already know the password. Teacher "unbind" (lineStatus.ts) clears
+  // lineUserId and re-opens the form automatically. Unbound students keep using the form.
+  if (student.lineUserId) {
+    return { ok: false, error: "บัญชีนี้ผูกกับ LINE แล้ว กรุณาเข้าสู่ระบบผ่าน LINE (หากมีปัญหาให้แจ้งครูยกเลิกการผูก)" };
+  }
+
   await createSession("student", student.studentId);
   return { ok: true };
 }

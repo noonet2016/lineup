@@ -8,10 +8,14 @@ export const dynamic = "force-dynamic";
 
 export default async function EditStatusPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; studentId: string }>;
+  searchParams: Promise<{ filter?: string }>;
 }) {
   const { id, studentId } = await params;
+  const { filter: returnFilter } = await searchParams;
+  const backHref = returnFilter ? `/classrooms/${id}?filter=${encodeURIComponent(returnFilter)}` : `/classrooms/${id}`;
   const classroomId = Number(id);
   if (!Number.isInteger(classroomId)) notFound();
 
@@ -36,7 +40,7 @@ export default async function EditStatusPage({
     <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId}>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div>
-          <a href={`/classrooms/${classroomId}`} className="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1">
+          <a href={backHref} className="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1">
             &larr; กลับหน้าแดชบอร์ดสรุปผล
           </a>
           <h1 className="text-3xl font-extrabold text-white mt-3">แก้ไขสถานะการเข้าแถวรายคน</h1>
@@ -44,7 +48,7 @@ export default async function EditStatusPage({
             นักเรียน: {student.fullName} (เลขที่ {student.numberInClass ?? "-"})
           </p>
         </div>
-        <EditStatusForm studentId={student.studentId} classroomId={classroomId} currentStatus={record?.status ?? "absent"} />
+        <EditStatusForm studentId={student.studentId} classroomId={classroomId} currentStatus={record?.status ?? "absent"} returnFilter={returnFilter} />
       </main>
     </TeacherShell>
   );

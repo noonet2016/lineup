@@ -34,20 +34,23 @@ export default function LineStatusClient({
   const [pending, startTransition] = useTransition();
   const [banner, setBanner] = useState<{ text: string; kind: "success" | "error" } | null>(null);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "linked" | "unlinked">("all");
   const [editingLineChatId, setEditingLineChatId] = useState<string | null>(null);
   const [lineChatValue, setLineChatValue] = useState("");
 
   const q = query.trim().toLowerCase();
-  const visible = q
-    ? students.filter(
-        (s) =>
-          s.fullName.toLowerCase().includes(q) ||
-          (s.nickname ?? "").toLowerCase().includes(q) ||
-          (s.lineChatId ?? "").toLowerCase().includes(q) ||
-          s.studentId.toLowerCase().includes(q) ||
-          String(s.numberInClass ?? "").includes(q),
-      )
-    : students;
+  const visible = students.filter((s) => {
+    if (statusFilter === "linked" && !s.linked) return false;
+    if (statusFilter === "unlinked" && s.linked) return false;
+    if (!q) return true;
+    return (
+      s.fullName.toLowerCase().includes(q) ||
+      (s.nickname ?? "").toLowerCase().includes(q) ||
+      (s.lineChatId ?? "").toLowerCase().includes(q) ||
+      s.studentId.toLowerCase().includes(q) ||
+      String(s.numberInClass ?? "").includes(q)
+    );
+  });
 
   function startLineChatEdit(student: StudentRow) {
     setBanner(null);
@@ -79,7 +82,8 @@ export default function LineStatusClient({
   return (
     <TeacherShell active="devices" fullName={fullName} roomName={roomName} classroomId={classroomId}>
       <LightboxProvider>
-      <main className="max-w-full mx-auto safe-px py-8 space-y-6">
+      <main className="max-w-full safe-px py-8">
+        <div className="mx-auto w-full max-w-3xl space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-white">🔗 สถานะผูก LINE</h1>
           <p className="text-slate-400 text-sm mt-1">ห้องที่ปรึกษา ม.{roomName}</p>
@@ -95,6 +99,25 @@ export default function LineStatusClient({
           </div>
           <p className="text-slate-400 text-sm mb-4">นักเรียนต้องผูกบัญชี LINE ก่อนถึงจะเข้าสู่ระบบและเช็คอินได้</p>
 
+          <div className="flex gap-2 mb-3">
+            {([
+              { key: "all", label: `ทั้งหมด (${students.length})`, on: "bg-indigo-500 text-white border-indigo-500" },
+              { key: "linked", label: `ผูกแล้ว (${linkedCount})`, on: "bg-emerald-500 text-white border-emerald-500" },
+              { key: "unlinked", label: `ยังไม่ผูก (${students.length - linkedCount})`, on: "bg-amber-500 text-white border-amber-500" },
+            ] as const).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setStatusFilter(tab.key)}
+                className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold border transition-all active:scale-[0.98] ${
+                  statusFilter === tab.key ? tab.on : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           <input
             type="text"
             value={query}
@@ -106,7 +129,9 @@ export default function LineStatusClient({
           {students.length === 0 ? (
             <div className="text-center text-slate-500 text-sm py-6">ยังไม่มีนักเรียนในห้องนี้</div>
           ) : visible.length === 0 ? (
-            <div className="text-center text-slate-500 text-sm py-6">ไม่พบนักเรียนที่ตรงกับ &ldquo;{query}&rdquo;</div>
+            <div className="text-center text-slate-500 text-sm py-6">
+              {q ? <>ไม่พบนักเรียนที่ตรงกับ &ldquo;{query}&rdquo;</> : "ไม่มีนักเรียนในสถานะที่เลือก"}
+            </div>
           ) : (
             <ul className="flex flex-col gap-3 overflow-y-auto overflow-x-hidden max-h-[70vh] pr-1">
               {visible.map((s) => (
@@ -207,6 +232,7 @@ export default function LineStatusClient({
             </ul>
           )}
         </section>
+        </div>
       </main>
       </LightboxProvider>
     </TeacherShell>

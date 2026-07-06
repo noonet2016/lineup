@@ -46,10 +46,6 @@ export default async function AdminPage() {
       members: { select: { studentId: true } },
     },
   });
-  const centralLocations = await prisma.centralLocation.findMany({
-    orderBy: [{ id: "asc" }],
-    select: { id: true, name: true, latitude: true, longitude: true, radiusM: true, isActive: true },
-  });
   const students = await prisma.student.findMany({
     where: { status: 1 },
     orderBy: [{ classroomId: "asc" }, { numberInClass: "asc" }, { studentId: "asc" }],
@@ -87,14 +83,6 @@ export default async function AdminPage() {
           isActive: activity.isActive,
           memberIds: activity.members.map((member) => member.studentId),
           memberCount: activity._count.members,
-        }))}
-        centralLocations={centralLocations.map((location) => ({
-          id: location.id,
-          name: location.name,
-          lat: Number(location.latitude),
-          lng: Number(location.longitude),
-          radius: location.radiusM,
-          isActive: location.isActive === 1,
         }))}
         students={students.map((student) => ({
           studentId: student.studentId,

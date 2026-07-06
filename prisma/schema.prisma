@@ -28,18 +28,6 @@ model Classroom {
   @@map("classrooms")
 }
 
-model CentralLocation {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100)
-  latitude  Decimal  @db.Decimal(10, 7)
-  longitude Decimal  @db.Decimal(10, 7)
-  radiusM   Int      @default(400) @map("radius_m")
-  isActive  Int      @default(1) @map("is_active") @db.TinyInt
-  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
-
-  @@map("central_locations")
-}
-
 model Teacher {
   id                 Int                @id @default(autoincrement())
   username           String             @unique @db.VarChar(100)

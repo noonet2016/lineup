@@ -7,7 +7,6 @@ import ActivityBadge from "@/app/_components/ActivityBadge";
 import { PopupAlertModal, usePopupAlert } from "@/app/_components/PopupAlert";
 import { assignActivityMembers, createActivity, deleteActivity, updateActivity } from "@/lib/actions/activities";
 import { createTeacherWithClassroom, deleteTeacher, resetTeacherPassword, updateTeacher } from "@/lib/actions/admin";
-import { createCentralLocation, deleteCentralLocation, updateCentralLocation } from "@/lib/actions/centralLocations";
 
 type TeacherRow = {
   id: number;
@@ -38,11 +37,8 @@ type StudentRow = {
 };
 
 type ActivityForm = { name: string; color: string; isActive: boolean };
-type CentralLocationRow = { id: number; name: string; lat: number; lng: number; radius: number; isActive: boolean };
-type CentralLocationForm = { name: string; lat: string; lng: string; radius: string; isActive: boolean };
 
 const DEFAULT_ACTIVITY_FORM: ActivityForm = { name: "", color: "slate", isActive: true };
-const DEFAULT_CENTRAL_LOCATION_FORM: CentralLocationForm = { name: "", lat: "", lng: "", radius: "400", isActive: true };
 const COLOR_OPTIONS = ["fuchsia", "amber", "lime", "sky", "violet", "rose", "slate"] as const;
 
 function studentLabel(student: StudentRow) {
@@ -54,13 +50,11 @@ export default function AdminClient({
   ownerId,
   teachers,
   activities: initialActivities,
-  centralLocations: initialCentralLocations,
   students,
 }: {
   ownerId: number;
   teachers: TeacherRow[];
   activities: ActivityRow[];
-  centralLocations: CentralLocationRow[];
   students: StudentRow[];
 }) {
   const router = useRouter();
@@ -72,15 +66,11 @@ export default function AdminClient({
   const [showResetPw, setShowResetPw] = useState(false);
   const [editFor, setEditFor] = useState<TeacherRow | null>(null);
   const [deleteFor, setDeleteFor] = useState<TeacherRow | null>(null);
-  const [tab, setTab] = useState<"teachers" | "activities" | "locations">("teachers");
+  const [tab, setTab] = useState<"teachers" | "activities">("teachers");
   const [activities, setActivities] = useState<ActivityRow[]>(initialActivities);
-  const [centralLocations, setCentralLocations] = useState<CentralLocationRow[]>(initialCentralLocations);
   const [newActivity, setNewActivity] = useState<ActivityForm>(DEFAULT_ACTIVITY_FORM);
-  const [newCentralLocation, setNewCentralLocation] = useState<CentralLocationForm>(DEFAULT_CENTRAL_LOCATION_FORM);
   const [editActivity, setEditActivity] = useState<{ id: number; form: ActivityForm } | null>(null);
-  const [editCentralLocation, setEditCentralLocation] = useState<{ id: number; form: CentralLocationForm } | null>(null);
   const [deleteActivityId, setDeleteActivityId] = useState<number | null>(null);
-  const [deleteCentralLocationId, setDeleteCentralLocationId] = useState<number | null>(null);
   const [memberEditor, setMemberEditor] = useState<{ id: number; name: string; selectedIds: string[]; query: string } | null>(null);
 
   const activityById = useMemo(() => new Map(activities.map((activity) => [activity.id, activity])), [activities]);
@@ -88,10 +78,6 @@ export default function AdminClient({
   useEffect(() => {
     setActivities(initialActivities);
   }, [initialActivities]);
-
-  useEffect(() => {
-    setCentralLocations(initialCentralLocations);
-  }, [initialCentralLocations]);
 
   function submitEdit(formData: FormData) {
     if (!editFor) return;
@@ -150,59 +136,6 @@ export default function AdminClient({
       if (result.ok) {
         setNewActivity(DEFAULT_ACTIVITY_FORM);
         router.refresh();
-      }
-    });
-  }
-
-  function centralLocationFormData(form: CentralLocationForm) {
-    const formData = new FormData();
-    formData.set("loc_name", form.name);
-    formData.set("loc_lat", form.lat);
-    formData.set("loc_lng", form.lng);
-    formData.set("loc_radius", form.radius);
-    if (form.isActive) formData.set("loc_active", "1");
-    return formData;
-  }
-
-  function createNewCentralLocation(e: FormEvent) {
-    e.preventDefault();
-    startTransition(async () => {
-      const result = await createCentralLocation(centralLocationFormData(newCentralLocation));
-      showResult(result);
-      if (result.ok) {
-        setNewCentralLocation(DEFAULT_CENTRAL_LOCATION_FORM);
-        router.refresh();
-      }
-    });
-  }
-
-  function saveCentralLocationEdit() {
-    if (!editCentralLocation) return;
-    const target = editCentralLocation;
-    startTransition(async () => {
-      const result = await updateCentralLocation(target.id, centralLocationFormData(target.form));
-      showResult(result);
-      if (result.ok) {
-        setEditCentralLocation(null);
-        router.refresh();
-      }
-    });
-  }
-
-  function confirmDeleteCentralLocation() {
-    if (deleteCentralLocationId === null) return;
-    const target = centralLocations.find((location) => location.id === deleteCentralLocationId);
-    if (!target) {
-      setDeleteCentralLocationId(null);
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await deleteCentralLocation(target.id);
-      showResult(result);
-      if (result.ok) {
-        setCentralLocations((current) => current.filter((location) => location.id !== target.id));
-        setDeleteCentralLocationId(null);
       }
     });
   }
@@ -307,13 +240,6 @@ export default function AdminClient({
           className={`flex-1 text-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${tab === "activities" ? "bg-indigo-500 text-white shadow-md" : "text-slate-400 hover:text-white hover:bg-slate-900/70"}`}
         >
           🎗️ กิจกรรมนักเรียน
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("locations")}
-          className={`flex-1 text-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${tab === "locations" ? "bg-indigo-500 text-white shadow-md" : "text-slate-400 hover:text-white hover:bg-slate-900/70"}`}
-        >
-          📍 จุดเข้าแถวส่วนกลาง
         </button>
       </div>
 
@@ -489,81 +415,6 @@ export default function AdminClient({
       </section>
       )}
 
-      {tab === "locations" && (
-      <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
-          <div>
-            <h2 className="text-lg font-bold text-white">จุดเข้าแถวส่วนกลาง ({centralLocations.length})</h2>
-            <p className="text-xs text-slate-400 mt-1">ครูที่ปรึกษาจะดึงรายการที่เปิดใช้งานไปคัดลอกเข้าห้องได้</p>
-          </div>
-        </div>
-
-        <form onSubmit={createNewCentralLocation} className="grid gap-3 sm:grid-cols-[1fr_140px_140px_110px_110px] items-end mb-5">
-          <label className="block">
-            <span className="block text-xs font-semibold text-slate-400 mb-2">ชื่อจุด</span>
-            <input value={newCentralLocation.name} onChange={(e) => setNewCentralLocation((current) => ({ ...current, name: e.target.value }))} placeholder="เช่น โดมกลาง" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-          </label>
-          <label className="block">
-            <span className="block text-xs font-semibold text-slate-400 mb-2">ละติจูด</span>
-            <input value={newCentralLocation.lat} onChange={(e) => setNewCentralLocation((current) => ({ ...current, lat: e.target.value }))} placeholder="17.1968614" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-          </label>
-          <label className="block">
-            <span className="block text-xs font-semibold text-slate-400 mb-2">ลองจิจูด</span>
-            <input value={newCentralLocation.lng} onChange={(e) => setNewCentralLocation((current) => ({ ...current, lng: e.target.value }))} placeholder="104.0849387" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-          </label>
-          <label className="block">
-            <span className="block text-xs font-semibold text-slate-400 mb-2">รัศมี</span>
-            <input type="number" min={1} value={newCentralLocation.radius} onChange={(e) => setNewCentralLocation((current) => ({ ...current, radius: e.target.value }))} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-          </label>
-          <button type="submit" disabled={pending || !newCentralLocation.name.trim()} className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl text-sm">
-            + เพิ่มจุด
-          </button>
-          <label className="sm:col-span-5 flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" checked={newCentralLocation.isActive} onChange={(e) => setNewCentralLocation((current) => ({ ...current, isActive: e.target.checked }))} className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-indigo-500 focus:ring-indigo-500" />
-            เปิดให้ครูดึงไปใช้
-          </label>
-        </form>
-
-        <ul className="space-y-3">
-          {centralLocations.length === 0 && <li className="px-4 py-6 text-center text-slate-500 text-sm rounded-2xl border border-slate-800 bg-slate-950/40">ยังไม่มีจุดเข้าแถวส่วนกลาง</li>}
-          {centralLocations.map((location) => (
-            <li key={location.id} className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-              {editCentralLocation?.id === location.id ? (
-                <div className="grid gap-3 sm:grid-cols-[1fr_140px_140px_110px] items-end">
-                  <input value={editCentralLocation.form.name} onChange={(e) => setEditCentralLocation((current) => (current ? { ...current, form: { ...current.form, name: e.target.value } } : current))} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                  <input value={editCentralLocation.form.lat} onChange={(e) => setEditCentralLocation((current) => (current ? { ...current, form: { ...current.form, lat: e.target.value } } : current))} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                  <input value={editCentralLocation.form.lng} onChange={(e) => setEditCentralLocation((current) => (current ? { ...current, form: { ...current.form, lng: e.target.value } } : current))} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                  <input type="number" min={1} value={editCentralLocation.form.radius} onChange={(e) => setEditCentralLocation((current) => (current ? { ...current, form: { ...current.form, radius: e.target.value } } : current))} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                  <label className="sm:col-span-4 flex items-center gap-2 text-sm text-slate-300">
-                    <input type="checkbox" checked={editCentralLocation.form.isActive} onChange={(e) => setEditCentralLocation((current) => (current ? { ...current, form: { ...current.form, isActive: e.target.checked } } : current))} className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-indigo-500 focus:ring-indigo-500" />
-                    เปิดให้ครูดึงไปใช้
-                  </label>
-                  <div className="sm:col-span-4 flex gap-2">
-                    <button type="button" onClick={saveCentralLocationEdit} disabled={pending} className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl text-sm">บันทึก</button>
-                    <button type="button" onClick={() => setEditCentralLocation(null)} className="bg-slate-900 border border-slate-800 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm">ยกเลิก</button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-white break-words">{location.name}</span>
-                      {!location.isActive && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-400">ไม่ใช้งาน</span>}
-                    </div>
-                    <p className="text-xs text-slate-500 font-mono mt-1">{location.lat}, {location.lng} · รัศมี {location.radius} ม.</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 shrink-0">
-                    <button type="button" onClick={() => setEditCentralLocation({ id: location.id, form: { name: location.name, lat: String(location.lat), lng: String(location.lng), radius: String(location.radius), isActive: location.isActive } })} className="text-xs font-semibold text-indigo-300 hover:text-indigo-200 px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 transition-all">แก้ไข</button>
-                    <button type="button" onClick={() => setDeleteCentralLocationId(location.id)} className="text-xs font-semibold text-rose-400 hover:text-rose-300 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-all">ลบ</button>
-                  </div>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
-      )}
-
       {tab === "teachers" && (
       <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
         <h2 className="text-lg font-bold text-white mb-4">ครูทั้งหมด ({teachers.length})</h2>
@@ -705,27 +556,6 @@ export default function AdminClient({
                 {pending ? "กำลังลบ..." : "ลบถาวร"}
               </button>
               <button onClick={() => setDeleteFor(null)} className="rounded-2xl bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 transition-colors">
-                ยกเลิก
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {deleteCentralLocationId !== null && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]" onClick={() => setDeleteCentralLocationId(null)}>
-          <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto mb-4 w-14 h-14 rounded-full border bg-rose-500/15 border-rose-500/30 text-rose-300 flex items-center justify-center text-2xl">🗑️</div>
-            <h4 className="text-white font-bold text-lg mb-1.5">ลบจุดเข้าแถวส่วนกลาง?</h4>
-            <p className="text-slate-300 text-sm">
-              {centralLocations.find((location) => location.id === deleteCentralLocationId)?.name ?? "จุดที่เลือก"}
-            </p>
-            <p className="mt-3 text-xs text-slate-400">จุดที่ครูเคยดึงเข้าห้องแล้วจะไม่ถูกลบ เพราะเป็นสำเนาแยกกัน</p>
-            <div className="flex gap-2 mt-5">
-              <button onClick={confirmDeleteCentralLocation} disabled={pending} className="flex-grow rounded-2xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-semibold py-2.5 transition-colors">
-                {pending ? "กำลังลบ..." : "ลบ"}
-              </button>
-              <button onClick={() => setDeleteCentralLocationId(null)} className="rounded-2xl bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 transition-colors">
                 ยกเลิก
               </button>
             </div>

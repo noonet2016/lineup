@@ -16,6 +16,7 @@ export type DashboardFilter =
   | "flagged"
   | "excused"
   | "edited"
+  | "scanfail"
   | "pending_review";
 
 export type DashboardRow = {
@@ -44,6 +45,7 @@ export type DashboardStats = {
   review: number;
   edited: number;
   excused: number;
+  scanfail: number;
 };
 
 const WEEKDAY_LABEL: Record<number, string> = {
@@ -180,6 +182,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
     review: 0,
     edited: 0,
     excused: 0,
+    scanfail: 0,
   };
 
   const rows: DashboardRow[] = [];
@@ -187,6 +190,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
 
   for (const student of students) {
     const record = sessionId ? student.attendanceRecords[0] : undefined;
+    const hasScanFail = Boolean(record && scanFailMap[student.studentId]);
     let displayStatus: DashboardStatus;
     let exemptReason: string | null = null;
 
@@ -204,6 +208,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
     }
     if (displayStatus === "pending" || displayStatus === "flagged") stats.review++;
     if (record?.editReason) stats.edited++;
+    if (hasScanFail) stats.scanfail++;
     allCount++;
 
     let show = true;
@@ -211,6 +216,8 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
       show = displayStatus === "pending" || displayStatus === "flagged";
     } else if (filter === "edited") {
       show = Boolean(record?.editReason);
+    } else if (filter === "scanfail") {
+      show = hasScanFail;
     } else if (filter !== "all") {
       show = displayStatus === filter;
     }
@@ -230,7 +237,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
         editReason: record?.editReason ?? null,
         exemptReason,
         exemptLabel: exemptLabels.get(student.studentId) ?? "",
-        scanFailBadge: record && scanFailMap[student.studentId] ? `⚠️ สแกนหน้าไม่ติด · แจ้ง ${scanFailMap[student.studentId].reportedAt}` : null,
+        scanFailBadge: hasScanFail ? `⚠️ สแกนหน้าไม่ติด · แจ้ง ${scanFailMap[student.studentId].reportedAt}` : null,
       });
     }
   }

@@ -118,6 +118,12 @@ export default function DashboardLive({
             {stats.review}
           </span>
         </FilterTab>
+        <FilterTab classroomId={classroomId} value="scanfail" active={filter === "scanfail"}>
+          ⚠️ สแกนหน้าไม่ติด
+          <span className={`bg-amber-500/10 border border-amber-500/35 text-amber-400 text-[10px] px-2 py-0.5 rounded-full font-bold ${stats.scanfail > 0 ? "" : "hidden"}`}>
+            {stats.scanfail}
+          </span>
+        </FilterTab>
       </div>
 
       <div className="relative">
@@ -245,7 +251,7 @@ export default function DashboardLive({
                             </button>
                           )}
                           <a
-                            href={`/classrooms/${classroomId}/students/${student.studentId}/edit`}
+                            href={`/classrooms/${classroomId}/students/${student.studentId}/edit?filter=${filter}`}
                             className="inline-flex items-center gap-1 bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-300 hover:text-indigo-400 px-3 py-1.5 rounded-lg text-xs transition-colors"
                           >
                             แก้ไขสถานะ
@@ -361,7 +367,7 @@ export default function DashboardLive({
                       </button>
                     )}
                     <a
-                      href={`/classrooms/${classroomId}/students/${student.studentId}/edit`}
+                      href={`/classrooms/${classroomId}/students/${student.studentId}/edit?filter=${filter}`}
                       className="inline-block bg-slate-900 border border-slate-800 hover:border-indigo-500/45 text-indigo-400 font-bold px-3 py-1.5 rounded-lg text-[10px] transition-all"
                     >
                       แก้ไขสถานะ
