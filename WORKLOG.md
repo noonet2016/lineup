@@ -661,3 +661,52 @@ All five student actions now authorize the TARGET classroom (advisor-or-owner), 
 - Symboli Rudolf (Edit): line-status page added status filter pills (ทั้งหมด/ผูกแล้ว/ยังไม่ผูก with counts) combined with existing search; generic empty-state. tsc+eslint clean.
 - Symboli Rudolf (mysql2): cleared 2026-07-05 (Sun holiday) test data per Trainer. Deleted attendance_sessions id14 + 1 record + 38 logs (wall-clock DATE 07-05) + 1 scan_fail_report (id4). Other dates + today (07-06) untouched. Backup: scratchpad/deleted_holiday_20260705_backup.json.
 - Symboli Rudolf (Edit): fixed dashboard filter loss on status-edit round trip — edit links now carry ?filter=<current>; edit page threads returnFilter to back link + EditStatusForm; save-redirect preserves filter (was always defaulting to absent). Files: DashboardLive.tsx, edit/page.tsx, EditStatusForm.tsx. tsc+build clean.
+- Symboli Rudolf (mysql2 dumper): generated ~/Desktop/lineup_dev_export.sql (13 tables, 2673 rows, 365KB) for phpMyAdmin/Plesk import. DROP+CREATE(SHOW CREATE TABLE)+batched INSERT, FK checks wrapped, includes DROP central_locations for parity. Round-trip verified into temp DB: all counts match dev, 0 orphans. No mysqldump CLI on this Mac.
+
+## 2026-07-06 — Session 10: security gate, manage/report UX, DB import+merge, central-location removal, deploy prep (Rudolf, detailed recap)
+
+Chronological detail of this session. Individual step bullets above (dated loosely) are the live trail; this is the organized recap. Nothing deleted — appended per Trainer request.
+
+### 1. Security — anti-proxy check-in (src/lib/actions/auth.ts)
+- Trainer reported students logging in via the normal password form on a friend's device (no LINE Login) and checking in for each other.
+- Root cause: two session-minting paths (password form `loginStudent` vs LIFF bind) produced identical student sessions; `submitCheckin` only checked role, never LINE identity; default password = studentId (guessable).
+- Chosen approach (Trainer's design): gradual enforcement — a student who HAS bound LINE (`lineUserId` set) can no longer log in via the password form; unbound students keep using it; teacher "unbind" (lineStatus.ts) re-opens the form. No hard cutover.
+- Implemented a single guard in `loginStudent` AFTER the bcrypt check (so bind-status can't be probed without the password). Default-password fix deferred per Trainer. tsc clean.
+
+### 2. Reset-password relocation + destructive-action popups (ManageStudents / EditStatusForm)
+- Trainer couldn't find reset-password (it was buried in the edit-status page). Moved it to the จัดการนักเรียน page (per-row button).
+- Dispatched Mejiro (GLM-5.2) for the move; its output truncated at max_tokens → Rudolf completed the edits manually (lesson: don't send Mejiro long multi-file full-file rewrites; use snippets/diffs).
+- Then reworked reset confirm from inline top-right to a centered popup modal (Trainer design pref), and converted delete confirm to a matching popup too. Both mutually exclusive.
+
+### 3. Search + filters + compact width
+- Added student search boxes to ManageStudents and the exemptions list; added ผูกแล้ว/ยังไม่ผูก status-filter pills to line-status.
+- Compact width: root cause was TeacherShell forcing `md:[&>main]:max-w-[60vw]` on `<main>`, overriding page max-w. Fix pattern = keep main max-w-full, wrap content in inner `mx-auto w-full max-w-3xl`. Applied to manage, line-status, report(view=student).
+- report(view=student): "ขาดบ่อย" section now sorts most-absent → least-absent.
+
+### 4. Database work (lineup_dev, via mysql2 scripts — no mysql CLI on this Mac)
+- Imported ~/Desktop/thatnara_lineup.sql (Jul3, legacy 12-table schema) — full reload of 10 compatible tables via throwaway tmp DB + INSERT..SELECT (dropped legacy device_id).
+- Incrementally synced TODAY (2026-07-06) from ~/Desktop/thatnara_lineup_prod.sql (Jul6, full 14-table NEW schema; prod history purged to 33 records — so NOT a full reload): +1 student, +1 session (id remap), +32 records, +108 logs.
+- Synced today scan_fail_reports (missed first pass because Jul6 dump is newer schema than Jul3).
+- Full merge migrate: rebuilt all tables from prod (ids preserved) + backfilled 437 purged historical records (session_id remapped by date, 469/469 mapped). Result records 470, logs 2111, student_activities restored.
+- Every DB op backed up to scratchpad JSON first (rollback available). All integrity checks 0 orphans.
+
+### 5. Central check-in location — feature removed entirely
+- Trainer decided per-room coordinates only (ห้องใครห้องมัน), no central concept. Confirmed via WORKLOG it was a real feature (Session 6, 2026-07-04), not previously removed.
+- Restored the 1 dev seed row first (migrate had wiped it), then removed the whole feature: Teio deleted centralLocations.ts + stripped UI/props from settings + admin; Rudolf then removed the Prisma model + DROP TABLE central_locations + prisma generate. Confirmed getActiveLocation/openTodaySession never used it. tsc+build clean.
+
+### 6. Dashboard
+- Added a "⚠️ สแกนหน้าไม่ติด" server filter (DashboardFilter + stats.scanfail + FilterTab). Explained to Trainer the scan-fail flow first (unmatched-list page vs dashboard badge = based on has-record, NOT acknowledgment).
+- Fixed filter loss on status-edit round trip: edit links carry ?filter=<current>; edit page threads returnFilter to back link + form; save-redirect preserves filter (previously always defaulted to absent). Works for all filters.
+
+### 7. Housekeeping / data
+- Cleared 2026-07-05 (Sun holiday) test data: session id14 + 1 record + 38 logs + 1 scan_fail. Backed up first.
+- Explained why some bound students show no LINE avatar (line_picture_url NULL in data, not a bug).
+
+### 8. Deploy
+- Committed the whole code batch to main: commit 0480761, pushed to github.com/noonet2016/lineup (18 files, +302/-433). Trashed .bak files before commit; only tracked changes staged.
+- Generated ~/Desktop/lineup_dev_export.sql (13 tables, 2673 rows) for phpMyAdmin/Plesk import; round-trip verified into a temp DB (all counts match, 0 orphans). Warned Trainer it has DROP TABLE (overwrites prod) → export prod backup first.
+
+### Open items / for prod cutover
+- PROD DB: run `DROP TABLE IF EXISTS central_locations;` (or import the generated dump which already includes it) to match dev schema.
+- Default student password = studentId is still guessable (deferred) — unbound students remain proxy-checkin-able until they bind LINE.
+- If Trainer wants a non-destructive prod sync instead of overwrite, produce a merge-safe dump (INSERT ... ON DUPLICATE KEY, no DROP/CREATE).
