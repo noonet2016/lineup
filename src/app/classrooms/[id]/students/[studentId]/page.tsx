@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { StudentShell, TeacherShell } from "@/app/_components/LegacyChrome";
-import { historyStatusMeta, loadStudentHistory } from "@/lib/studentHistory";
+import { historyStatusMeta, leaveMeta, loadStudentHistory } from "@/lib/studentHistory";
 import { formatInstantDate, formatWallClockDate, formatWallClockTime, nowInBangkok } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -100,9 +100,21 @@ export default async function StudentHistoryPage({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-slate-400 mb-1">สถานะวันนี้ · {formatInstantDate(now)}</p>
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold border ${todayBadge.className}`}>
-              {data.todayHasSession ? (data.todayStatus === "notyet" ? "ยังไม่เช็ค" : todayBadge.text) : "ยังไม่เปิดรอบ"}
-            </span>
+            {data.todayStatus === "leave" ? (
+              (() => {
+                const lm = leaveMeta(data.todayLeaveKind, data.todayLeavePending);
+                return (
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold border ${lm.className}`}>
+                    <span className={`w-2 h-2 rounded-full ${lm.dotClass}`} />
+                    {data.todayLeaveReason || lm.text}
+                  </span>
+                );
+              })()
+            ) : (
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold border ${todayBadge.className}`}>
+                {data.todayHasSession ? (data.todayStatus === "notyet" ? "ยังไม่เช็ค" : todayBadge.text) : "ยังไม่เปิดรอบ"}
+              </span>
+            )}
           </div>
           <div className="text-right">
             <p className="text-xs text-slate-500">เวลาที่เช็ค</p>
@@ -197,6 +209,12 @@ export default async function StudentHistoryPage({
               <span className="text-slate-300">🔴 ขาด</span>
               <span className="font-bold text-rose-400">{data.absentDays} วัน</span>
             </div>
+            {data.leaveDays > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300">🔵 ลา/กิจกรรม</span>
+                <span className="font-bold text-sky-300">{data.leaveDays} วัน</span>
+              </div>
+            )}
             {data.pendingDays > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">⏳ รอครูตรวจ</span>
@@ -220,15 +238,25 @@ export default async function StudentHistoryPage({
         ) : (
           <ul className="divide-y divide-slate-900/60">
             {data.history.map((row) => {
+              const lm = row.status === "leave" ? leaveMeta(row.leaveKind, row.leavePending) : null;
               const badge = historyStatusMeta(row.status);
               return (
                 <li key={row.sessionDate.toISOString()} className="flex items-center justify-between px-5 py-3">
                   <span className="text-sm text-slate-300">{formatWallClockDate(row.sessionDate)}</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-slate-500">{formatWallClockTime(row.checkTime)}</span>
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badge.className}`}>
-                      {badge.text}
+                    <span className="text-xs font-mono text-slate-500">
+                      {lm ? row.leaveReason ?? "" : formatWallClockTime(row.checkTime)}
                     </span>
+                    {lm ? (
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${lm.className}`}>
+                        <span className={`w-2 h-2 rounded-full ${lm.dotClass}`} />
+                        {lm.text}
+                      </span>
+                    ) : (
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badge.className}`}>
+                        {badge.text}
+                      </span>
+                    )}
                   </div>
                 </li>
               );
