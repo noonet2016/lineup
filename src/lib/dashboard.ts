@@ -29,6 +29,8 @@ export type DashboardRow = {
   displayStatus: DashboardStatus;
   checkTime: Date | null;
   distanceM: number | null;
+  latitude: number | null;
+  longitude: number | null;
   isSuspicious: boolean;
   editReason: string | null;
   exemptReason: string | null;
@@ -165,6 +167,8 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
             status: true,
             checkTime: true,
             distanceM: true,
+            latitude: true,
+            longitude: true,
             isSuspicious: true,
             editReason: true,
           },
@@ -233,6 +237,8 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
         displayStatus,
         checkTime: record?.checkTime ?? null,
         distanceM: record?.distanceM ?? null,
+        latitude: record?.latitude != null ? Number(record.latitude) : null,
+        longitude: record?.longitude != null ? Number(record.longitude) : null,
         isSuspicious: Boolean(record?.isSuspicious),
         editReason: record?.editReason ?? null,
         exemptReason,

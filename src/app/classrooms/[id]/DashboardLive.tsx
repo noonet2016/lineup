@@ -220,6 +220,16 @@ export default function DashboardLive({
                           ⚠️
                         </span>
                       )}
+                      {student.latitude !== null && student.longitude !== null && (
+                        <a
+                          href={`https://www.google.com/maps?q=${student.latitude},${student.longitude}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block mt-1 text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors"
+                        >
+                          📍 เปิดพิกัด
+                        </a>
+                      )}
                     </td>
                     {isAdvisor && (
                       <td className="px-6 py-4 text-right">
@@ -337,6 +347,16 @@ export default function DashboardLive({
                     {student.distanceM !== null ? `${student.distanceM} ม.` : "-"}
                     {student.isSuspicious && <span className="text-rose-500 ml-1">⚠️</span>}
                   </span>
+                  {student.latitude !== null && student.longitude !== null && (
+                    <a
+                      href={`https://www.google.com/maps?q=${student.latitude},${student.longitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block mt-0.5 text-[10px] text-cyan-400 hover:text-cyan-300 transition-colors"
+                    >
+                      📍 เปิดพิกัด
+                    </a>
+                  )}
                 </div>
                 {isAdvisor && (
                   <div className="text-right flex items-center gap-1.5">
