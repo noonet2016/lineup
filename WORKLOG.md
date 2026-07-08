@@ -775,3 +775,34 @@ A "what's still outstanding?" pass extracted every historical TODO/next-step fro
 - `PROJECT_PLAN.md`: M6 marked `[x]` done; all success criteria ticked; 2 decisions logged (M6-complete reconciliation, LIFF P3 deferred).
 - Backup of this file before this edit: `WORKLOG.md.bak`.
 - **Project state: fully deployed, live, in daily use. No open engineering work. Next work is new feature requests, TBD.**
+
+## ========== CHECKPOINT — 2026-07-08 (Session 12): DB sync to prod + scan-fail/leave/dashboard features ==========
+
+### Current task
+Feature batch on the live app + local DB brought in sync with production. All work committed + pushed to origin/main (HEAD 2e94a66). NOT yet deployed to Plesk (Trainer does git pull → build → restart).
+
+### State — done this session (all pushed)
+1. **Local DB synced to prod.** Imported real prod dump into local `lineup_dev` (XAMPP MariaDB, /Applications/XAMPP/xamppfiles/bin/mysql, root@127.0.0.1:3306, no pw).
+   - Backup of old local first: `scratch/lineup_dev_backup_20260708.sql` (13 tables, restore via that XAMPP mysql).
+   - DROP+CREATE lineup_dev (utf8mb4) then imported `~/Desktop/thatnara_lineup_prod.sql`. Now: students 94, teachers 2, classrooms 2, attendance_records 609, student_exemptions 37, scan_fail_reports 23, school_activities 3.
+   - NOTE: Trainer first dumped the WRONG db (`thatnara_lineup` = legacy PHP schema, had devices/teacher_credentials, no LINE cols). The correct prod db is **`thatnara_lineup_prod`** — use that name for any future dumps.
+2. **M6 reconciliation** (see previous checkpoint): confirmed prod DB `thatnara_lineup_prod` fully migrated; PROJECT_PLAN M6 marked done.
+3. **Scan-fail report — historical + full log** (commit 99c7adb):
+   - getUnmatchedScanFailReports(classroomId, sessionDate?, includeMatched?) + acknowledgeScanFail(studentId, acknowledged, sessionDate?) in src/lib/actions/scanfail.ts.
+   - page.tsx passes includeMatched=true ALWAYS (Trainer wants today to behave like history: show everyone with a status badge).
+   - ScanFailListClient: date nav bar (prev/next/today/date input); per-row attendance badge (✓ เช็คชื่อแล้ว / มาสาย / ⚠️ ยังไม่เช็คชื่อ) via attendanceStatus+checkedInAt (attendance_records.status + check_time, batch-loaded no N+1). Popup alert REMOVED (Trainer sees status change inline).
+   - GPS: getBestEffortGps in CheckinClient.tsx rewritten — watchPosition over 10s, keep best fix, settle early at <=50m accuracy, fall back to coarse fix instead of null; null only on permission-denied/no-geo. (Root cause of a "ไม่มีพิกัด" case: old 4s single-shot timed out.)
+4. **Google Maps pin label** — TRIED q=lat,lng(name) then REVERTED (commit 2eca3e1 -> 6c57a83): Google ignores the label on the teacher's device, name just trailed in URL. Back to clean q=lat,lng. (Lesson: URL label on a raw-coordinate pin is not reliable.)
+5. **Dashboard — open coordinates** (commit 5043a44): dashboard.ts exposes latitude/longitude (Decimal→number) on DashboardRow; DashboardLive shows "📍 เปิดพิกัด" link (table + mobile card) when a check-in has coords.
+6. **Leave-requests — per-day filter** (commit 53bbba9): teacher review page filters to requests whose range covers the selected day (startDate<=day<=endDate, open on null bounds) + scan-fail-style date bar (no future cap). Actions unchanged.
+7. **NEW student page "ห้องวันนี้"** `/classroom-today` (commit 2e94a66): read-only, shows classmates on leave/activity for a day so a class-rep can tell subject teachers who is on leave. classroomId derived from SESSION STUDENT only (never URL) — own classroom only. Reuses matchExemption/classifyLeave/leaveMeta (now exported from studentHistory.ts); approved solid + pending dimmed, rejected excluded; CATEGORY label only (no raw reason) for privacy. Added to STUDENT nav only (LegacyChrome.tsx).
+
+### Next steps
+- Trainer to DEPLOY: on Plesk `git pull` (to 2e94a66) → build → restart Passenger. Code-only, NO DB migration needed (all features use existing prod columns).
+- Post-deploy verify: (a) scan-fail report shows everyone + status badges + date nav; (b) dashboard "📍 เปิดพิกัด" links; (c) leave-requests date filter; (d) login as STUDENT → "ห้องวันนี้" shows own classroom's leave list correctly.
+- npm notice on Plesk (11.16→11.18) is informational only — ignore; `npm install -g` likely lacks permission on shared hosting.
+
+### Open questions / loose ends
+- WORKLOG.md.bak is an untracked local backup (intentionally not committed). Can be trashed once comfortable.
+- classroom-today: currently shows leave/activity only (Trainer's choice), NOT absent/late (those need assembly done + were deemed privacy-sensitive). If they later want a fuller board, that's a follow-up.
+- LIFF P3 (OA rich menu) still deferred — access via LIFF URL pinned in each classroom LINE group.
