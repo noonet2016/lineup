@@ -4,8 +4,8 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import { LightboxProvider, LightboxThumb } from "@/app/_components/ImageLightbox";
-import { PopupAlertModal, usePopupAlert } from "@/app/_components/PopupAlert";
 import { acknowledgeScanFail, type UnmatchedScanFailReport } from "@/lib/actions/scanfail";
+import { dashBadge, type DashboardStatus } from "@/lib/dashboardBadge";
 
 type Props = {
   classroomId: number;
@@ -13,31 +13,103 @@ type Props = {
   fullName: string;
   reports: UnmatchedScanFailReport[];
   todayLabel: string;
+  selectedDate: string;
+  todayDate: string;
+  isToday: boolean;
 };
 
-export default function ScanFailListClient({ classroomId, roomName, fullName, reports, todayLabel }: Props) {
+export default function ScanFailListClient({
+  classroomId,
+  roomName,
+  fullName,
+  reports,
+  todayLabel,
+  selectedDate,
+  todayDate,
+  isToday,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const { alert, setAlert, showResult } = usePopupAlert();
+
+  function navigateToDate(date: string) {
+    router.push(`/classrooms/${classroomId}/scan-fail?date=${date}`);
+  }
+
+  function shiftDate(days: number) {
+    const date = new Date(`${selectedDate}T00:00:00.000Z`);
+    date.setUTCDate(date.getUTCDate() + days);
+    const nextDate = date.toISOString().slice(0, 10);
+    if (nextDate <= todayDate) navigateToDate(nextDate);
+  }
 
   function handleAck(studentId: string, acknowledged: boolean) {
     startTransition(async () => {
-      const result = await acknowledgeScanFail(studentId, acknowledged);
-      showResult(result);
+      await acknowledgeScanFail(studentId, acknowledged, selectedDate);
       router.refresh();
     });
+  }
+
+  function attendanceBadge(report: UnmatchedScanFailReport): { text: string; className: string } {
+    if (!report.checkedInAt) {
+      return { text: "⚠️ ยังไม่เช็คชื่อ", className: "bg-rose-500 text-white" };
+    }
+
+    if (report.attendanceStatus === "late") {
+      const badge = dashBadge(report.attendanceStatus as DashboardStatus);
+      return { text: `${badge.text} ${report.checkedInAt}`, className: "bg-amber-500 text-white" };
+    }
+
+    return { text: `✓ เช็คชื่อแล้ว ${report.checkedInAt}`, className: "bg-emerald-500 text-white" };
   }
 
   return (
     <TeacherShell active="dashboard" fullName={fullName} roomName={roomName} classroomId={classroomId}>
       <LightboxProvider>
-      <PopupAlertModal alert={alert} onClose={() => setAlert(null)} />
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-xl sm:text-3xl font-extrabold text-white">📷 รายงานสแกนหน้าไม่ติด</h1>
           <p className="text-slate-400 text-sm">แจ้งสแกนหน้าไม่ติด แต่ยังไม่ได้เช็คชื่อเข้าแถว</p>
           <p className="text-xs text-slate-500">📅 {todayLabel}</p>
         </div>
+
+        <section className="glass-panel rounded-2xl p-4 shadow-2xl">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => shiftDate(-1)}
+              className="min-h-11 px-4 rounded-xl bg-slate-600 hover:bg-slate-500 active:bg-slate-700 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
+              aria-label="วันก่อนหน้า"
+            >
+              ◀
+            </button>
+            <input
+              type="date"
+              value={selectedDate}
+              max={todayDate}
+              onChange={(event) => {
+                if (event.target.value) navigateToDate(event.target.value);
+              }}
+              className="min-h-11 rounded-xl border border-slate-700 bg-slate-950/70 px-4 text-center text-sm font-semibold text-white [color-scheme:dark] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            />
+            <button
+              type="button"
+              disabled={isToday}
+              onClick={() => shiftDate(1)}
+              className="min-h-11 px-4 rounded-xl bg-slate-600 hover:bg-slate-500 active:bg-slate-700 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
+              aria-label="วันถัดไป"
+            >
+              ▶
+            </button>
+            <button
+              type="button"
+              disabled={isToday}
+              onClick={() => navigateToDate(todayDate)}
+              className="min-h-11 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
+            >
+              วันนี้
+            </button>
+          </div>
+        </section>
 
         <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
           {reports.length === 0 ? (
@@ -52,6 +124,7 @@ export default function ScanFailListClient({ classroomId, roomName, fullName, re
                     : null;
 
                 const initial = report.fullName.trim().slice(0, 1) || "?";
+                const attendance = attendanceBadge(report);
 
                 return (
                   <li key={report.studentId} className="py-4 first:pt-0 last:pb-0">
@@ -71,16 +144,19 @@ export default function ScanFailListClient({ classroomId, roomName, fullName, re
                       <div className="flex flex-col gap-2 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-white">{studentLabel}</p>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold ${attendance.className}`}>
+                          {attendance.text}
+                        </span>
                         {report.outsideRadius ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/10 border border-rose-500/30 text-rose-300">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500 text-white">
                             ⚠️ นอกรัศมี ~{report.distanceMeters} ม. (กำหนด {report.radius} ม.)
                           </span>
                         ) : report.latitude !== null && report.longitude !== null ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500 text-white">
                             📍 ในรัศมี{report.distanceMeters !== null ? ` ~${report.distanceMeters} ม.` : ""}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-500/10 border border-slate-500/20 text-slate-400">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500 text-white">
                             📍 ไม่มีพิกัด
                           </span>
                         )}

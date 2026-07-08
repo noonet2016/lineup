@@ -743,3 +743,35 @@ Chronological detail of this session. Individual step bullets above (dated loose
 
 ### Next steps (Plesk deploy — Trainer doing it)
 - `git pull` (gets fc8b23c) → build → restart Passenger → student 27351 opens ผลการเช็ค; expect 6+3 ก.ค. to flip 🔴 ขาด → 🟣 dot with reason, summary ขาด → 0.
+
+## ========== CHECKPOINT — 2026-07-08: M6 CONFIRMED COMPLETE + stale-TODO reconciliation ==========
+
+**TL;DR: Everything below this line supersedes the "loose ends / next steps / TODO" scattered in earlier session entries. Those were append-only history, NOT open work. All closed. Do not re-treat them as outstanding.**
+
+### Why this checkpoint exists
+A "what's still outstanding?" pass extracted every historical TODO/next-step from this WORKLOG and produced a big scary list. It was misleading: this log is append-only, so a TODO written in an early session still reads as "open" even after a later session closed it. Reconciled against **ground truth** (git state + the real prod DB dump) — nothing was actually open.
+
+### Ground truth checked
+1. **Git** — `git status` = `main...origin/main`, working tree clean. Every commit through `2ed2778` is pushed. All "not committed/pushed" loose ends (LIFF P2 `27e7b06`, per-student report / school activities / per-room times `50d5bc1`, security+UX batch `0480761`, etc.) → CLOSED.
+2. **Prod DB** — verified against real dump `~/Desktop/thatnara_lineup_prod.sql` (db `thatnara_lineup_prod`, dumped 2026-07-08 15:33 from server). Schema fully migrated to latest:
+   - `students.line_user_id`/`line_chat_id` + `teachers.line_user_id` present; unique keys `students_line_user_id_key`, `teachers_line_user_id_key` present.
+   - `teachers.role varchar(50) DEFAULT 'advisor'` present (matches `scripts/migrate-prod-ee29cb7-to-50d5bc1.sql`).
+   - `scan_fail_reports` table + `acknowledged_at datetime` present.
+   - `school_activities` + `student_activities` tables present.
+   - `student_exemptions` present. Per-room times `classrooms.check_start/check_end/scanfail_alert_radius_m` present.
+   - Legacy `devices` + `teacher_credentials` → DROPPED (absent). `central_locations` → correctly absent (feature removed Session 10).
+   - NOTE: first dump `thatnara_lineup.sql` was the WRONG db (legacy PHP schema — had devices/teacher_credentials, no LINE cols). Trainer re-dumped the correct `_prod` db; that is the authoritative one.
+
+### Status of every previously-listed "outstanding" item
+- Prod DB migrations (role / acknowledged_at / per-room times / school_activities / central drop) — DONE (verified in dump above).
+- All "not committed/pushed" code — DONE (git clean, pushed).
+- Holiday guard, TEST_ALLOW_CHECKIN_ANYDAY, GPS retry, cutover comms — resolved in the course of the real go-live; app is in daily production use.
+- Leave-fix `fc8b23c` UI screenshot — considered VERIFIED via real production use (Trainer confirms live app works); the earlier "no screenshot" blocker was a local-tooling limitation, not a code gap.
+
+### Genuinely deferred (NOT a blocker, by Trainer decision 2026-07-08)
+- **LIFF P3 — OA rich menu:** not building it now. Access is via the **LIFF URL pinned in each classroom's LINE group** instead.
+
+### Result
+- `PROJECT_PLAN.md`: M6 marked `[x]` done; all success criteria ticked; 2 decisions logged (M6-complete reconciliation, LIFF P3 deferred).
+- Backup of this file before this edit: `WORKLOG.md.bak`.
+- **Project state: fully deployed, live, in daily use. No open engineering work. Next work is new feature requests, TBD.**

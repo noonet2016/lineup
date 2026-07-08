@@ -149,29 +149,48 @@ export default function CheckinClient({
   const MAX_WAIT_MS = 15000;
   const GOOD_ENOUGH_ACCURACY = 50;
 
+  // Scan-fail reporting is allowed even without GPS, but we try harder to attach a
+  // coordinate so the teacher can gauge distance. watchPosition over a 10s window
+  // keeps the best (lowest-accuracy) fix and settles early once it's good enough;
+  // on timeout it returns the best coarse fix seen rather than null. Only permission
+  // denial / no-geolocation / zero-fix falls back to null.
+  const BEST_EFFORT_GPS_MS = 10000;
+
   async function getBestEffortGps() {
     if (!navigator.geolocation) return null;
 
     return new Promise<{ lat: number; lng: number; accuracy: number } | null>((resolve) => {
       let settled = false;
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      let watchId: number | null = null;
+      let best: { lat: number; lng: number; accuracy: number } | null = null;
+
       const settle = (value: { lat: number; lng: number; accuracy: number } | null) => {
         if (settled) return;
         settled = true;
         if (timeoutId) clearTimeout(timeoutId);
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
         resolve(value);
       };
 
-      timeoutId = setTimeout(() => settle(null), 4000);
-      navigator.geolocation.getCurrentPosition(
+      // On timeout, hand back the best fix we managed to get (even if coarse).
+      timeoutId = setTimeout(() => settle(best), BEST_EFFORT_GPS_MS);
+
+      watchId = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude, accuracy } = position.coords;
-          settle({ lat: latitude, lng: longitude, accuracy });
+          if (!best || accuracy < best.accuracy) {
+            best = { lat: latitude, lng: longitude, accuracy };
+          }
+          // Good enough — stop early.
+          if (accuracy <= GOOD_ENOUGH_ACCURACY) settle(best);
         },
-        () => {
-          settle(null);
+        (err) => {
+          // Permission denied is terminal — waiting won't help. Other transient
+          // errors: keep whatever best fix we have (possibly null) until timeout.
+          if (err.code === err.PERMISSION_DENIED) settle(null);
         },
-        { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 },
+        { enableHighAccuracy: true, timeout: BEST_EFFORT_GPS_MS, maximumAge: 0 },
       );
     });
   }

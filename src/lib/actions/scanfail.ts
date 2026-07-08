@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
-import { formatWallClockTime, nowInBangkok } from "@/lib/time";
+import { formatWallClockTime, nowInBangkok, parseDateInput } from "@/lib/time";
 import { getActiveLocation } from "@/lib/checkin";
 import { haversineDistance } from "@/lib/geo";
 
@@ -32,6 +32,8 @@ export type UnmatchedScanFailReport = {
   outsideRadius: boolean;
   radius: number;
   acknowledgedAt: string | null;
+  attendanceStatus: string | null;
+  checkedInAt: string | null;
 };
 
 function cleanCoordinate(value: number | null | undefined): number | null {
@@ -40,6 +42,12 @@ function cleanCoordinate(value: number | null | undefined): number | null {
 
 function formatScanFailTime(reportedAt: Date): string {
   return formatWallClockTime(reportedAt).replace(" น.", "");
+}
+
+function resolveScanFailSessionDate(sessionDate?: string | Date): Date {
+  if (sessionDate instanceof Date) return sessionDate;
+  if (sessionDate) return parseDateInput(sessionDate) ?? nowInBangkok().dateOnly;
+  return nowInBangkok().dateOnly;
 }
 
 /** Distance of a report's coords vs the classroom check-in point, and whether it's beyond the configured alert radius. */
@@ -153,7 +161,11 @@ export async function cancelMyScanFail(): Promise<ActionResult> {
 }
 
 /** Teacher confirms a student's scan-fail report (acknowledges they were genuinely on-site). */
-export async function acknowledgeScanFail(studentId: string, acknowledged: boolean): Promise<ActionResult> {
+export async function acknowledgeScanFail(
+  studentId: string,
+  acknowledged: boolean,
+  sessionDate?: string | Date,
+): Promise<ActionResult> {
   const session = await requireSession();
   if (session.role !== "teacher") return { ok: false, message: "เฉพาะครูเท่านั้น" };
 
@@ -164,7 +176,8 @@ export async function acknowledgeScanFail(studentId: string, acknowledged: boole
   if (!student) return { ok: false, message: "ไม่พบนักเรียน" };
   if (student.classroom.advisorId !== Number(session.id)) return { ok: false, message: "ไม่มีสิทธิ์ในห้องเรียนนี้" };
 
-  const { dateOnly: today, wallClock: now } = nowInBangkok();
+  const today = resolveScanFailSessionDate(sessionDate);
+  const { wallClock: now } = nowInBangkok();
   const existing = await prisma.scanFailReport.findUnique({
     where: { studentId_sessionDate: { studentId, sessionDate: today } },
     select: { id: true },
@@ -204,13 +217,17 @@ export async function getScanFailMap(classroomId: number): Promise<ScanFailBadge
   return map;
 }
 
-export async function getUnmatchedScanFailReports(classroomId: number): Promise<UnmatchedScanFailReport[]> {
-  const { dateOnly: today } = nowInBangkok();
+export async function getUnmatchedScanFailReports(
+  classroomId: number,
+  sessionDate?: string | Date,
+  includeMatched = false,
+): Promise<UnmatchedScanFailReport[]> {
+  const today = resolveScanFailSessionDate(sessionDate);
   const session = await prisma.attendanceSession.findUnique({
     where: { sessionDate_classroomId: { sessionDate: today, classroomId } },
     select: { id: true },
   });
-  const studentWhere = session
+  const studentWhere = !includeMatched && session
     ? { classroomId, status: 1, attendanceRecords: { none: { sessionId: session.id } } }
     : { classroomId, status: 1 };
 
@@ -243,8 +260,16 @@ export async function getUnmatchedScanFailReports(classroomId: number): Promise<
   // Separate, configurable alert radius; empty/invalid falls back to the classroom check-in radius.
   const c = await prisma.classroom.findUnique({ where: { id: classroomId }, select: { scanfailAlertRadiusM: true } });
   const alertRadius = c?.scanfailAlertRadiusM && c.scanfailAlertRadiusM > 0 ? c.scanfailAlertRadiusM : location.radius;
+  const attendanceRecords = session && reports.length > 0
+    ? await prisma.attendanceRecord.findMany({
+        where: { sessionId: session.id, studentId: { in: reports.map((report) => report.studentId) } },
+        select: { studentId: true, status: true, checkTime: true },
+      })
+    : [];
+  const attendanceRecordByStudentId = new Map(attendanceRecords.map((record) => [record.studentId, record]));
 
   return reports.map((report) => {
+    const attendanceRecord = attendanceRecordByStudentId.get(report.studentId);
     const hasCoords = report.latitude !== null && report.longitude !== null;
     const distanceMeters = hasCoords
       ? Math.round(haversineDistance(report.latitude!, report.longitude!, location.lat, location.lng))
@@ -264,6 +289,8 @@ export async function getUnmatchedScanFailReports(classroomId: number): Promise<
       outsideRadius: distanceMeters !== null && distanceMeters > alertRadius,
       radius: alertRadius,
       acknowledgedAt: report.acknowledgedAt ? formatScanFailTime(report.acknowledgedAt) : null,
+      attendanceStatus: attendanceRecord?.status ?? null,
+      checkedInAt: attendanceRecord?.checkTime ? formatScanFailTime(attendanceRecord.checkTime) : null,
     };
   });
 }
