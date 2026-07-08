@@ -118,13 +118,9 @@ export default function ScanFailListClient({
             <ul className="divide-y divide-slate-900/60">
               {reports.map((report) => {
                 const studentLabel = `${report.numberInClass ?? "-"}. ${report.fullName}${report.nickname ? ` (${report.nickname})` : ""}`;
-                // q=lat,lng(Label) shows a named marker. Google may fall back to the
-                // reverse-geocoded address on some clients, but where supported it labels
-                // the pin with the student's name. Encode to keep Thai/spaces intact.
-                const mapLabel = `${report.fullName}${report.nickname ? ` (${report.nickname})` : ""}`;
                 const mapsUrl =
                   report.latitude !== null && report.longitude !== null
-                    ? `https://www.google.com/maps?q=${report.latitude},${report.longitude}(${encodeURIComponent(mapLabel)})`
+                    ? `https://www.google.com/maps?q=${report.latitude},${report.longitude}`
                     : null;
 
                 const initial = report.fullName.trim().slice(0, 1) || "?";
