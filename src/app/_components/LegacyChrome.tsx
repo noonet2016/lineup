@@ -3,7 +3,7 @@ import { TeacherMobileNav } from "@/app/_components/TeacherMobileNav";
 import PullToRefresh from "@/app/_components/PullToRefresh";
 
 type TeacherActive = "dashboard" | "devices" | "exemptions" | "leave" | "scanfail" | "settings" | "report" | "students" | "activities";
-type StudentActive = "checkin" | "history" | "profile" | "leave";
+type StudentActive = "checkin" | "history" | "profile" | "leave" | "classroomToday";
 
 const teacherItems: { key: TeacherActive; label: string; href: string; path: string }[] = [
   {
@@ -65,6 +65,7 @@ const teacherItems: { key: TeacherActive; label: string; href: string; path: str
 const studentItems: { label: string; href: string; key: StudentActive; path: string }[] = [
   { label: "เช็คชื่อ", href: "/checkin", key: "checkin", path: "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   { label: "ยื่นขอลา", href: "/leave", key: "leave", path: "M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.008v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.008v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.008v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" },
+  { label: "ห้องวันนี้", href: "/classroom-today", key: "classroomToday", path: "M6.75 3v2.25M17.25 3v2.25M3.75 8.25h16.5M5.25 5.25h13.5A1.5 1.5 0 0120.25 6.75v12A1.5 1.5 0 0118.75 20.25H5.25A1.5 1.5 0 013.75 18.75v-12A1.5 1.5 0 015.25 5.25z" },
   { label: "ผลการเช็ค", href: "/history", key: "history", path: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1-1.125 1h-2.25A1.125 1.125 0 0116.5 19.875V4.125z" },
   { label: "โปรไฟล์", href: "/account", key: "profile", path: "M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" },
 ];
@@ -205,7 +206,7 @@ export function StudentHeader() {
 export function StudentNav({ active }: { active: StudentActive }) {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 bg-slate-950/90 backdrop-blur border-t border-slate-900 safe-pb">
-      <div className="max-w-xl mx-auto grid grid-cols-4">
+      <div className="max-w-xl mx-auto grid grid-cols-5">
         {studentItems.map((item) => {
           const on = active === item.key;
           return (

@@ -42,7 +42,7 @@ export function classifyLeave(reason: string): LeaveKind {
  * matching (weekday ISO 1-7, start/end range), but keeps `pending` so students see their request
  * reflected before the teacher approves it.
  */
-function matchExemption(exemptions: ActiveExemption[], date: Date): ActiveExemption | null {
+export function matchExemption(exemptions: ActiveExemption[], date: Date): ActiveExemption | null {
   const wd = isoWeekday(date);
   let best: ActiveExemption | null = null;
   for (const e of exemptions) {
@@ -248,7 +248,7 @@ export function leaveMeta(
     activity: { text: "ไปกิจกรรม", dot: "bg-purple-400", pill: "bg-purple-500/10 border-purple-500/25 text-purple-300" },
     sick: { text: "ลาป่วย", dot: "bg-sky-400", pill: "bg-sky-500/10 border-sky-500/25 text-sky-300" },
     personal: { text: "ลากิจ", dot: "bg-amber-400", pill: "bg-amber-500/10 border-amber-500/25 text-amber-300" },
-    other: { text: "ลา", dot: "bg-slate-300", pill: "bg-slate-500/10 border-slate-500/25 text-slate-300" },
+    other: { text: "ลาอื่นๆ", dot: "bg-slate-300", pill: "bg-slate-500/10 border-slate-500/25 text-slate-300" },
   };
   const m = base[kind];
   return {
