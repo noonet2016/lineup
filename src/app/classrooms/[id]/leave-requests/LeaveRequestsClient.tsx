@@ -45,11 +45,19 @@ export default function LeaveRequestsClient({
   classroomId,
   roomName,
   fullName,
+  selectedDate,
+  selectedDateLabel,
+  todayDate,
+  isToday,
   requests,
 }: {
   classroomId: number;
   roomName: string;
   fullName: string;
+  selectedDate: string;
+  selectedDateLabel: string;
+  todayDate: string;
+  isToday: boolean;
   requests: LeaveRequest[];
 }) {
   const router = useRouter();
@@ -70,6 +78,16 @@ export default function LeaveRequestsClient({
   }, [requests]);
 
   const pendingCount = useMemo(() => items.filter((item) => item.status === "pending").length, [items]);
+
+  function navigateToDate(date: string) {
+    router.push(`/classrooms/${classroomId}/leave-requests?date=${date}`);
+  }
+
+  function shiftDate(days: number) {
+    const date = new Date(`${selectedDate}T00:00:00.000Z`);
+    date.setUTCDate(date.getUTCDate() + days);
+    navigateToDate(date.toISOString().slice(0, 10));
+  }
 
   function runReview(id: number, action: "approve" | "reject" | "revert") {
     setBanner(null);
@@ -112,9 +130,47 @@ export default function LeaveRequestsClient({
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-white">📝 คำขอลาเรียน</h1>
           <p className="text-slate-400 text-sm mt-1">ห้องที่ปรึกษา ม.{roomName}</p>
+          <p className="text-xs text-slate-500 mt-1">📅 {selectedDateLabel}</p>
         </div>
 
         <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
+
+        <section className="glass-panel rounded-2xl p-4 shadow-2xl">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => shiftDate(-1)}
+              className="min-h-11 px-4 rounded-xl bg-slate-600 hover:bg-slate-500 active:bg-slate-700 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
+              aria-label="วันก่อนหน้า"
+            >
+              ◀
+            </button>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(event) => {
+                if (event.target.value) navigateToDate(event.target.value);
+              }}
+              className="min-h-11 rounded-xl border border-slate-700 bg-slate-950/70 px-4 text-center text-sm font-semibold text-white [color-scheme:dark] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            />
+            <button
+              type="button"
+              onClick={() => shiftDate(1)}
+              className="min-h-11 px-4 rounded-xl bg-slate-600 hover:bg-slate-500 active:bg-slate-700 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
+              aria-label="วันถัดไป"
+            >
+              ▶
+            </button>
+            <button
+              type="button"
+              disabled={isToday}
+              onClick={() => navigateToDate(todayDate)}
+              className="min-h-11 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
+            >
+              วันนี้
+            </button>
+          </div>
+        </section>
 
         <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-5">
