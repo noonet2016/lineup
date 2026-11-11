@@ -36,7 +36,7 @@ export default function OverviewClient({ overview }: { overview: Overview }) {
         <div className="mt-6 flex h-44 items-end gap-2 sm:gap-3">
           {overview.trend.map((day) => <div key={day.label} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.5"><span className="text-xs font-bold text-cyan-300">{day.rate}%</span><div className="w-full max-w-[44px] rounded-t-lg bg-gradient-to-t from-indigo-600 to-cyan-400 shadow-[0_0_12px_-2px_rgba(34,211,238,0.5)] transition-[height] duration-500" style={{ height: `${Math.max(day.rate, 2)}%` }} /></div>)}
         </div>
-        <div className="mt-2 flex gap-2 border-t border-slate-800 pt-2 sm:gap-3">{overview.trend.map((day) => <span key={day.label} className="min-w-0 flex-1 text-center text-[11px] text-slate-400">{day.label}</span>)}</div>
+        <div className="mt-2 flex gap-2 border-t border-slate-800 pt-2 sm:gap-3">{overview.trend.map((day) => <span key={day.label} className="min-w-0 flex-1 text-center text-xs text-slate-400">{day.label}</span>)}</div>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">

@@ -192,7 +192,7 @@ export default async function StudentHistoryPage({
           >
             <div className="absolute inset-[10px] rounded-full bg-slate-950 flex flex-col items-center justify-center">
               <span className="text-2xl font-extrabold text-cyan-400">{data.rate}%</span>
-              <span className="text-[10px] text-slate-400">เข้าแถว</span>
+              <span className="text-xs text-slate-400">เข้าแถว</span>
             </div>
           </div>
           <div className="flex-grow space-y-2 text-sm">

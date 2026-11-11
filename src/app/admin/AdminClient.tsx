@@ -313,7 +313,7 @@ export default function AdminClient({
                 placeholder="เว้นว่าง = ไม่เปลี่ยนค่าเดิม"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
               />
-              <span className="block text-[11px] text-slate-400 mt-1.5">ถ้านักเรียนแจ้งจากระยะไกลเกินค่านี้ ครูจะเห็น badge นอกรัศมี (ไม่บล็อกการแจ้ง)</span>
+              <span className="block text-xs text-slate-400 mt-1.5">ถ้านักเรียนแจ้งจากระยะไกลเกินค่านี้ ครูจะเห็น badge นอกรัศมี (ไม่บล็อกการแจ้ง)</span>
             </label>
             <button type="submit" disabled={pending} className="w-full rounded-xl bg-cyan-500 px-4 py-3 font-bold text-white shadow-lg shadow-cyan-500/20 transition-colors hover:bg-cyan-600 disabled:opacity-50">บันทึกจุดส่วนกลาง</button>
           </form>
@@ -371,7 +371,7 @@ export default function AdminClient({
             <button type="submit" disabled={pending} className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98] disabled:opacity-60">
               {pending ? "กำลังบันทึก..." : "+ เพิ่มครู + ห้อง"}
             </button>
-            <p className="text-[11px] text-slate-400 mt-2">ครูที่เพิ่มจะเป็น &ldquo;ที่ปรึกษา&rdquo; ของห้องที่สร้าง — ล็อกอินแล้วตั้งจุดเช็คอิน + เพิ่มนักเรียนของห้องตัวเองได้ทันที</p>
+            <p className="text-xs text-slate-400 mt-2">ครูที่เพิ่มจะเป็น &ldquo;ที่ปรึกษา&rdquo; ของห้องที่สร้าง — ล็อกอินแล้วตั้งจุดเช็คอิน + เพิ่มนักเรียนของห้องตัวเองได้ทันที</p>
           </div>
         </form>
       </section>
@@ -484,7 +484,7 @@ export default function AdminClient({
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <ActivityBadge name={activity.name} color={activity.color} />
-                      {!activity.isActive && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-400">ไม่ใช้งาน</span>}
+                      {!activity.isActive && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-400">ไม่ใช้งาน</span>}
                     </div>
                     <p className="text-xs text-slate-400 mt-2">สมาชิก {activity.memberCount} คน</p>
                   </div>
@@ -529,18 +529,18 @@ export default function AdminClient({
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-semibold text-white break-words">{teacher.fullName}</span>
                   {teacher.role === "admin" && (
-                    <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300">ผู้ดูแลระบบ</span>
+                    <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300">ผู้ดูแลระบบ</span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-400 font-mono">@{teacher.username}</p>
-                <p className="text-[11px] text-slate-400">ห้อง: {teacher.rooms.length ? teacher.rooms.map((r) => `ม.${r}`).join(", ") : "— ยังไม่มีห้อง"}</p>
+                <p className="text-xs text-slate-400 font-mono">@{teacher.username}</p>
+                <p className="text-xs text-slate-400">ห้อง: {teacher.rooms.length ? teacher.rooms.map((r) => `ม.${r}`).join(", ") : "— ยังไม่มีห้อง"}</p>
                 {teacher.roomsDetailed.length ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {teacher.roomsDetailed.map((room) => (
                       <Link
                         key={room.id}
                         href={`/classrooms/${room.id}/students/manage`}
-                        className="inline-flex items-center rounded-lg bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-200 hover:bg-cyan-500/20"
+                        className="inline-flex items-center rounded-lg bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/20"
                       >
                         จัดการนักเรียน ม.{room.roomName}
                       </Link>
@@ -690,7 +690,7 @@ export default function AdminClient({
                         <label className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-900/50 cursor-pointer">
                           <div className="min-w-0">
                             <div className="text-sm text-white font-semibold truncate">{studentLabel(student)}</div>
-                            <div className="text-[11px] text-slate-400">ห้อง ม.{student.roomName}</div>
+                            <div className="text-xs text-slate-400">ห้อง ม.{student.roomName}</div>
                           </div>
                           <input
                             type="checkbox"

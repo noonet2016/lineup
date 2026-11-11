@@ -128,15 +128,15 @@ export default function ReportDayClient({
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badge.className}`}>{badge.text}</span>
                         {st.exemptReason && (
-                          <span className="block text-[10px] text-sky-400 mt-1">🎌 {st.exemptReason}</span>
+                          <span className="block text-xs text-sky-400 mt-1">🎌 {st.exemptReason}</span>
                         )}
                         {st.editReason && (
-                          <span className="block text-[10px] text-indigo-400 mt-1" title={st.editReason}>
+                          <span className="block text-xs text-indigo-400 mt-1" title={st.editReason}>
                             📝 แก้โดย {st.editorName ?? "ครู"}
                           </span>
                         )}
                         {st.scanFailBadge && (
-                          <span className="block w-fit mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-400/15 border border-amber-400/50 text-amber-300">
+                          <span className="block w-fit mt-1 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-400/15 border border-amber-400/50 text-amber-300">
                             {st.scanFailBadge}
                           </span>
                         )}
@@ -182,18 +182,18 @@ export default function ReportDayClient({
                         {st.fullName}
                         {st.nickname && <span className="block text-slate-400 font-normal">({st.nickname})</span>}
                       </h4>
-                      <span className="text-[10px] text-slate-400 font-mono">รหัส: {st.studentId}</span>
+                      <span className="text-xs text-slate-400 font-mono">รหัส: {st.studentId}</span>
                     </div>
                   </div>
-                  <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${badge.className}`}>{badge.text}</span>
+                  <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold border ${badge.className}`}>{badge.text}</span>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 bg-slate-950/40 p-2.5 rounded-xl border border-slate-900/50">
+                <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/40 p-2.5 rounded-xl border border-slate-900/50">
                   <div>
-                    <span className="text-slate-400 block text-[9px] uppercase">เวลาเช็ค</span>
+                    <span className="text-slate-400 block text-xs uppercase">เวลาเช็ค</span>
                     <span className="text-slate-300 font-mono">{st.checkTimeLabel}</span>
                   </div>
                   <div className="text-center">
-                    <span className="text-slate-400 block text-[9px] uppercase">ระยะห่าง</span>
+                    <span className="text-slate-400 block text-xs uppercase">ระยะห่าง</span>
                     <span className="text-slate-300 font-mono">
                       {st.distanceM !== null ? `${st.distanceM} ม.` : "-"}
                       {st.isSuspicious && <span className="text-rose-500 ml-1">⚠️</span>}
@@ -202,24 +202,24 @@ export default function ReportDayClient({
                   <div className="text-right">
                     <a
                       href={`/classrooms/${classroomId}/students/${st.studentId}/edit`}
-                      className="inline-block bg-slate-900 border border-slate-800 hover:border-indigo-500/45 text-indigo-400 font-bold px-3 py-1.5 rounded-lg text-[10px] transition-all"
+                      className="inline-block bg-slate-900 border border-slate-800 hover:border-indigo-500/45 text-indigo-400 font-bold px-3 py-1.5 rounded-lg text-xs transition-all"
                     >
                       แก้ไข
                     </a>
                   </div>
                 </div>
                 {st.exemptReason && (
-                  <div className="text-[10px] text-sky-400 bg-sky-500/5 px-2.5 py-1.5 rounded-lg border border-sky-500/10">
+                  <div className="text-xs text-sky-400 bg-sky-500/5 px-2.5 py-1.5 rounded-lg border border-sky-500/10">
                     🎌 ลา/กิจกรรม: {st.exemptReason}
                   </div>
                 )}
                 {st.editReason && (
-                  <div className="text-[10px] text-indigo-400 bg-indigo-500/5 px-2.5 py-1.5 rounded-lg border border-indigo-500/10">
+                  <div className="text-xs text-indigo-400 bg-indigo-500/5 px-2.5 py-1.5 rounded-lg border border-indigo-500/10">
                     📝 แก้โดย {st.editorName ?? "ครู"}: {st.editReason}
                   </div>
                 )}
                 {st.scanFailBadge && (
-                  <div className="text-[10px] text-amber-300 bg-amber-400/10 px-2.5 py-1.5 rounded-lg border border-amber-400/30 font-bold">
+                  <div className="text-xs text-amber-300 bg-amber-400/10 px-2.5 py-1.5 rounded-lg border border-amber-400/30 font-bold">
                     {st.scanFailBadge}
                   </div>
                 )}

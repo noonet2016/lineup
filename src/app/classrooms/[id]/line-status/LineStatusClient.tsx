@@ -152,13 +152,13 @@ export default function LineStatusClient({
                     <div className="flex items-center justify-between gap-2">
                       <div className="text-xs font-semibold text-slate-400">เลขที่ {s.numberInClass ?? "-"}</div>
                       {s.linked ? (
-                        <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">ผูกแล้ว</span>
+                        <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">ผูกแล้ว</span>
                       ) : (
-                        <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400">ยังไม่ผูก</span>
+                        <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400">ยังไม่ผูก</span>
                       )}
                     </div>
                     <div className="text-sm font-semibold text-white whitespace-nowrap">{s.fullName}</div>
-                    <div className="text-[11px] text-slate-400 font-mono break-words">เลขประจำตัว {s.studentId}{s.nickname ? ` · ชื่อเล่น ${s.nickname}` : ""}</div>
+                    <div className="text-xs text-slate-400 font-mono break-words">เลขประจำตัว {s.studentId}{s.nickname ? ` · ชื่อเล่น ${s.nickname}` : ""}</div>
                     <div className="text-xs text-slate-400 break-words">
                       {s.linked ? `LINE: ${s.lineDisplayName ?? "(ไม่ทราบชื่อ)"}` : "ยังไม่ได้ผูกบัญชี LINE"}
                     </div>

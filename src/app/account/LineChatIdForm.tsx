@@ -50,7 +50,7 @@ export default function LineChatIdForm({ initialLineChatId }: { initialLineChatI
           💬 เปิดแชท LINE: {initialLineChatId}
         </a>
       )}
-      <p className="text-[11px] text-slate-400">ใช้ public LINE ID เท่านั้น ไม่ใช่ LINE user ID ที่ขึ้นต้นด้วย U</p>
+      <p className="text-xs text-slate-400">ใช้ public LINE ID เท่านั้น ไม่ใช่ LINE user ID ที่ขึ้นต้นด้วย U</p>
       {message && (
         <p className={`text-xs ${message.type === "success" ? "text-emerald-400" : "text-rose-400"}`}>
           {message.text}

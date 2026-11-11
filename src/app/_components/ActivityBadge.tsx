@@ -17,7 +17,7 @@ function normalizeColor(color: string): ActivityColor {
 export default function ActivityBadge({ name, color }: { name: string; color: string }) {
   const token = normalizeColor(color);
   return (
-    <span className={`inline-flex items-center border rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${COLOR_META[token]}`}>
+    <span className={`inline-flex items-center border rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap ${COLOR_META[token]}`}>
       {name}
     </span>
   );

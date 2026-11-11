@@ -146,25 +146,25 @@ export default function ScanFailListClient({
                       <div className="flex flex-col gap-2 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-white">{studentLabel}</p>
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold ${attendance.className}`}>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold ${attendance.className}`}>
                           {attendance.text}
                         </span>
                         {report.outsideRadius ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500 text-white">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-rose-500 text-white">
                             ⚠️ นอกรัศมี ~{report.distanceMeters} ม. (กำหนด {report.radius} ม.)
                           </span>
                         ) : report.latitude !== null && report.longitude !== null ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500 text-white">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500 text-white">
                             📍 ในรัศมี{report.distanceMeters !== null ? ` ~${report.distanceMeters} ม.` : ""}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500 text-white">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-500 text-white">
                             📍 ไม่มีพิกัด
                           </span>
                         )}
                       </div>
                       {report.lineDisplayName && (
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-xs text-slate-400">
                           <span className="text-emerald-400 font-semibold">LINE:</span> {report.lineDisplayName}
                         </p>
                       )}

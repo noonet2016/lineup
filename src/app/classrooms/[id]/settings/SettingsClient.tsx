@@ -202,7 +202,7 @@ export default function SettingsClient({
               placeholder="เว้นว่าง = ใช้รัศมีจุดเช็คอินของห้อง"
               className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             />
-            <span className="block text-[11px] text-slate-400 mt-1.5">
+            <span className="block text-xs text-slate-400 mt-1.5">
               ถ้านักเรียนแจ้งจากระยะไกลเกินค่านี้ ครูจะเห็น badge &ldquo;นอกรัศมี&rdquo; (ไม่บล็อกการแจ้ง)
             </span>
           </label>
@@ -281,9 +281,9 @@ export default function SettingsClient({
             {locations.map((loc) => (
               <div key={loc.id} className={`relative rounded-xl border ${loc.isActive ? "bg-cyan-500/5 border-cyan-500/30" : "bg-slate-950/30 border-slate-900"}`}>
                 {loc.isActive ? (
-                  <span className="absolute top-2 right-3 z-10 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">ใช้งานอยู่</span>
+                  <span className="absolute top-2 right-3 z-10 text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">ใช้งานอยู่</span>
                 ) : (
-                  <button disabled={pending} onClick={() => run(() => setActiveLocation(loc.id))} className="absolute top-2 right-3 z-10 bg-cyan-500 hover:bg-cyan-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all active:scale-95">
+                  <button disabled={pending} onClick={() => run(() => setActiveLocation(loc.id))} className="absolute top-2 right-3 z-10 bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg transition-all active:scale-95">
                     ใช้จุดนี้
                   </button>
                 )}
@@ -291,8 +291,8 @@ export default function SettingsClient({
                   <span className="block text-sm font-bold text-white break-words pr-24">{loc.name}</span>
                   <div className="flex items-end justify-between gap-3 mt-1.5">
                     <div className="min-w-0">
-                      <span className="block text-[11px] text-slate-400 font-mono">{loc.lat}, {loc.lng}</span>
-                      <span className="block text-[11px] text-slate-400 font-mono">รัศมี {loc.radius} ม.</span>
+                      <span className="block text-xs text-slate-400 font-mono">{loc.lat}, {loc.lng}</span>
+                      <span className="block text-xs text-slate-400 font-mono">รัศมี {loc.radius} ม.</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button onClick={() => openEditLocation(loc.id)} className="text-amber-300 hover:text-amber-200 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition-all">

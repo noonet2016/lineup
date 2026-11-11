@@ -114,13 +114,13 @@ export default function DashboardLive({
         </FilterTab>
         <FilterTab classroomId={classroomId} value="pending_review" active={filter === "pending_review"}>
           รายการรอตรวจ
-          <span className={`bg-indigo-500/10 border border-indigo-500/35 text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold ${stats.review > 0 ? "" : "hidden"}`}>
+          <span className={`bg-indigo-500/10 border border-indigo-500/35 text-indigo-400 text-xs px-2 py-0.5 rounded-full font-bold ${stats.review > 0 ? "" : "hidden"}`}>
             {stats.review}
           </span>
         </FilterTab>
         <FilterTab classroomId={classroomId} value="scanfail" active={filter === "scanfail"}>
           ⚠️ สแกนหน้าไม่ติด
-          <span className={`bg-amber-500/10 border border-amber-500/35 text-amber-400 text-[10px] px-2 py-0.5 rounded-full font-bold ${stats.scanfail > 0 ? "" : "hidden"}`}>
+          <span className={`bg-amber-500/10 border border-amber-500/35 text-amber-400 text-xs px-2 py-0.5 rounded-full font-bold ${stats.scanfail > 0 ? "" : "hidden"}`}>
             {stats.scanfail}
           </span>
         </FilterTab>
@@ -190,7 +190,7 @@ export default function DashboardLive({
                         </div>
                       )}
                       {student.exemptLabel && (
-                        <span className="ml-1.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-400/15 border border-amber-400/50 text-amber-300 align-middle">
+                        <span className="ml-1.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-400/15 border border-amber-400/50 text-amber-300 align-middle">
                           🎌 {student.exemptLabel}
                         </span>
                       )}
@@ -201,13 +201,13 @@ export default function DashboardLive({
                         {badge.text}
                       </span>
                       {student.exemptReason && (
-                        <span className="block text-[10px] text-sky-400 mt-1">🎌 {student.exemptReason}</span>
+                        <span className="block text-xs text-sky-400 mt-1">🎌 {student.exemptReason}</span>
                       )}
                       {student.editReason && (
-                        <span className="block text-[10px] text-indigo-400 mt-1">📝 แก้ไขโดยครู: {student.editReason}</span>
+                        <span className="block text-xs text-indigo-400 mt-1">📝 แก้ไขโดยครู: {student.editReason}</span>
                       )}
                       {student.scanFailBadge && (
-                        <span className="block w-fit mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-400/15 border border-amber-400/50 text-amber-300">
+                        <span className="block w-fit mt-1 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-400/15 border border-amber-400/50 text-amber-300">
                           {student.scanFailBadge}
                         </span>
                       )}
@@ -225,7 +225,7 @@ export default function DashboardLive({
                           href={`https://www.google.com/maps?q=${student.latitude},${student.longitude}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="block mt-1 text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors"
+                          className="block mt-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
                         >
                           📍 เปิดพิกัด
                         </a>
@@ -318,31 +318,31 @@ export default function DashboardLive({
                       </div>
                     )}
                     <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="text-[10px] text-slate-400 font-mono">รหัส: {student.studentId}</span>
+                      <span className="text-xs text-slate-400 font-mono">รหัส: {student.studentId}</span>
                       {student.nickname && (
-                        <span className="text-[9px] text-cyan-400 font-medium px-1.5 py-0.5 rounded bg-cyan-500/10">
+                        <span className="text-xs text-cyan-400 font-medium px-1.5 py-0.5 rounded bg-cyan-500/10">
                           ชื่อเล่น: {student.nickname}
                         </span>
                       )}
                       {student.exemptLabel && (
-                        <span className="text-[10px] text-amber-300 font-bold px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/50">
+                        <span className="text-xs text-amber-300 font-bold px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/50">
                           🎌 {student.exemptLabel}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${badge.className}`}>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold border shrink-0 ${badge.className}`}>
                   {badge.text}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-400 bg-slate-950/40 p-2.5 rounded-xl border border-slate-900/50">
+              <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/40 p-2.5 rounded-xl border border-slate-900/50">
                 <div>
-                  <span className="text-slate-400 block text-[9px] uppercase">เวลาบันทึก</span>
+                  <span className="text-slate-400 block text-xs uppercase">เวลาบันทึก</span>
                   <span className="text-slate-300 font-mono">{formatWallClockTime(student.checkTime, true)}</span>
                 </div>
                 <div className="text-center">
-                  <span className="text-slate-400 block text-[9px] uppercase">ระยะห่าง</span>
+                  <span className="text-slate-400 block text-xs uppercase">ระยะห่าง</span>
                   <span className="text-slate-300 font-mono">
                     {student.distanceM !== null ? `${student.distanceM} ม.` : "-"}
                     {student.isSuspicious && <span className="text-rose-500 ml-1">⚠️</span>}
@@ -352,7 +352,7 @@ export default function DashboardLive({
                       href={`https://www.google.com/maps?q=${student.latitude},${student.longitude}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="block mt-0.5 text-[10px] text-cyan-400 hover:text-cyan-300 transition-colors"
+                      className="block mt-0.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
                     >
                       📍 เปิดพิกัด
                     </a>
@@ -365,14 +365,14 @@ export default function DashboardLive({
                         href={lineChatUrl(student.lineChatId)}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-block bg-[#06C755]/10 border border-[#06C755]/45 hover:bg-[#06C755]/20 text-[#06C755] font-bold px-3 py-1.5 rounded-lg text-[10px] transition-all"
+                        className="inline-block bg-[#06C755]/10 border border-[#06C755]/45 hover:bg-[#06C755]/20 text-[#06C755] font-bold px-3 py-1.5 rounded-lg text-xs transition-all"
                       >
                         💬 ทักไลน์
                       </a>
                     ) : (
                       <span
                         title="ยังไม่มี LINE ID — เพิ่มได้ที่หน้าสถานะผูก LINE"
-                        className="inline-block bg-slate-900/50 border border-slate-800 text-slate-400 font-bold px-3 py-1.5 rounded-lg text-[10px] cursor-not-allowed"
+                        className="inline-block bg-slate-900/50 border border-slate-800 text-slate-400 font-bold px-3 py-1.5 rounded-lg text-xs cursor-not-allowed"
                       >
                         💬 ทักไลน์
                       </span>
@@ -381,14 +381,14 @@ export default function DashboardLive({
                       <button
                         type="button"
                         onClick={() => setQuickLeaveStudent({ studentId: student.studentId, fullName: student.fullName })}
-                        className="inline-block bg-slate-900 border border-slate-800 hover:border-sky-500/45 text-sky-400 font-bold px-3 py-1.5 rounded-lg text-[10px] transition-all"
+                        className="inline-block bg-slate-900 border border-slate-800 hover:border-sky-500/45 text-sky-400 font-bold px-3 py-1.5 rounded-lg text-xs transition-all"
                       >
                         🎌 ลา/กิจกรรม
                       </button>
                     )}
                     <a
                       href={`/classrooms/${classroomId}/students/${student.studentId}/edit?filter=${filter}`}
-                      className="inline-block bg-slate-900 border border-slate-800 hover:border-indigo-500/45 text-indigo-400 font-bold px-3 py-1.5 rounded-lg text-[10px] transition-all"
+                      className="inline-block bg-slate-900 border border-slate-800 hover:border-indigo-500/45 text-indigo-400 font-bold px-3 py-1.5 rounded-lg text-xs transition-all"
                     >
                       แก้ไขสถานะ
                     </a>
@@ -396,17 +396,17 @@ export default function DashboardLive({
                 )}
               </div>
               {student.exemptReason && (
-                <div className="text-[10px] text-sky-400 bg-sky-500/5 px-2.5 py-1.5 rounded-lg border border-sky-500/10">
+                <div className="text-xs text-sky-400 bg-sky-500/5 px-2.5 py-1.5 rounded-lg border border-sky-500/10">
                   🎌 ลา/กิจกรรม: {student.exemptReason}
                 </div>
               )}
               {student.editReason && (
-                <div className="text-[10px] text-indigo-400 bg-indigo-500/5 px-2.5 py-1.5 rounded-lg border border-indigo-500/10">
+                <div className="text-xs text-indigo-400 bg-indigo-500/5 px-2.5 py-1.5 rounded-lg border border-indigo-500/10">
                   📝 แก้ไขโดยครู: {student.editReason}
                 </div>
               )}
               {student.scanFailBadge && (
-                <div className="text-[10px] text-amber-300 bg-amber-400/10 px-2.5 py-1.5 rounded-lg border border-amber-400/30 font-bold">
+                <div className="text-xs text-amber-300 bg-amber-400/10 px-2.5 py-1.5 rounded-lg border border-amber-400/30 font-bold">
                   {student.scanFailBadge}
                 </div>
               )}
@@ -476,7 +476,7 @@ function StatCard({
     >
       <span className="text-xs text-slate-400 block mb-1">{label}</span>
       <span className={`text-2xl sm:text-3xl font-extrabold ${text}`}>{value}</span>
-      {sub && <span className="block text-[10px] text-slate-400 mt-0.5">{sub}</span>}
+      {sub && <span className="block text-xs text-slate-400 mt-0.5">{sub}</span>}
     </a>
   );
 }

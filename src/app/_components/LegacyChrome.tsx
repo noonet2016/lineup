@@ -264,7 +264,7 @@ export function StudentNav({ active }: { active: StudentActive }) {
           return (
             <a key={item.key} href={item.href} aria-label={item.label} className={`flex flex-col items-center justify-center gap-1 py-2.5 transition-colors ${on ? "text-cyan-400" : "text-slate-400 hover:text-slate-300"}`}>
               <Icon path={item.path} className="w-6 h-6" strokeWidth={on ? 2.2 : 1.8} />
-              <span className="text-[10px] font-semibold tracking-tight">{item.label}</span>
+              <span className="text-xs font-semibold tracking-tight">{item.label}</span>
             </a>
           );
         })}

@@ -111,7 +111,7 @@ export default async function AccountPage({
               )}
               <div className="min-w-0">
                 <p className="text-sm text-white font-semibold break-words">{account.lineDisplayName || "(ไม่ทราบชื่อ LINE)"}</p>
-                <p className="text-[11px] text-slate-400 font-mono break-all">ID: {account.lineUserId}</p>
+                <p className="text-xs text-slate-400 font-mono break-all">ID: {account.lineUserId}</p>
               </div>
             </div>
           </div>

@@ -509,7 +509,7 @@ export default function ManageStudentsClient({
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <ActivityBadge name={activity.name} color={activity.color} />
-                        {!activity.isActive && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-400">ไม่ใช้งาน</span>}
+                        {!activity.isActive && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-400">ไม่ใช้งาน</span>}
                       </div>
                     </div>
                     <input

@@ -32,7 +32,7 @@ function StatusBadge({ status }: { status: RequestStatus | string }) {
     rejected: { label: "ไม่อนุมัติ", className: "bg-rose-500/15 border-rose-500/30 text-rose-300" },
   };
   const entry = map[(status as RequestStatus) ?? "pending"] ?? map.pending;
-  return <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[11px] font-semibold ${entry.className}`}>{entry.label}</span>;
+  return <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold ${entry.className}`}>{entry.label}</span>;
 }
 
 function formatDateRange(startDate: string | null, endDate: string | null) {
