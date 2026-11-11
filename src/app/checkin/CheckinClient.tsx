@@ -104,6 +104,8 @@ export default function CheckinClient({
   const [step, setStep] = useState<Step>(alreadyCheckedIn ? "done" : "locate");
   const [doneStatus, setDoneStatus] = useState<string | null>(existingStatus);
   const [gpsStatus, setGpsStatus] = useState("สถานะ GPS: รอตรวจพิกัด");
+  // linePictureUrl now carries the school photo when one exists; LINE URLs can expire (404).
+  const [avatarBroken, setAvatarBroken] = useState(false);
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [scanFailPending, startScanFailTransition] = useTransition();
@@ -429,15 +431,16 @@ export default function CheckinClient({
     <main className="flex-grow flex items-center justify-center">
       <div className="w-full max-w-full mx-auto space-y-6">
         <div className="glass-panel rounded-2xl p-6 flex items-center gap-4">
-          {linePictureUrl ? (
+          {linePictureUrl && !avatarBroken ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={linePictureUrl}
               alt={fullName}
-              className="w-14 h-14 rounded-full object-cover border border-slate-700 shrink-0"
+              onError={() => setAvatarBroken(true)}
+              className="w-16 h-16 rounded-full object-cover border-2 border-slate-700 shrink-0"
             />
           ) : (
-            <div className="w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-xl font-bold shrink-0">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-xl font-bold shrink-0">
               {fullName.slice(0, 1)}
             </div>
           )}

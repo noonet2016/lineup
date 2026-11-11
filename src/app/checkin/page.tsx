@@ -7,6 +7,7 @@ import CheckinClient from "./CheckinClient";
 import { computeScanFailGeo } from "@/lib/actions/scanfail";
 import { holidayBlockReason } from "@/lib/dashboard";
 import { formatWallClockDate, formatWallClockTime, formatWallClockThaiDate } from "@/lib/time";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 const TZ = "Asia/Bangkok";
 
@@ -67,7 +68,7 @@ export default async function CheckinPage() {
       <CheckinClient
         fullName={student.fullName}
         nickname={student.nickname}
-        linePictureUrl={student.linePictureUrl}
+        linePictureUrl={studentAvatarUrl(student.studentId, student.linePictureUrl)}
         studentId={student.studentId}
         roomName={student.classroom.roomName}
         locationName={location.name}
