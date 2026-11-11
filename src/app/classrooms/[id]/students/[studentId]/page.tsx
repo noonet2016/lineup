@@ -5,6 +5,8 @@ import { isAdmin } from "@/lib/teacher";
 import { prisma } from "@/lib/prisma";
 import { StudentShell, TeacherShell } from "@/app/_components/LegacyChrome";
 import { historyStatusMeta, leaveMeta, loadStudentHistory } from "@/lib/studentHistory";
+import { LightboxProvider, LightboxThumb } from "@/app/_components/ImageLightbox";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 import { formatInstantDate, formatWallClockDate, formatWallClockTime, nowInBangkok } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -83,20 +85,38 @@ export default async function StudentHistoryPage({
   const rangeQS = `sm=${startMonth}&sy=${startYear}&em=${endMonth}&ey=${endYear}`;
   const pageHref = (pg: number) => `?${rangeQS}&p=${pg}#daily`;
 
+  const photoUrl = studentAvatarUrl(data.student.studentId, null);
+
   const content = (
     <main className="max-w-full mx-auto safe-px py-8 space-y-6">
       <Link href={`/classrooms/${classroomId}`} className="text-sm text-slate-400 hover:text-white">
         ← กลับไปหน้าห้องเรียน
       </Link>
 
-      <div>
-        <p className="text-sm font-semibold tracking-wider text-cyan-400">ผลการเช็คชื่อ</p>
-        <h1 className="text-xl font-bold text-white mt-1">
-          {data.student.fullName}
-          {data.student.nickname ? ` (${data.student.nickname})` : ""}
-        </h1>
-        <p className="text-xs text-slate-400 mt-1">รหัสนักเรียน: {data.student.studentId}</p>
-      </div>
+      <LightboxProvider>
+        <div className="flex items-center gap-4">
+          {photoUrl ? (
+            <LightboxThumb
+              src={photoUrl}
+              alt={data.student.fullName}
+              caption={`${data.student.fullName}${data.student.nickname ? ` (${data.student.nickname})` : ""}`}
+              className="w-20 h-20 border-2 border-slate-700"
+            />
+          ) : (
+            <div className="w-20 h-20 shrink-0 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-2xl font-bold text-slate-300" aria-hidden="true">
+              {data.student.fullName.replace(/^(นางสาว|นาง|นาย|เด็กหญิง|เด็กชาย)\s*/, "").charAt(0) || "?"}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-semibold tracking-wider text-cyan-400">ผลการเช็คชื่อ</p>
+            <h1 className="text-xl font-bold text-white mt-1">
+              {data.student.fullName}
+              {data.student.nickname ? ` (${data.student.nickname})` : ""}
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">รหัสนักเรียน: {data.student.studentId}</p>
+          </div>
+        </div>
+      </LightboxProvider>
 
       <div className="glass-panel rounded-2xl p-5">
         <div className="flex items-center justify-between">
