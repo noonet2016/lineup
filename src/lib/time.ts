@@ -70,14 +70,11 @@ export function formatWallClockDate(date: Date): string {
 /** Format a wall-clock-carried Time/DateTime column value (see module doc) as "HH:mm น." or "HH:mm:ss น.". */
 export function formatWallClockTime(date: Date | null, withSeconds = false): string {
   if (!date) return "-";
-  return (
-    new Intl.DateTimeFormat("th-TH", {
-      timeZone: "UTC",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: withSeconds ? "2-digit" : undefined,
-    }).format(date) + " น."
-  );
+  // Built by hand on purpose: Intl "th-TH" output depends on the runtime's ICU data — Node 26
+  // already appends " น." to HH:MM (but not to HH:MM:SS), which made "07:57 น. น.".
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const hm = `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+  return `${withSeconds ? `${hm}:${pad(date.getUTCSeconds())}` : hm} น.`;
 }
 
 /**

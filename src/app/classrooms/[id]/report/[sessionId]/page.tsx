@@ -41,7 +41,7 @@ export default async function ClassroomReportDayPage({
       fullName={classroom.advisor?.fullName ?? ""}
       adminBack={admin}
       sessionDateLabel={formatWallClockDate(data.session.sessionDate)}
-      timeRangeLabel={`${formatWallClockTime(data.session.startTime)}–${formatWallClockTime(data.session.endTime)}`}
+      timeRangeLabel={`${formatWallClockTime(data.session.startTime).replace(" น.", "")}–${formatWallClockTime(data.session.endTime).replace(" น.", "")}`}
       exportHref={`/api/classrooms/${classroomId}/report/export?start_date=${dateStr}&end_date=${dateStr}`}
       stats={data.stats}
       students={data.students.map((s) => ({
