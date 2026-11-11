@@ -32,7 +32,7 @@ export default async function StudentHistoryPage({
   searchParams,
 }: {
   params: Promise<{ id: string; studentId: string }>;
-  searchParams: Promise<{ sy?: string; sm?: string; ey?: string; em?: string; p?: string }>;
+  searchParams: Promise<{ sy?: string; sm?: string; ey?: string; em?: string; p?: string; all?: string }>;
 }) {
   const { id, studentId } = await params;
   const classroomId = Number(id);
@@ -42,7 +42,8 @@ export default async function StudentHistoryPage({
   const bangkokNow = nowInBangkok();
   const bangkokYear = bangkokNow.dateOnly.getUTCFullYear();
   const bangkokMonth = bangkokNow.dateOnly.getUTCMonth() + 1;
-  const { sy, sm, ey, em, p } = await searchParams;
+  const { sy, sm, ey, em, p, all } = await searchParams;
+  const viewAll = all === "1";
   const historyPage = /^\d+$/.test(p ?? "") ? Math.max(1, Number(p)) : 1;
   const parseYear = (v?: string) => (/^\d{4}$/.test(v ?? "") ? Number(v) : bangkokYear);
   const parseMonth = (v?: string) => (/^(?:[1-9]|1[0-2])$/.test(v ?? "") ? Number(v) : bangkokMonth);
@@ -55,6 +56,19 @@ export default async function StudentHistoryPage({
   if (startYear * 12 + startMonth > endYear * 12 + endMonth) {
     [startYear, endYear] = [endYear, startYear];
     [startMonth, endMonth] = [endMonth, startMonth];
+  }
+  // "ดูทั้งหมด": from the room's first check-in session up to this month.
+  if (viewAll) {
+    const first = await prisma.attendanceSession.findFirst({
+      where: { classroomId },
+      orderBy: { sessionDate: "asc" },
+      select: { sessionDate: true },
+    });
+    const firstDate = first?.sessionDate ?? bangkokNow.dateOnly;
+    startYear = firstDate.getUTCFullYear();
+    startMonth = firstDate.getUTCMonth() + 1;
+    endYear = bangkokYear;
+    endMonth = bangkokMonth;
   }
 
   const data = await loadStudentHistory(studentId, startYear, startMonth, endYear, endMonth, historyPage);
@@ -77,13 +91,14 @@ export default async function StudentHistoryPage({
   );
   const startLabel = `${MONTHS_TH[startMonth]} ${startYear + 543}`;
   const endLabel = `${MONTHS_TH[endMonth]} ${endYear + 543}`;
-  const monthLabel = startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
+  const rangeLabel = startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
+  const monthLabel = viewAll ? `ทั้งหมด (${rangeLabel})` : rangeLabel;
   const years = [bangkokYear - 2, bangkokYear - 1, bangkokYear];
 
   const totalPages = Math.max(1, Math.ceil(data.historyTotal / data.historyPageSize));
   const curPage = Math.min(data.historyPage, totalPages);
   const rangeQS = `sm=${startMonth}&sy=${startYear}&em=${endMonth}&ey=${endYear}`;
-  const pageHref = (pg: number) => `?${rangeQS}&p=${pg}#daily`;
+  const pageHref = (pg: number) => (viewAll ? `?all=1&p=${pg}#daily` : `?${rangeQS}&p=${pg}#daily`);
 
   const photoUrl = studentAvatarUrl(data.student.studentId, null);
 
@@ -199,9 +214,17 @@ export default async function StudentHistoryPage({
                 ))}
               </select>
             </div>
-            <button type="submit" className="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">
-              ดูช่วงที่เลือก
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="submit" className="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">
+                ดูช่วงที่เลือก
+              </button>
+              <Link
+                href="?all=1"
+                className={`w-full text-center text-sm font-semibold px-3 py-2 rounded-lg border ${viewAll ? "bg-cyan-600 border-cyan-500 text-white" : "bg-slate-900 border-slate-700 text-slate-200 hover:border-cyan-500/50"}`}
+              >
+                ดูทั้งหมด
+              </Link>
+            </div>
           </form>
         </div>
 
