@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, requireTeacherClassroom } from "@/lib/teacher";
+import { requireAdmin, requireClassroomManager } from "@/lib/teacher";
 import { holidayBlockReason } from "@/lib/dashboard";
 import { nowInBangkok } from "@/lib/time";
 
@@ -41,24 +41,24 @@ async function resolveClassroomTimes(classroomId: number) {
 }
 
 /** Mirrors legacy teacher/settings.php action=generate_code. */
-export async function openTodaySession(): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function openTodaySession(classroomId: number): Promise<ActionResult> {
+  await requireClassroomManager(classroomId);
   const { dateOnly: today } = nowInBangkok();
 
   const existing = await prisma.attendanceSession.findUnique({
-    where: { sessionDate_classroomId: { sessionDate: today, classroomId: teacher.classroomId } },
+    where: { sessionDate_classroomId: { sessionDate: today, classroomId: classroomId } },
   });
   if (existing) return { ok: true, message: "รอบเช็คชื่อวันนี้เปิดอยู่แล้ว!" };
 
   const holiday = await holidayBlockReason(today);
   if (holiday !== null) return { ok: false, message: `วันนี้เป็นวันหยุด (${holiday}) ไม่สามารถเปิดรอบได้` };
 
-  const times = await resolveClassroomTimes(teacher.classroomId);
+  const times = await resolveClassroomTimes(classroomId);
 
   await prisma.attendanceSession.create({
     data: {
       sessionDate: today,
-      classroomId: teacher.classroomId,
+      classroomId: classroomId,
       startTime: hmsToDate(times.check_start),
       lateAfter: hmsToDate(times.late_after),
       endTime: hmsToDate(times.check_end),
@@ -66,16 +66,16 @@ export async function openTodaySession(): Promise<ActionResult> {
     },
   });
   await prisma.attendanceLog.create({
-    data: { studentId: null, eventType: "settings_changed", detail: `เปิดรอบเช็คชื่อห้อง id ${teacher.classroomId} ด้วยตนเอง` },
+    data: { studentId: null, eventType: "settings_changed", detail: `เปิดรอบเช็คชื่อห้อง id ${classroomId} ด้วยตนเอง` },
   });
 
-  revalidatePath(`/classrooms/${teacher.classroomId}`);
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  revalidatePath(`/classrooms/${classroomId}`);
+  revalidatePath(`/classrooms/${classroomId}/settings`);
   return { ok: true, message: "เปิดรอบเช็คชื่อเข้าแถวประจำวันนี้สำเร็จ!" };
 }
 
-export async function updateClassroomTimes(formData: FormData): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function updateClassroomTimes(classroomId: number, formData: FormData): Promise<ActionResult> {
+  await requireClassroomManager(classroomId);
 
   const values: {
     checkStart: string | null;
@@ -106,16 +106,16 @@ export async function updateClassroomTimes(formData: FormData): Promise<ActionRe
   }
 
   await prisma.classroom.update({
-    where: { id: teacher.classroomId },
+    where: { id: classroomId },
     data: values,
   });
 
   const { dateOnly: today } = nowInBangkok();
   const session = await prisma.attendanceSession.findUnique({
-    where: { sessionDate_classroomId: { sessionDate: today, classroomId: teacher.classroomId } },
+    where: { sessionDate_classroomId: { sessionDate: today, classroomId: classroomId } },
   });
   if (session) {
-    const resolved = await resolveClassroomTimes(teacher.classroomId);
+    const resolved = await resolveClassroomTimes(classroomId);
     await prisma.attendanceSession.update({
       where: { id: session.id },
       data: {
@@ -126,8 +126,8 @@ export async function updateClassroomTimes(formData: FormData): Promise<ActionRe
     });
   }
 
-  revalidatePath(`/classrooms/${teacher.classroomId}`);
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  revalidatePath(`/classrooms/${classroomId}`);
+  revalidatePath(`/classrooms/${classroomId}/settings`);
   return { ok: true, message: "บันทึกเวลาเข้าแถวของห้องเรียบร้อยแล้ว" };
 }
 
@@ -237,15 +237,15 @@ function parseLocationFields(formData: FormData): { name: string; lat: number; l
 }
 
 /** Mirrors legacy action=add_location — first location for a classroom becomes active automatically. */
-export async function addLocation(formData: FormData): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function addLocation(classroomId: number, formData: FormData): Promise<ActionResult> {
+  await requireClassroomManager(classroomId);
   const fields = parseLocationFields(formData);
   if (!fields) return { ok: false, message: "ข้อมูลจุดเข้าแถวไม่ถูกต้อง" };
 
-  const count = await prisma.checkinLocation.count({ where: { classroomId: teacher.classroomId } });
+  const count = await prisma.checkinLocation.count({ where: { classroomId: classroomId } });
   await prisma.checkinLocation.create({
     data: {
-      classroomId: teacher.classroomId,
+      classroomId: classroomId,
       name: fields.name,
       latitude: fields.lat,
       longitude: fields.lng,
@@ -254,23 +254,23 @@ export async function addLocation(formData: FormData): Promise<ActionResult> {
     },
   });
 
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  revalidatePath(`/classrooms/${classroomId}/settings`);
   return { ok: true, message: `เพิ่มจุดเข้าแถว "${fields.name}" เรียบร้อยแล้ว` };
 }
 
 /** Mirrors legacy action=edit_location — fixes the legacy soft-success bug: reports failure if the row wasn't found/owned. */
-export async function editLocation(locationId: number, formData: FormData): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function editLocation(classroomId: number, locationId: number, formData: FormData): Promise<ActionResult> {
+  await requireClassroomManager(classroomId);
   const fields = parseLocationFields(formData);
   if (!fields) return { ok: false, message: "ข้อมูลจุดเข้าแถวไม่ถูกต้อง" };
 
   const result = await prisma.checkinLocation.updateMany({
-    where: { id: locationId, classroomId: teacher.classroomId },
+    where: { id: locationId, classroomId: classroomId },
     data: { name: fields.name, latitude: fields.lat, longitude: fields.lng, radiusM: fields.radius },
   });
   if (result.count === 0) return { ok: false, message: "ไม่พบจุดที่ต้องการแก้ไข หรือไม่ใช่ห้องของคุณ" };
 
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  revalidatePath(`/classrooms/${classroomId}/settings`);
   return { ok: true, message: `แก้ไขจุดเข้าแถว "${fields.name}" เรียบร้อยแล้ว` };
 }
 
@@ -280,45 +280,45 @@ export async function editLocation(locationId: number, formData: FormData): Prom
  * classroom left with zero active locations). Here the ownership check runs inside the same
  * transaction, before anything is cleared.
  */
-export async function setActiveLocation(locationId: number): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function setActiveLocation(classroomId: number, locationId: number): Promise<ActionResult> {
+  await requireClassroomManager(classroomId);
 
   const result = await prisma.$transaction(async (tx) => {
-    const target = await tx.checkinLocation.findFirst({ where: { id: locationId, classroomId: teacher.classroomId } });
+    const target = await tx.checkinLocation.findFirst({ where: { id: locationId, classroomId: classroomId } });
     if (!target) return null;
-    await tx.checkinLocation.updateMany({ where: { classroomId: teacher.classroomId }, data: { isActive: 0 } });
+    await tx.checkinLocation.updateMany({ where: { classroomId: classroomId }, data: { isActive: 0 } });
     await tx.checkinLocation.update({ where: { id: locationId }, data: { isActive: 1 } });
     return target;
   });
 
   if (!result) return { ok: false, message: "ไม่พบจุดที่เลือก หรือไม่ใช่ห้องของคุณ" };
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  revalidatePath(`/classrooms/${classroomId}/settings`);
   return { ok: true, message: "เปลี่ยนจุดเข้าแถวที่ใช้งานเรียบร้อยแล้ว" };
 }
 
 /** Disable every room location so getActiveLocation() naturally falls back to the central point. */
-export async function clearRoomLocationOverride(): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
-  await prisma.checkinLocation.updateMany({ where: { classroomId: teacher.classroomId }, data: { isActive: 0 } });
-  revalidatePath(`/classrooms/${teacher.classroomId}`);
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+export async function clearRoomLocationOverride(classroomId: number): Promise<ActionResult> {
+  await requireClassroomManager(classroomId);
+  await prisma.checkinLocation.updateMany({ where: { classroomId: classroomId }, data: { isActive: 0 } });
+  revalidatePath(`/classrooms/${classroomId}`);
+  revalidatePath(`/classrooms/${classroomId}/settings`);
   return { ok: true, message: "ห้องนี้กลับไปใช้จุดส่วนกลาง (โดม) แล้ว" };
 }
 
 /** Remove this room's time override so it uses the school-wide defaults again. */
-export async function clearRoomTimeOverride(): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function clearRoomTimeOverride(classroomId: number): Promise<ActionResult> {
+  await requireClassroomManager(classroomId);
   await prisma.classroom.update({
-    where: { id: teacher.classroomId },
+    where: { id: classroomId },
     data: { checkStart: null, lateAfter: null, checkEnd: null },
   });
 
   const { dateOnly: today } = nowInBangkok();
   const session = await prisma.attendanceSession.findUnique({
-    where: { sessionDate_classroomId: { sessionDate: today, classroomId: teacher.classroomId } },
+    where: { sessionDate_classroomId: { sessionDate: today, classroomId: classroomId } },
   });
   if (session) {
-    const resolved = await resolveClassroomTimes(teacher.classroomId);
+    const resolved = await resolveClassroomTimes(classroomId);
     await prisma.attendanceSession.update({
       where: { id: session.id },
       data: {
@@ -329,28 +329,28 @@ export async function clearRoomTimeOverride(): Promise<ActionResult> {
     });
   }
 
-  revalidatePath(`/classrooms/${teacher.classroomId}`);
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  revalidatePath(`/classrooms/${classroomId}`);
+  revalidatePath(`/classrooms/${classroomId}/settings`);
   return { ok: true, message: "ห้องนี้กลับไปใช้เวลาส่วนกลางของโรงเรียนแล้ว" };
 }
 
 /** Mirrors legacy action=delete_location — auto-promotes the oldest remaining location to active if the deleted one was active. */
-export async function deleteLocation(locationId: number): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function deleteLocation(classroomId: number, locationId: number): Promise<ActionResult> {
+  await requireClassroomManager(classroomId);
 
-  const target = await prisma.checkinLocation.findFirst({ where: { id: locationId, classroomId: teacher.classroomId } });
+  const target = await prisma.checkinLocation.findFirst({ where: { id: locationId, classroomId: classroomId } });
   if (!target) return { ok: false, message: "ไม่พบจุดที่ต้องการลบ หรือไม่ใช่ห้องของคุณ" };
 
   await prisma.checkinLocation.delete({ where: { id: locationId } });
 
   if (target.isActive === 1) {
     const next = await prisma.checkinLocation.findFirst({
-      where: { classroomId: teacher.classroomId },
+      where: { classroomId: classroomId },
       orderBy: { id: "asc" },
     });
     if (next) await prisma.checkinLocation.update({ where: { id: next.id }, data: { isActive: 1 } });
   }
 
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  revalidatePath(`/classrooms/${classroomId}/settings`);
   return { ok: true, message: "ลบจุดเข้าแถวเรียบร้อยแล้ว" };
 }

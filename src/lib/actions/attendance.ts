@@ -3,7 +3,7 @@
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireTeacherClassroom } from "@/lib/teacher";
+import { requireClassroomManager } from "@/lib/teacher";
 import { nowInBangkok } from "@/lib/time";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string };
@@ -16,8 +16,8 @@ const VALID_STATUSES = ["present", "late", "absent", "pending", "flagged"] as co
  * updates the existing record or inserts one (for a student who was absent all along), stamps
  * check_time to the edit moment same as legacy, and logs status_changed.
  */
-export async function updateStudentStatus(studentId: string, status: string, editReason: string): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function updateStudentStatus(classroomId: number, studentId: string, status: string, editReason: string): Promise<ActionResult> {
+  const teacher = await requireClassroomManager(classroomId);
 
   if (!VALID_STATUSES.includes(status as (typeof VALID_STATUSES)[number])) {
     return { ok: false, message: "ประเภทสถานะที่เลือกไม่ถูกต้อง" };
@@ -27,13 +27,13 @@ export async function updateStudentStatus(studentId: string, status: string, edi
 
   const student = await prisma.student.findUnique({ where: { studentId } });
   if (!student || student.status !== 1) return { ok: false, message: "ไม่พบข้อมูลนักเรียน" };
-  if (student.classroomId !== teacher.classroomId) {
+  if (student.classroomId !== classroomId) {
     return { ok: false, message: "คุณไม่มีสิทธิ์แก้ไขสถานะของนักเรียนนอกห้องเรียนที่ดูแล" };
   }
 
   const { dateOnly: today, wallClock: editTime } = nowInBangkok();
   const session = await prisma.attendanceSession.findUnique({
-    where: { sessionDate_classroomId: { sessionDate: today, classroomId: teacher.classroomId } },
+    where: { sessionDate_classroomId: { sessionDate: today, classroomId: classroomId } },
   });
   if (!session) {
     return { ok: false, message: "ยังไม่ได้เปิดรอบลงทะเบียนเช็คชื่อในวันนี้ กรุณาเปิดรอบก่อน" };
@@ -70,17 +70,17 @@ export async function updateStudentStatus(studentId: string, status: string, edi
     },
   });
 
-  revalidatePath(`/classrooms/${teacher.classroomId}`);
-  revalidatePath(`/classrooms/${teacher.classroomId}/students/${studentId}`);
+  revalidatePath(`/classrooms/${classroomId}`);
+  revalidatePath(`/classrooms/${classroomId}/students/${studentId}`);
   return { ok: true, message: `แก้ไขสถานะของ ${student.fullName} เรียบร้อยแล้ว` };
 }
 
 /** Mirrors legacy edit_status.php's reset_pw action: reset to the student's own ID, force change on next login. */
-export async function resetStudentPassword(studentId: string): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function resetStudentPassword(classroomId: number, studentId: string): Promise<ActionResult> {
+  const teacher = await requireClassroomManager(classroomId);
 
   const student = await prisma.student.findUnique({ where: { studentId } });
-  if (!student || student.classroomId !== teacher.classroomId) {
+  if (!student || student.classroomId !== classroomId) {
     return { ok: false, message: "ไม่พบข้อมูลนักเรียนในห้องเรียนที่คุณดูแล" };
   }
 

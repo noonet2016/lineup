@@ -63,7 +63,7 @@ export default function LineStatusClient({
   function handleSaveLineChatId(studentId: string) {
     setBanner(null);
     startTransition(async () => {
-      const result = await setStudentLineChatId(studentId, lineChatValue);
+      const result = await setStudentLineChatId(classroomId, studentId, lineChatValue);
       setBanner({ text: result.message, kind: result.ok ? "success" : "error" });
       if (result.ok) setEditingLineChatId(null);
       router.refresh();
@@ -73,7 +73,7 @@ export default function LineStatusClient({
   function handleUnlink(studentId: string) {
     setBanner(null);
     startTransition(async () => {
-      const result = await unlinkStudentLine(studentId);
+      const result = await unlinkStudentLine(classroomId, studentId);
       setBanner({ text: result.message, kind: result.ok ? "success" : "error" });
       router.refresh();
     });

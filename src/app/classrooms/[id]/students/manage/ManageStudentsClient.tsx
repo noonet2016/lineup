@@ -204,7 +204,7 @@ export default function ManageStudentsClient({
   function doResetPassword(studentId: string) {
     setMessage(null);
     startTransition(async () => {
-      const result = await resetStudentPassword(studentId);
+      const result = await resetStudentPassword(classroomId, studentId);
       setResetTarget(null);
       setMessage({ type: result.ok ? "success" : "error", text: result.message });
     });

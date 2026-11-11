@@ -78,7 +78,7 @@ export default function ExemptionsClient({
         <div className="grid lg:grid-cols-2 gap-6 items-stretch">
         <section className="min-w-0 glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">
           <h2 className="text-lg font-bold text-white mb-5">เพิ่มการยกเว้น</h2>
-          <form action={(formData) => run(() => addExemption(formData))} className="space-y-4">
+          <form action={(formData) => run(() => addExemption(classroomId, formData))} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">นักเรียน</label>
               <select name="student_id" required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/50">
@@ -168,10 +168,10 @@ export default function ExemptionsClient({
                     </div>
                   </div>
                   <div className="flex gap-2 text-xs shrink-0">
-                    <button disabled={pending} onClick={() => run(() => toggleExemptionActive(e.id, !e.isActive))} className="text-slate-400 hover:text-white">
+                    <button disabled={pending} onClick={() => run(() => toggleExemptionActive(classroomId, e.id, !e.isActive))} className="text-slate-400 hover:text-white">
                       {e.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
                     </button>
-                    <button disabled={pending} onClick={() => run(() => deleteExemption(e.id))} className="text-rose-400 hover:text-rose-300">
+                    <button disabled={pending} onClick={() => run(() => deleteExemption(classroomId, e.id))} className="text-rose-400 hover:text-rose-300">
                       ลบ
                     </button>
                   </div>

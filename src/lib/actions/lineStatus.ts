@@ -3,16 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { LINE_CHAT_ID_ERROR, normalizeLineChatId } from "@/lib/lineChatId";
-import { requireTeacherClassroom } from "@/lib/teacher";
+import { requireClassroomManager } from "@/lib/teacher";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string };
 
 /** Teacher-triggered unbind: clears a student's LINE link so they can re-bind (e.g. linked the wrong account). */
-export async function unlinkStudentLine(studentId: string): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function unlinkStudentLine(classroomId: number, studentId: string): Promise<ActionResult> {
+  const teacher = await requireClassroomManager(classroomId);
 
   const student = await prisma.student.findUnique({ where: { studentId } });
-  if (!student || student.classroomId !== teacher.classroomId) {
+  if (!student || student.classroomId !== classroomId) {
     return { ok: false, message: "ไม่พบนักเรียนในห้องนี้" };
   }
   if (!student.lineUserId) {
@@ -27,15 +27,15 @@ export async function unlinkStudentLine(studentId: string): Promise<ActionResult
     data: { studentId, eventType: "settings_changed", detail: `ครู ${teacher.fullName} ยกเลิกการผูกบัญชี LINE ของนักเรียน ${studentId}` },
   });
 
-  revalidatePath(`/classrooms/${teacher.classroomId}/line-status`);
+  revalidatePath(`/classrooms/${classroomId}/line-status`);
   return { ok: true, message: "ยกเลิกการผูกบัญชี LINE แล้ว" };
 }
 
-export async function setStudentLineChatId(studentId: string, rawValue: string): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+export async function setStudentLineChatId(classroomId: number, studentId: string, rawValue: string): Promise<ActionResult> {
+  const teacher = await requireClassroomManager(classroomId);
 
   const student = await prisma.student.findUnique({ where: { studentId } });
-  if (!student || student.classroomId !== teacher.classroomId) {
+  if (!student || student.classroomId !== classroomId) {
     return { ok: false, message: "ไม่พบนักเรียนในห้องนี้" };
   }
 
@@ -58,6 +58,6 @@ export async function setStudentLineChatId(studentId: string, rawValue: string):
     },
   });
 
-  revalidatePath(`/classrooms/${teacher.classroomId}/line-status`);
+  revalidatePath(`/classrooms/${classroomId}/line-status`);
   return { ok: true, message: "บันทึก LINE ID แล้ว" };
 }

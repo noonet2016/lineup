@@ -178,7 +178,7 @@ export default function SettingsClient({
                 <p className="text-sm font-bold text-amber-300">ยังไม่ได้เปิดรอบเช็คชื่อวันนี้</p>
                 <p className="text-xs text-slate-400 mt-0.5">ปกติระบบเปิดอัตโนมัติเมื่อมีนักเรียนเช็คอินคนแรก · กดปุ่มนี้เพื่อเปิดรอบล่วงหน้าได้เอง</p>
               </div>
-              <button disabled={pending} onClick={() => run(openTodaySession)} className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]">
+              <button disabled={pending} onClick={() => run(() => openTodaySession(classroomId))} className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]">
                 + เปิดรอบเช็คชื่อวันนี้
               </button>
             </div>
@@ -187,9 +187,9 @@ export default function SettingsClient({
         <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-semibold">🏠 เวลาของห้อง</span>
           <span className={`inline-flex items-center rounded-md border px-2 py-0.5 font-semibold ${classroomTimes.hasTimeOverride ? "border-amber-500/25 bg-amber-500/10 text-amber-200" : "border-teal-500/25 bg-teal-500/10 text-teal-200"}`}>{classroomTimes.hasTimeOverride ? "กำหนดเวลาเฉพาะห้องนี้" : "ใช้เวลาส่วนกลาง (จากโรงเรียน)"}</span>
-          {classroomTimes.hasTimeOverride && <button type="button" disabled={pending} onClick={() => run(clearRoomTimeOverride)} className="rounded-lg border border-teal-500/35 bg-teal-500/15 px-3 py-2 text-xs font-bold text-teal-100 transition-colors hover:bg-teal-500/25 disabled:opacity-50">กลับไปใช้เวลาส่วนกลาง</button>}
+          {classroomTimes.hasTimeOverride && <button type="button" disabled={pending} onClick={() => run(() => clearRoomTimeOverride(classroomId))} className="rounded-lg border border-teal-500/35 bg-teal-500/15 px-3 py-2 text-xs font-bold text-teal-100 transition-colors hover:bg-teal-500/25 disabled:opacity-50">กลับไปใช้เวลาส่วนกลาง</button>}
         </div>
-        <form action={(formData) => run(() => updateClassroomTimes(formData))} className="space-y-4 mb-7">
+        <form action={(formData) => run(() => updateClassroomTimes(classroomId, formData))} className="space-y-4 mb-7">
           <AssemblyTimeFields defaultValues={{ checkStart: classroomTimes.check_start, lateAfter: classroomTimes.late_after, checkEnd: classroomTimes.check_end }} />
           <label className="block">
             <span className="block text-xs font-semibold text-slate-400 mb-2">
@@ -263,7 +263,7 @@ export default function SettingsClient({
         {locations.some((location) => location.isActive) ? (
           <div className="mb-4 flex flex-col gap-3 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm font-semibold text-cyan-200">ใช้จุดของห้อง: {locations.find((location) => location.isActive)?.name}</span>
-            <button type="button" disabled={pending} onClick={() => run(clearRoomLocationOverride)} className="rounded-lg border border-amber-500/35 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100 transition-colors hover:bg-amber-500/25 disabled:opacity-50">กลับไปใช้จุดส่วนกลาง</button>
+            <button type="button" disabled={pending} onClick={() => run(() => clearRoomLocationOverride(classroomId))} className="rounded-lg border border-amber-500/35 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100 transition-colors hover:bg-amber-500/25 disabled:opacity-50">กลับไปใช้จุดส่วนกลาง</button>
           </div>
         ) : (
           <div className="mb-4 rounded-xl border border-indigo-500/25 bg-indigo-500/10 p-3 text-sm font-semibold text-indigo-200">ใช้จุดส่วนกลาง (โดม)</div>
@@ -284,7 +284,7 @@ export default function SettingsClient({
                 {loc.isActive ? (
                   <span className="absolute top-2 right-3 z-10 text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">ใช้งานอยู่</span>
                 ) : (
-                  <button disabled={pending} onClick={() => run(() => setActiveLocation(loc.id))} className="absolute top-2 right-3 z-10 bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg transition-all active:scale-95">
+                  <button disabled={pending} onClick={() => run(() => setActiveLocation(classroomId, loc.id))} className="absolute top-2 right-3 z-10 bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg transition-all active:scale-95">
                     ใช้จุดนี้
                   </button>
                 )}
@@ -299,7 +299,7 @@ export default function SettingsClient({
                       <button onClick={() => openEditLocation(loc.id)} className="text-amber-300 hover:text-amber-200 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition-all">
                         แก้ไข
                       </button>
-                      <button disabled={pending} onClick={() => run(() => deleteLocation(loc.id))} className="text-rose-400 hover:text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-rose-500/10 transition-all">
+                      <button disabled={pending} onClick={() => run(() => deleteLocation(classroomId, loc.id))} className="text-rose-400 hover:text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-rose-500/10 transition-all">
                         ลบ
                       </button>
                     </div>
@@ -383,8 +383,8 @@ export default function SettingsClient({
             <form
               key={editingLocationId ?? "new"}
               action={(formData) => {
-                if (editingLocationId) run(() => editLocation(editingLocationId, formData));
-                else run(() => addLocation(formData));
+                if (editingLocationId) run(() => editLocation(classroomId, editingLocationId, formData));
+                else run(() => addLocation(classroomId, formData));
                 closeLocationModal();
               }}
               className="space-y-2.5"

@@ -2,19 +2,21 @@
 
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { requireTeacherClassroom } from "@/lib/teacher";
+import { requireSession } from "@/lib/session";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string };
 
 /** Mirrors legacy teacher/settings.php action=change_teacher_pw. */
 export async function changeTeacherPassword(formData: FormData): Promise<ActionResult> {
-  const teacher = await requireTeacherClassroom();
+  const session = await requireSession();
+  if (session.role !== "teacher") throw new Error("เฉพาะครูเท่านั้น");
+  const teacherId = Number(session.id);
 
   const currentPw = String(formData.get("current_pw") ?? "");
   const newPw = String(formData.get("new_pw") ?? "");
   const confirmPw = String(formData.get("confirm_pw") ?? "");
 
-  const record = await prisma.teacher.findUniqueOrThrow({ where: { id: teacher.teacherId } });
+  const record = await prisma.teacher.findUniqueOrThrow({ where: { id: teacherId } });
 
   const validCurrent = await bcrypt.compare(currentPw, record.passwordHash);
   if (!validCurrent) return { ok: false, message: "รหัสผ่านปัจจุบันไม่ถูกต้อง" };
@@ -25,7 +27,7 @@ export async function changeTeacherPassword(formData: FormData): Promise<ActionR
   if (sameAsOld) return { ok: false, message: "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม" };
 
   const newHash = await bcrypt.hash(newPw, 10);
-  await prisma.teacher.update({ where: { id: teacher.teacherId }, data: { passwordHash: newHash } });
+  await prisma.teacher.update({ where: { id: teacherId }, data: { passwordHash: newHash } });
 
   return { ok: true, message: "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว" };
 }

@@ -24,7 +24,7 @@ export async function isAdmin(): Promise<boolean> {
   return teacher?.role === "admin";
 }
 
-/** Every teacher page/action in this app is scoped to the single classroom they advise (matches legacy: one teacher = one homeroom). */
+/** Legacy helper for pages that intentionally require the caller's own homeroom. Room-scoped actions must use requireClassroomManager(targetId). */
 export async function requireTeacherClassroom(): Promise<TeacherContext> {
   const session = await requireSession();
   if (session.role !== "teacher") throw new Error("เฉพาะครูเท่านั้น");

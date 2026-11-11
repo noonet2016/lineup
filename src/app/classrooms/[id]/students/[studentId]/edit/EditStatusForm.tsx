@@ -32,7 +32,7 @@ export default function EditStatusForm({ studentId, classroomId, currentStatus, 
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
-      const result = await updateStudentStatus(studentId, status, reason);
+      const result = await updateStudentStatus(classroomId, studentId, status, reason);
       if (result.ok) {
         const params = new URLSearchParams();
         if (returnFilter) params.set("filter", returnFilter);

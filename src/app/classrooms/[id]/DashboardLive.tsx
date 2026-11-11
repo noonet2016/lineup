@@ -50,7 +50,7 @@ export default function DashboardLive({
   function submitQuickLeave(formData: FormData) {
     setQuickLeaveError(null);
     startQuickLeaveTransition(async () => {
-      const result = await addExemption(formData);
+      const result = await addExemption(classroomId, formData);
       if (!result.ok) {
         setQuickLeaveError(result.message);
         return;

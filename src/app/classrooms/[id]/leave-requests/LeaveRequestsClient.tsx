@@ -98,10 +98,10 @@ export default function LeaveRequestsClient({
     startTransition(async () => {
       const result =
         action === "approve"
-          ? await approveLeave(id, note || undefined)
+          ? await approveLeave(classroomId, id, note || undefined)
           : action === "reject"
-            ? await rejectLeave(id, note || undefined)
-            : await revertLeaveToPending(id);
+            ? await rejectLeave(classroomId, id, note || undefined)
+            : await revertLeaveToPending(classroomId, id);
       setBanner({ text: result.message, kind: result.ok ? "success" : "error" });
       if (result.ok) {
         setItems((current) =>
