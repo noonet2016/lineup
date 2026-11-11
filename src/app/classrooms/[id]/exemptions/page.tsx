@@ -77,7 +77,7 @@ export default async function ClassroomExemptionsPage({
       selectedDateLabel={formatWallClockDate(selectedDay)}
       todayDate={todayDate}
       totalCount={exemptions.length}
-      students={students.map((s) => ({ studentId: s.studentId, fullName: s.fullName, nickname: s.nickname, numberInClass: s.numberInClass }))}
+      students={students.map((s) => ({ studentId: s.studentId, fullName: s.fullName, nickname: s.nickname, numberInClass: s.numberInClass, photoUrl: studentAvatarUrl(s.studentId, s.linePictureUrl) }))}
       exemptions={shown.map((e) => ({
         id: e.id,
         studentId: e.student.studentId,

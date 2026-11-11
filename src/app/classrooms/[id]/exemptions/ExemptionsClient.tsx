@@ -10,7 +10,7 @@ import StudentAvatar from "@/app/_components/StudentAvatar";
 
 const WEEKDAY_LABEL: Record<number, string> = { 1: "จันทร์", 2: "อังคาร", 3: "พุธ", 4: "พฤหัสบดี", 5: "ศุกร์", 6: "เสาร์", 7: "อาทิตย์" };
 
-type StudentOpt = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null };
+type StudentOpt = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null; photoUrl: string | null };
 type Exemption = {
   id: number;
   studentId: string;
@@ -57,6 +57,8 @@ export default function ExemptionsClient({
   const [banner, setBanner] = useState<{ text: string; kind: "success" | "error" } | null>(null);
   const [exemptWeekday, setExemptWeekday] = useState("today");
   const [query, setQuery] = useState("");
+  const [pickedId, setPickedId] = useState("");
+  const picked = students.find((s) => s.studentId === pickedId) ?? null;
 
   const visibleExemptions = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -105,7 +107,7 @@ export default function ExemptionsClient({
           <form action={(formData) => run(() => addExemption(classroomId, formData))} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">นักเรียน</label>
-              <select name="student_id" required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/50">
+              <select name="student_id" required value={pickedId} onChange={(e) => setPickedId(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/50">
                 <option value="">— เลือกนักเรียน —</option>
                 {students.map((s) => (
                   <option key={s.studentId} value={s.studentId}>
@@ -113,6 +115,19 @@ export default function ExemptionsClient({
                   </option>
                 ))}
               </select>
+              {picked && (
+                <div className="mt-3 flex items-center gap-4 rounded-xl border border-sky-500/25 bg-sky-500/5 p-3">
+                  <StudentAvatar student={picked} className="w-16 h-16" initialClassName="text-xl" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-white break-words">{picked.fullName}</p>
+                    <p className="text-sm text-slate-300">
+                      เลขที่ {picked.numberInClass ?? "-"}
+                      {picked.nickname ? ` · ชื่อเล่น ${picked.nickname}` : ""}
+                    </p>
+                    <p className="text-xs text-slate-400 font-mono">เลขประจำตัว {picked.studentId}</p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="space-y-4">
               <div>
