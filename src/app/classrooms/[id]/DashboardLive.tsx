@@ -205,7 +205,7 @@ export default function DashboardLive({
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badge.className}`}>
                         {badge.text}
                       </span>
-                      {student.exemptReason && (
+                      {student.exemptReason && !student.activities.some((a) => a.name === student.exemptReason) && (
                         <span className="block text-xs text-sky-400 mt-1">🎌 {student.exemptReason}</span>
                       )}
                       {student.editReason && (
@@ -403,7 +403,7 @@ export default function DashboardLive({
                   </div>
                 )}
               </div>
-              {student.exemptReason && (
+              {student.exemptReason && !student.activities.some((a) => a.name === student.exemptReason) && (
                 <div className="text-xs text-sky-400 bg-sky-500/5 px-2.5 py-1.5 rounded-lg border border-sky-500/10">
                   🎌 ลา/กิจกรรม: {student.exemptReason}
                 </div>

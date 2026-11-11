@@ -186,7 +186,11 @@ export async function acknowledgeScanFail(
     select: { classroomId: true, classroom: { select: { advisorId: true } } },
   });
   if (!student) return { ok: false, message: "ไม่พบนักเรียน" };
-  if (student.classroom.advisorId !== Number(session.id)) return { ok: false, message: "ไม่มีสิทธิ์ในห้องเรียนนี้" };
+  // Advisor of that room or the admin (admin mode) — same rule as requireClassroomManager.
+  const me = await prisma.teacher.findUnique({ where: { id: Number(session.id) }, select: { role: true } });
+  if (me?.role !== "admin" && student.classroom.advisorId !== Number(session.id)) {
+    return { ok: false, message: "ไม่มีสิทธิ์ในห้องเรียนนี้" };
+  }
 
   const today = resolveScanFailSessionDate(sessionDate);
   const { wallClock: now } = nowInBangkok();
