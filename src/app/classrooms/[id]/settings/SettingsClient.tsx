@@ -19,6 +19,7 @@ import MapPicker, { type MapPoint } from "@/app/_components/MapPicker";
 import AssemblyTimeFields from "@/app/_components/AssemblyTimeFields";
 import { changeTeacherPassword } from "@/lib/actions/teacherAccount";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
+import { EYE_TOGGLE_BUTTON_CLASS, EyeToggleIcon, eyeToggleLabel } from "@/app/_components/PasswordInput";
 type ClassroomTimes = { check_start: string; late_after: string; check_end: string; scanfailAlertRadiusM: string; hasTimeOverride: boolean };
 type Holiday = { dateStr: string; label: string; name: string };
 type Location = { id: number; name: string; lat: number; lng: number; radius: number; isActive: boolean };
@@ -325,10 +326,10 @@ export default function SettingsClient({
                 type={showCurrentPw ? "text" : "password"}
                 name="current_pw"
                 required
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 pr-11 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 pr-12 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowCurrentPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300">
-                {showCurrentPw ? "🙈" : "👁️"}
+              <button type="button" onClick={() => setShowCurrentPw((v) => !v)} className={EYE_TOGGLE_BUTTON_CLASS} aria-label={eyeToggleLabel(showCurrentPw)} aria-pressed={showCurrentPw}>
+                <EyeToggleIcon shown={showCurrentPw} />
               </button>
             </div>
           </label>
@@ -340,10 +341,10 @@ export default function SettingsClient({
                 name="new_pw"
                 required
                 minLength={6}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 pr-11 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 pr-12 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowNewPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300">
-                {showNewPw ? "🙈" : "👁️"}
+              <button type="button" onClick={() => setShowNewPw((v) => !v)} className={EYE_TOGGLE_BUTTON_CLASS} aria-label={eyeToggleLabel(showNewPw)} aria-pressed={showNewPw}>
+                <EyeToggleIcon shown={showNewPw} />
               </button>
             </div>
           </label>
@@ -354,10 +355,10 @@ export default function SettingsClient({
                 type={showConfirmPw ? "text" : "password"}
                 name="confirm_pw"
                 required
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 pr-11 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 pr-12 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowConfirmPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300">
-                {showConfirmPw ? "🙈" : "👁️"}
+              <button type="button" onClick={() => setShowConfirmPw((v) => !v)} className={EYE_TOGGLE_BUTTON_CLASS} aria-label={eyeToggleLabel(showConfirmPw)} aria-pressed={showConfirmPw}>
+                <EyeToggleIcon shown={showConfirmPw} />
               </button>
             </div>
           </label>

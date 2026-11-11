@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PasswordInput from "@/app/_components/PasswordInput";
 
 type Phase = "loading" | "error" | "not_linked";
 
@@ -141,8 +142,7 @@ export default function LiffEntryPage() {
             </div>
             <div className="space-y-1">
               <label className="text-xs text-slate-400">รหัสผ่าน</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"

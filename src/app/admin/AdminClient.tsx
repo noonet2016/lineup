@@ -10,6 +10,7 @@ import AssemblyTimeFields from "@/app/_components/AssemblyTimeFields";
 import { assignActivityMembers, createActivity, deleteActivity, updateActivity } from "@/lib/actions/activities";
 import { createAdmin, createTeacherWithClassroom, deleteTeacher, resetTeacherPassword, updateTeacher } from "@/lib/actions/admin";
 import { updateCentralCheckinPoint, updateGeneralSettings } from "@/lib/actions/settings";
+import { EYE_TOGGLE_BUTTON_CLASS, EyeToggleIcon, eyeToggleLabel } from "@/app/_components/PasswordInput";
 
 type TeacherRow = {
   id: number;
@@ -362,9 +363,7 @@ export default function AdminClient({
                 placeholder="ครูเปลี่ยนเองได้ภายหลัง"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-12 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowAddPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300 text-xs font-semibold">
-                {showAddPw ? "ซ่อน" : "แสดง"}
-              </button>
+              <button type="button" onClick={() => setShowAddPw((v) => !v)} className={EYE_TOGGLE_BUTTON_CLASS} aria-label={eyeToggleLabel(showAddPw)} aria-pressed={showAddPw}><EyeToggleIcon shown={showAddPw} /></button>
             </div>
           </label>
           <div className="sm:col-span-2">
@@ -384,7 +383,7 @@ export default function AdminClient({
         <form id="add-admin-form" action={addAdmin} className="grid sm:grid-cols-3 gap-4">
           <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">ชื่อ - นามสกุล</span><input name="full_name" required placeholder="เช่น ผู้ดูแลระบบ" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /></label>
           <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">Username</span><input name="username" required autoComplete="off" placeholder="เช่น admin2" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /></label>
-          <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">รหัสผ่านเริ่มต้น (≥ 6 ตัว)</span><div className="relative"><input name="password" type={showAdminPw ? "text" : "password"} required minLength={6} autoComplete="new-password" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-12 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /><button type="button" onClick={() => setShowAdminPw((value) => !value)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300 text-xs font-semibold">{showAdminPw ? "ซ่อน" : "แสดง"}</button></div></label>
+          <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">รหัสผ่านเริ่มต้น (≥ 6 ตัว)</span><div className="relative"><input name="password" type={showAdminPw ? "text" : "password"} required minLength={6} autoComplete="new-password" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-12 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /><button type="button" onClick={() => setShowAdminPw((value) => !value)} className={EYE_TOGGLE_BUTTON_CLASS} aria-label={eyeToggleLabel(showAdminPw)} aria-pressed={showAdminPw}><EyeToggleIcon shown={showAdminPw} /></button></div></label>
           <div className="sm:col-span-3"><button type="submit" disabled={pending} className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl transition-colors">{pending ? "กำลังบันทึก..." : "+ เพิ่มผู้ดูแลระบบ"}</button></div>
         </form>
       </section>
@@ -590,9 +589,7 @@ export default function AdminClient({
                 placeholder="รหัสผ่านใหม่ (≥ 6 ตัว)"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-12 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowResetPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300 text-xs font-semibold">
-                {showResetPw ? "ซ่อน" : "แสดง"}
-              </button>
+              <button type="button" onClick={() => setShowResetPw((v) => !v)} className={EYE_TOGGLE_BUTTON_CLASS} aria-label={eyeToggleLabel(showResetPw)} aria-pressed={showResetPw}><EyeToggleIcon shown={showResetPw} /></button>
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={submitReset} disabled={pending || newPw.length < 6} className="flex-grow rounded-2xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold py-2.5 transition-colors">

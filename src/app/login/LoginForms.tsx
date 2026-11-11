@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { loginStudent, loginTeacher, type LoginResult } from "@/lib/actions/auth";
+import PasswordInput from "@/app/_components/PasswordInput";
 
 const initialState: LoginResult = { ok: false, error: "" };
 
@@ -62,9 +63,8 @@ export default function LoginForms({ initialRole = "student" }: { initialRole?: 
         )}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">{isTeacher ? "รหัสผ่าน (Password)" : "รหัสผ่าน"}</label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             name="password"
             required
             placeholder="••••••••"

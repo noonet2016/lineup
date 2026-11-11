@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { loginAdmin, type LoginResult } from "@/lib/actions/auth";
+import PasswordInput from "@/app/_components/PasswordInput";
 
 const initialState: LoginResult = { ok: false, error: "" };
 
@@ -32,9 +33,8 @@ export default function AdminLoginForm() {
       </div>
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">รหัสผ่าน (Password)</label>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
           name="password"
           required
           autoComplete="current-password"
