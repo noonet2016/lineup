@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/teacher";
 import PollRefresh from "@/app/_components/PollRefresh";
 import { formatDateInput, formatWallClockDate, formatWallClockTime, nowInBangkok, parseDateInput } from "@/lib/time";
 import LeaveRequestsClient from "./LeaveRequestsClient";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 // Short Thai date "dd/mm/พ.ศ." from a wall-clock-carried Date (UTC fields, no TZ shift).
 function thaiShortDate(date: Date): string {
@@ -119,6 +120,7 @@ export default async function ClassroomLeaveRequestsPage({
             fullName: request.student.fullName,
             nickname: request.student.nickname,
             numberInClass: request.student.numberInClass,
+            photoUrl: studentAvatarUrl(request.student.studentId, null),
           },
         }))}
       />

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import { approveLeave, rejectLeave, revertLeaveToPending } from "@/lib/actions/exemptions";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
+import { LightboxProvider } from "@/app/_components/ImageLightbox";
+import StudentAvatar from "@/app/_components/StudentAvatar";
 
 type RequestStatus = "pending" | "approved" | "rejected";
 
@@ -22,6 +24,7 @@ type LeaveRequest = {
     fullName: string;
     nickname: string | null;
     numberInClass: number | null;
+    photoUrl: string | null;
   };
 };
 
@@ -128,6 +131,7 @@ export default function LeaveRequestsClient({
 
   return (
     <TeacherShell active="dashboard" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
+      <LightboxProvider>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-white">📝 คำขอลาเรียน</h1>
@@ -193,7 +197,9 @@ export default function LeaveRequestsClient({
                 return (
                   <li key={request.id} className="bg-slate-950/30 px-4 py-4 sm:px-5">
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                      <div className="min-w-0 space-y-1">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <StudentAvatar student={request.student} className="w-12 h-12" />
+                      <div className="min-w-0 flex-1 space-y-1">
                         <div className="text-sm font-semibold text-white">
                           {request.student.numberInClass ?? "-"}. {request.student.fullName}
                           {request.student.nickname && (
@@ -224,6 +230,7 @@ export default function LeaveRequestsClient({
                             <span className="text-slate-400">หมายเหตุครู:</span> {request.reviewNote}
                           </p>
                         )}
+                      </div>
                       </div>
 
                       {(isPending || isApproved || isRejected) && (
@@ -281,6 +288,7 @@ export default function LeaveRequestsClient({
           )}
         </section>
       </main>
+      </LightboxProvider>
     </TeacherShell>
   );
 }
