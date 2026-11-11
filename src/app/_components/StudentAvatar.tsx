@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { LightboxThumb } from "@/app/_components/ImageLightbox";
 
 type AvatarStudent = {
@@ -11,19 +12,36 @@ type AvatarStudent = {
 
 /**
  * Student school photo (tap to enlarge) or an initial when there is no photo.
- * Must be rendered inside a <LightboxProvider>.
+ * Must be rendered inside a <LightboxProvider> unless zoom={false} (plain image — use it inside
+ * a <label> or a button, where a nested tap-to-enlarge button would steal the tap).
  */
 export default function StudentAvatar({
   student,
   className,
   initialClassName = "text-sm",
+  zoom = true,
 }: {
   student: AvatarStudent;
   className: string;
   /** Text size of the fallback initial (scale it with bigger avatars). */
   initialClassName?: string;
+  zoom?: boolean;
 }) {
-  if (student.photoUrl) {
+  const [broken, setBroken] = useState(false);
+  if (student.photoUrl && !zoom && !broken) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={student.photoUrl}
+        alt={student.fullName}
+        loading="lazy"
+        decoding="async"
+        onError={() => setBroken(true)}
+        className={`${className} shrink-0 rounded-full object-cover border border-slate-800`}
+      />
+    );
+  }
+  if (student.photoUrl && zoom) {
     return (
       <LightboxThumb
         src={student.photoUrl}

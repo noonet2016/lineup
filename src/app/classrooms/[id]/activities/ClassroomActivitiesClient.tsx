@@ -3,11 +3,13 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ActivityBadge from "@/app/_components/ActivityBadge";
+import { LightboxProvider } from "@/app/_components/ImageLightbox";
+import StudentAvatar from "@/app/_components/StudentAvatar";
 import { PopupAlertModal, usePopupAlert } from "@/app/_components/PopupAlert";
 import { setActivityMembersInClassroom } from "@/lib/actions/activities";
 
 type ActivityOption = { id: number; name: string; color: string };
-type Student = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null; activityIds: number[] };
+type Student = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null; photoUrl: string | null; activityIds: number[] };
 
 type EditorState = { activityId: number; name: string; color: string; selectedIds: string[]; query: string } | null;
 
@@ -35,6 +37,12 @@ export default function ClassroomActivitiesClient({
     const counts = new Map<number, number>();
     for (const student of students) for (const activityId of student.activityIds) counts.set(activityId, (counts.get(activityId) ?? 0) + 1);
     return counts;
+  }, [students]);
+
+  const membersByActivity = useMemo(() => {
+    const map = new Map<number, Student[]>();
+    for (const student of students) for (const activityId of student.activityIds) map.set(activityId, [...(map.get(activityId) ?? []), student]);
+    return map;
   }, [students]);
 
   function openEditor(activity: ActivityOption) {
@@ -85,6 +93,7 @@ export default function ClassroomActivitiesClient({
   }, [editor, students]);
 
   return (
+    <LightboxProvider>
     <div className="space-y-4">
       <PopupAlertModal alert={alert} onClose={() => setAlert(null)} />
 
@@ -93,9 +102,18 @@ export default function ClassroomActivitiesClient({
       ) : (
         activities.map((activity) => (
           <div key={activity.id} className="glass-panel rounded-2xl p-5 flex items-center justify-between gap-4">
-            <div className="min-w-0 flex items-center gap-3">
-              <ActivityBadge name={activity.name} color={activity.color} />
-              <span className="text-sm text-slate-400">{memberCount.get(activity.id) ?? 0} คนในห้องนี้</span>
+            <div className="min-w-0 space-y-3">
+              <div className="flex items-center gap-3">
+                <ActivityBadge name={activity.name} color={activity.color} />
+                <span className="text-sm text-slate-400">{memberCount.get(activity.id) ?? 0} คนในห้องนี้</span>
+              </div>
+              {(membersByActivity.get(activity.id)?.length ?? 0) > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {membersByActivity.get(activity.id)!.map((member) => (
+                    <StudentAvatar key={member.studentId} student={member} className="w-10 h-10" />
+                  ))}
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -133,6 +151,7 @@ export default function ClassroomActivitiesClient({
                   return (
                     <label key={student.studentId} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer ${checked ? "bg-violet-500/10" : "hover:bg-slate-800/60"}`}>
                       <input type="checkbox" checked={checked} onChange={() => toggle(student.studentId)} className="w-4 h-4 accent-violet-500" />
+                      <StudentAvatar student={student} className="w-9 h-9" zoom={false} />
                       <span className="text-sm text-slate-200">{studentLabel(student)}</span>
                     </label>
                   );
@@ -151,5 +170,6 @@ export default function ClassroomActivitiesClient({
         </div>
       )}
     </div>
+    </LightboxProvider>
   );
 }

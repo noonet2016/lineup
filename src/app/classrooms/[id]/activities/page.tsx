@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { isAdmin } from "@/lib/teacher";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import ClassroomActivitiesClient from "./ClassroomActivitiesClient";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export default async function ClassroomActivitiesPage({ params }: { params: Prom
             fullName: student.fullName,
             nickname: student.nickname,
             numberInClass: student.numberInClass,
+            photoUrl: studentAvatarUrl(student.studentId, null),
             activityIds: student.activities.map((item) => item.activityId),
           }))}
         />
