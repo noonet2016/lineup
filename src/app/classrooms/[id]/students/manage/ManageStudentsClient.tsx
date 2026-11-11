@@ -288,14 +288,14 @@ export default function ManageStudentsClient({
 
       {showImport ? (
         <div
-          className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+          className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm motion-safe:animate-[fadeIn_0.15s_ease-out]"
           onClick={() => setShowImport(false)}
           role="dialog"
           aria-modal="true"
         >
           <form
             onSubmit={submitImport}
-            className="w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]"
+            className="w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 motion-safe:animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold text-white mb-2">นำเข้านักเรียนเป็นชุด</h3>
@@ -497,8 +497,8 @@ export default function ManageStudentsClient({
       </div>
 
       {activityEditor && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]" onClick={() => setActivityEditor(null)}>
-          <div className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm motion-safe:animate-[fadeIn_0.15s_ease-out]" onClick={() => setActivityEditor(null)}>
+          <div className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 motion-safe:animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
             <h4 className="text-white font-bold text-lg mb-1">แก้กิจกรรมนักเรียน</h4>
             <p className="text-slate-400 text-sm mb-4">{activityEditor.fullName}</p>
             <div className="max-h-72 overflow-auto rounded-2xl border border-slate-800 bg-slate-950/40 p-3 space-y-2">
@@ -546,8 +546,8 @@ export default function ManageStudentsClient({
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]" onClick={() => setDeleteTarget(null)} role="dialog" aria-modal="true">
-          <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm motion-safe:animate-[fadeIn_0.15s_ease-out]" onClick={() => setDeleteTarget(null)} role="dialog" aria-modal="true">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center motion-safe:animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
             <div className="mx-auto mb-4 w-14 h-14 rounded-full border flex items-center justify-center text-2xl font-bold bg-rose-500/15 border-rose-500/30 text-rose-300">
               ✕
             </div>
@@ -577,8 +577,8 @@ export default function ManageStudentsClient({
       )}
 
       {resetTarget && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]" onClick={() => setResetTarget(null)} role="dialog" aria-modal="true">
-          <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm motion-safe:animate-[fadeIn_0.15s_ease-out]" onClick={() => setResetTarget(null)} role="dialog" aria-modal="true">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center motion-safe:animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]" onClick={(e) => e.stopPropagation()}>
             <div className="mx-auto mb-4 w-14 h-14 rounded-full border flex items-center justify-center text-2xl font-bold bg-amber-500/15 border-amber-500/30 text-amber-300">
               !
             </div>

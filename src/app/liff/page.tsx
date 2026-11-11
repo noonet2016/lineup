@@ -116,7 +116,7 @@ export default function LiffEntryPage() {
 
         {phase === "loading" && (
           <>
-            <div className="mx-auto w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
+            <div className="mx-auto w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full motion-safe:animate-spin" />
             <p className="text-slate-300 text-sm">{message}</p>
           </>
         )}

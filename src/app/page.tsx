@@ -7,7 +7,7 @@ export default function Home() {
       <BackgroundGlow variant="indigo" />
       <main className="flex-grow flex items-center justify-center p-4 safe-px">
         <div className="w-full max-w-full text-center space-y-12 py-12">
-          <div className="space-y-4 animate-fade-in">
+          <div className="space-y-4 motion-safe:animate-fade-in">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-semibold tracking-wider uppercase mb-2">
               ✨ Smart Morning Assembly Check-in
             </div>

@@ -18,7 +18,7 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
       {children}
       {current && (
         <div
-          className="fixed inset-0 z-[130] flex flex-col items-center justify-center p-6 bg-slate-950/85 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+          className="fixed inset-0 z-[130] flex flex-col items-center justify-center p-6 bg-slate-950/85 backdrop-blur-sm motion-safe:animate-[fadeIn_0.15s_ease-out]"
           onClick={close}
           role="dialog"
           aria-modal="true"
@@ -35,7 +35,7 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
             src={current.src}
             alt={current.caption ?? ""}
             onClick={(e) => e.stopPropagation()}
-            className="max-w-[90vw] max-h-[80vh] rounded-2xl object-contain shadow-2xl border border-slate-700 animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]"
+            className="max-w-[90vw] max-h-[80vh] rounded-2xl object-contain shadow-2xl border border-slate-700 motion-safe:animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]"
           />
           {current.caption && (
             <p className="mt-4 text-slate-200 text-sm font-semibold text-center max-w-[90vw] break-words">{current.caption}</p>

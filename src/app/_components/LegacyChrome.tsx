@@ -156,7 +156,7 @@ export function TeacherShell({
       </div>
       <aside className="fixed top-0 left-0 z-50 h-full w-60 bg-slate-950/95 backdrop-blur border-r border-slate-900 hidden md:flex flex-col safe-pt">
         <div className="flex items-center gap-2.5 h-16 px-5 border-b border-slate-900">
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 motion-safe:animate-ping" />
           <span className="font-bold text-white tracking-wider text-sm">TEACHER PORTAL</span>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
@@ -207,7 +207,7 @@ export function AdminShell({ active, fullName, children }: { active: AdminActive
       </div>
       <aside className="fixed top-0 left-0 z-50 h-full w-60 bg-slate-950/95 backdrop-blur border-r border-slate-900 hidden md:flex flex-col safe-pt">
         <div className="flex items-center gap-2.5 h-16 px-5 border-b border-slate-900">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 motion-safe:animate-ping" />
           <span className="font-bold text-white tracking-wider text-sm">ADMIN PORTAL</span>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
@@ -240,7 +240,7 @@ export function StudentHeader() {
   return (
     <header className="sticky top-0 z-30 mb-3 flex items-center justify-between h-12 px-4 safe-px safe-pt bg-slate-950/90 backdrop-blur border-b border-slate-900">
       <div className="flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+        <span className="w-2 h-2 rounded-full bg-cyan-400 motion-safe:animate-ping" />
         <span className="text-sm font-semibold tracking-wider text-cyan-400">STUDENT PORTAL</span>
       </div>
       <form action={logout}>

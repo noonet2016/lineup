@@ -77,7 +77,7 @@ export function TeacherMobileNav({ items, active, fullName, roomName, portalLabe
             >
         <div className="flex items-center justify-between h-12 border-b border-slate-900 pb-4">
           <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 motion-safe:animate-ping" />
             <span className="font-bold text-white tracking-wider text-sm">{portalLabel}</span>
           </div>
           <button

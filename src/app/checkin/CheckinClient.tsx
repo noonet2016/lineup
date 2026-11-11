@@ -446,13 +446,13 @@ export default function CheckinClient({
 
         {alert && (
           <div
-            className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+            className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm motion-safe:animate-[fadeIn_0.15s_ease-out]"
             onClick={() => setAlert(null)}
             role="dialog"
             aria-modal="true"
           >
             <div
-              className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]"
+              className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/95 shadow-2xl p-6 text-center motion-safe:animate-[popIn_0.2s_cubic-bezier(0.16,1,0.3,1)]"
               onClick={(e) => e.stopPropagation()}
             >
               <div className={`mx-auto mb-4 w-14 h-14 rounded-full border flex items-center justify-center text-2xl font-bold ${alertMeta.ring}`}>

@@ -92,7 +92,7 @@ export default function PullToRefresh() {
           fill="none"
           stroke="currentColor"
           strokeWidth={2.5}
-          className={`w-5 h-5 text-indigo-400 ${refreshing ? "animate-spin" : ""}`}
+          className={`w-5 h-5 text-indigo-400 ${refreshing ? "motion-safe:animate-spin" : ""}`}
           style={refreshing ? undefined : { transform: `rotate(${progress * 270}deg)`, opacity: 0.4 + progress * 0.6 }}
         >
           <path
