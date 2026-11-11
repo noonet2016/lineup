@@ -6,6 +6,7 @@ import { requireSession } from "@/lib/session";
 import { formatWallClockTime, nowInBangkok, parseDateInput } from "@/lib/time";
 import { getActiveLocation } from "@/lib/checkin";
 import { haversineDistance } from "@/lib/geo";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string };
 
@@ -290,7 +291,7 @@ export async function getUnmatchedScanFailReports(
       numberInClass: report.student.numberInClass,
       lineUserId: report.student.lineUserId,
       lineDisplayName: report.student.lineDisplayName,
-      linePictureUrl: report.student.linePictureUrl,
+      linePictureUrl: studentAvatarUrl(report.studentId, report.student.linePictureUrl),
       reportedAt: formatScanFailTime(report.reportedAt),
       latitude: report.latitude,
       longitude: report.longitude,

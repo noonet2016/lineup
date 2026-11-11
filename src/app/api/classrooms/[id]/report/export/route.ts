@@ -23,8 +23,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const session = await getSession();
   if (!session || session.role !== "teacher") return new NextResponse("Unauthorized", { status: 401 });
 
-  const classroom = await prisma.classroom.findUnique({ where: { id: classroomId } });
-  if (!classroom || classroom.advisorId !== Number(session.id)) return new NextResponse("Forbidden", { status: 403 });
+  const [classroom, teacher] = await Promise.all([
+    prisma.classroom.findUnique({ where: { id: classroomId } }),
+    prisma.teacher.findUnique({ where: { id: Number(session.id) }, select: { role: true } }),
+  ]);
+  if (!classroom || !teacher) return new NextResponse("Forbidden", { status: 403 });
+  if (teacher.role !== "admin" && classroom.advisorId !== Number(session.id)) return new NextResponse("Forbidden", { status: 403 });
 
   const { searchParams } = req.nextUrl;
   const today = todayInBangkok();

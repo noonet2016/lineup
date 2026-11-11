@@ -138,7 +138,7 @@ export default function LineStatusClient({
             <ul className="flex flex-col gap-3 overflow-y-auto overflow-x-hidden max-h-[70vh] pr-1">
               {visible.map((s) => (
                 <li key={s.studentId} className="flex items-start gap-3 px-4 py-3 rounded-xl border border-slate-900 bg-slate-950/30">
-                  {s.linked && s.linePictureUrl ? (
+                  {s.linePictureUrl ? (
                     <LightboxThumb
                       src={s.linePictureUrl}
                       alt={s.fullName}

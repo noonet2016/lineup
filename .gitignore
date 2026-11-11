@@ -56,3 +56,6 @@ next-env.d.ts
 graphify-out/
 *.bak
 *.bak-*
+
+# student photos — real student images (PII), never commit
+/storage/

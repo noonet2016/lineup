@@ -3,6 +3,7 @@ import { getExemptMap } from "./dashboard";
 import { getScanFailMap } from "./actions/scanfail";
 import { getActivityTagMap } from "./actions/activities";
 import type { DashboardStatus } from "./dashboardBadge";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 /** Mirrors legacy teacher/report.php's summary query: one row per attendance_session in the date range. */
 export type ReportSummaryRow = {
@@ -133,7 +134,7 @@ export async function loadStudentReport(classroomId: number, startDate: Date, en
       fullName: student.fullName,
       nickname: student.nickname,
       numberInClass: student.numberInClass,
-      linePictureUrl: student.linePictureUrl,
+      linePictureUrl: studentAvatarUrl(student.studentId, student.linePictureUrl),
       activities: activityTagMap.get(student.studentId) ?? [],
       sessionsExpected: 0,
       present: 0,

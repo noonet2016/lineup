@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { isAdmin } from "@/lib/teacher";
 import PollRefresh from "@/app/_components/PollRefresh";
 import LineStatusClient from "./LineStatusClient";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function ClassroomLineStatusPage({ params }: { params: Prom
           numberInClass: s.numberInClass,
           linked: Boolean(s.lineUserId),
           lineDisplayName: s.lineDisplayName,
-          linePictureUrl: s.linePictureUrl,
+          linePictureUrl: studentAvatarUrl(s.studentId, s.linePictureUrl),
           lineChatId: s.lineChatId,
         }))}
         adminBack={admin}
