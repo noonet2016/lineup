@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireOwner, requireTeacherClassroom } from "@/lib/teacher";
+import { requireAdmin, requireTeacherClassroom } from "@/lib/teacher";
 import { holidayBlockReason } from "@/lib/dashboard";
 import { nowInBangkok } from "@/lib/time";
 
@@ -133,7 +133,7 @@ export async function updateClassroomTimes(formData: FormData): Promise<ActionRe
 
 /** Mirrors legacy action=add_holiday (upsert by date). */
 export async function addHoliday(formData: FormData): Promise<ActionResult> {
-  const teacher = await requireOwner();
+  const teacher = await requireAdmin();
   const dateStr = String(formData.get("holiday_date") ?? "").trim();
   const name = String(formData.get("holiday_name") ?? "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return { ok: false, message: "รูปแบบวันที่ไม่ถูกต้อง" };
@@ -148,20 +148,82 @@ export async function addHoliday(formData: FormData): Promise<ActionResult> {
     create: { holidayDate, name, createdBy: teacher.teacherId },
   });
 
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  revalidatePath("/admin");
   return { ok: true, message: `บันทึกวันหยุด "${name}" เรียบร้อยแล้ว` };
 }
 
 /** Mirrors legacy action=delete_holiday. Global (not classroom-scoped), matching legacy. */
 export async function deleteHoliday(dateStr: string): Promise<ActionResult> {
-  const teacher = await requireOwner();
+  await requireAdmin();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return { ok: false, message: "รูปแบบวันที่ไม่ถูกต้อง" };
   const [y, m, d] = dateStr.split("-").map(Number);
   const holidayDate = new Date(Date.UTC(y, m - 1, d));
 
   await prisma.holiday.deleteMany({ where: { holidayDate } });
-  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  revalidatePath("/admin");
   return { ok: true, message: "ลบวันหยุดเรียบร้อยแล้ว" };
+}
+
+/** Admin-only school-wide fallback used whenever a classroom has no active location. */
+export async function updateCentralCheckinPoint(formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const lat = Number(formData.get("dome_lat"));
+  const lng = Number(formData.get("dome_lng"));
+  const radius = Number(formData.get("radius_m"));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isInteger(radius) || lat < -90 || lat > 90 || lng < -180 || lng > 180 || radius <= 0) {
+    return { ok: false, message: "พิกัดหรือรัศมีจุดส่วนกลางไม่ถูกต้อง" };
+  }
+
+  const scanFailRadiusRaw = String(formData.get("scanfail_alert_radius_m") ?? "").trim();
+  let scanFailRadius: number | null = null;
+  if (scanFailRadiusRaw !== "") {
+    scanFailRadius = Number(scanFailRadiusRaw);
+    if (!Number.isInteger(scanFailRadius) || scanFailRadius <= 0) {
+      return { ok: false, message: "รัศมีแจ้งเตือนต้องเป็นจำนวนเต็มบวก" };
+    }
+  }
+
+  await prisma.$transaction([
+    prisma.systemSetting.upsert({ where: { settingKey: "dome_lat" }, update: { settingValue: String(lat) }, create: { settingKey: "dome_lat", settingValue: String(lat) } }),
+    prisma.systemSetting.upsert({ where: { settingKey: "dome_lng" }, update: { settingValue: String(lng) }, create: { settingKey: "dome_lng", settingValue: String(lng) } }),
+    prisma.systemSetting.upsert({ where: { settingKey: "radius_m" }, update: { settingValue: String(radius) }, create: { settingKey: "radius_m", settingValue: String(radius) } }),
+    ...(scanFailRadius === null ? [] : [
+      prisma.systemSetting.upsert({ where: { settingKey: "scanfail_alert_radius_m" }, update: { settingValue: String(scanFailRadius) }, create: { settingKey: "scanfail_alert_radius_m", settingValue: String(scanFailRadius) } }),
+    ]),
+  ]);
+
+  revalidatePath("/admin");
+  revalidatePath("/checkin");
+  revalidatePath("/classrooms", "layout");
+  return { ok: true, message: "บันทึกจุดเข้าแถวส่วนกลางเรียบร้อยแล้ว" };
+}
+
+/** Admin-only school-wide defaults used by classrooms without a time override. */
+export async function updateGeneralSettings(formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+
+  const start = normalizeTime(String(formData.get("check_start") ?? ""));
+  const late = normalizeTime(String(formData.get("late_after") ?? ""));
+  const end = normalizeTime(String(formData.get("check_end") ?? ""));
+  if (!start || !late || !end || start === "__INVALID__" || late === "__INVALID__" || end === "__INVALID__") {
+    return { ok: false, message: "รูปแบบเวลาต้องเป็น HH:MM หรือ HH:MM:SS" };
+  }
+
+  const settings = [
+    ["check_start", start],
+    ["late_after", late],
+    ["check_end", end],
+  ] as const;
+  await prisma.$transaction(
+    settings.map(([settingKey, settingValue]) =>
+      prisma.systemSetting.upsert({ where: { settingKey }, update: { settingValue }, create: { settingKey, settingValue } }),
+    ),
+  );
+
+  revalidatePath("/admin");
+  revalidatePath("/checkin");
+  revalidatePath("/classrooms", "layout");
+  return { ok: true, message: "บันทึกการตั้งค่าทั่วไปของโรงเรียนเรียบร้อยแล้ว" };
 }
 
 function parseLocationFields(formData: FormData): { name: string; lat: number; lng: number; radius: number } | null {
@@ -232,6 +294,44 @@ export async function setActiveLocation(locationId: number): Promise<ActionResul
   if (!result) return { ok: false, message: "ไม่พบจุดที่เลือก หรือไม่ใช่ห้องของคุณ" };
   revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
   return { ok: true, message: "เปลี่ยนจุดเข้าแถวที่ใช้งานเรียบร้อยแล้ว" };
+}
+
+/** Disable every room location so getActiveLocation() naturally falls back to the central point. */
+export async function clearRoomLocationOverride(): Promise<ActionResult> {
+  const teacher = await requireTeacherClassroom();
+  await prisma.checkinLocation.updateMany({ where: { classroomId: teacher.classroomId }, data: { isActive: 0 } });
+  revalidatePath(`/classrooms/${teacher.classroomId}`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  return { ok: true, message: "ห้องนี้กลับไปใช้จุดส่วนกลาง (โดม) แล้ว" };
+}
+
+/** Remove this room's time override so it uses the school-wide defaults again. */
+export async function clearRoomTimeOverride(): Promise<ActionResult> {
+  const teacher = await requireTeacherClassroom();
+  await prisma.classroom.update({
+    where: { id: teacher.classroomId },
+    data: { checkStart: null, lateAfter: null, checkEnd: null },
+  });
+
+  const { dateOnly: today } = nowInBangkok();
+  const session = await prisma.attendanceSession.findUnique({
+    where: { sessionDate_classroomId: { sessionDate: today, classroomId: teacher.classroomId } },
+  });
+  if (session) {
+    const resolved = await resolveClassroomTimes(teacher.classroomId);
+    await prisma.attendanceSession.update({
+      where: { id: session.id },
+      data: {
+        startTime: hmsToDate(resolved.check_start),
+        lateAfter: hmsToDate(resolved.late_after),
+        endTime: hmsToDate(resolved.check_end),
+      },
+    });
+  }
+
+  revalidatePath(`/classrooms/${teacher.classroomId}`);
+  revalidatePath(`/classrooms/${teacher.classroomId}/settings`);
+  return { ok: true, message: "ห้องนี้กลับไปใช้เวลาส่วนกลางของโรงเรียนแล้ว" };
 }
 
 /** Mirrors legacy action=delete_location — auto-promotes the oldest remaining location to active if the deleted one was active. */

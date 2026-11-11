@@ -50,6 +50,18 @@ function resolveScanFailSessionDate(sessionDate?: string | Date): Date {
   return nowInBangkok().dateOnly;
 }
 
+/** Room override, then the school-wide scan-fail default, then the active check-in radius. */
+async function resolveScanFailAlertRadius(classroomId: number, locationRadius: number): Promise<number> {
+  const [classroom, setting] = await Promise.all([
+    prisma.classroom.findUnique({ where: { id: classroomId }, select: { scanfailAlertRadiusM: true } }),
+    prisma.systemSetting.findUnique({ where: { settingKey: "scanfail_alert_radius_m" }, select: { settingValue: true } }),
+  ]);
+  if (classroom?.scanfailAlertRadiusM && classroom.scanfailAlertRadiusM > 0) return classroom.scanfailAlertRadiusM;
+
+  const centralRadius = Number.parseInt(setting?.settingValue ?? "", 10);
+  return Number.isInteger(centralRadius) && centralRadius > 0 ? centralRadius : locationRadius;
+}
+
 /** Distance of a report's coords vs the classroom check-in point, and whether it's beyond the configured alert radius. */
 export async function computeScanFailGeo(
   classroomId: number,
@@ -57,8 +69,7 @@ export async function computeScanFailGeo(
   lng: number | null,
 ): Promise<ScanFailGeo> {
   const location = await getActiveLocation(classroomId);
-  const c = await prisma.classroom.findUnique({ where: { id: classroomId }, select: { scanfailAlertRadiusM: true } });
-  const alertRadius = c?.scanfailAlertRadiusM && c.scanfailAlertRadiusM > 0 ? c.scanfailAlertRadiusM : location.radius;
+  const alertRadius = await resolveScanFailAlertRadius(classroomId, location.radius);
   const distanceMeters =
     lat !== null && lng !== null ? Math.round(haversineDistance(lat, lng, location.lat, location.lng)) : null;
   return { distanceMeters, outsideRadius: distanceMeters !== null && distanceMeters > alertRadius, radius: alertRadius };
@@ -257,9 +268,7 @@ export async function getUnmatchedScanFailReports(
   });
 
   const location = await getActiveLocation(classroomId);
-  // Separate, configurable alert radius; empty/invalid falls back to the classroom check-in radius.
-  const c = await prisma.classroom.findUnique({ where: { id: classroomId }, select: { scanfailAlertRadiusM: true } });
-  const alertRadius = c?.scanfailAlertRadiusM && c.scanfailAlertRadiusM > 0 ? c.scanfailAlertRadiusM : location.radius;
+  const alertRadius = await resolveScanFailAlertRadius(classroomId, location.radius);
   const attendanceRecords = session && reports.length > 0
     ? await prisma.attendanceRecord.findMany({
         where: { sessionId: session.id, studentId: { in: reports.map((report) => report.studentId) } },

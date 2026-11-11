@@ -1,10 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import { prisma } from "./prisma";
 import { holidayBlockReason } from "./dashboard";
 import { requireSession } from "./session";
 import { formatWallClockDate, formatWallClockTime, nowInBangkok } from "./time";
-import { haversineDistance } from "./geo";
+import { haversineDistance, maxPairwiseDistance } from "./geo";
 
 /** Prisma @db.Time(0) columns come back as Date objects with only the time-of-day meaningful; read it in UTC (no TZ shift). */
 function timeToHms(time: Date): string {
@@ -18,6 +19,16 @@ function hmsToDate(hms: string): Date {
 }
 
 export type ActiveLocation = { name: string; lat: number; lng: number; radius: number };
+export type CheckinGpsSample = {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  altitude: number | null;
+  altitudeAccuracy: number | null;
+  speed: number | null;
+  heading: number | null;
+  timestamp: number;
+};
 
 /** Mirrors legacy lib/location.php get_active_location(): the classroom's active check-in point, else the school-wide dome fallback. */
 export async function getActiveLocation(classroomId: number): Promise<ActiveLocation> {
@@ -109,6 +120,64 @@ function formatThaiDateTime(date: Date): string {
   return `${formatWallClockDate(date)} ${formatWallClockTime(date, true)}`;
 }
 
+async function getClientIp(): Promise<string | null> {
+  const headersList = await headers();
+  const forwardedFor = headersList.get("x-forwarded-for");
+  const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
+  return firstForwardedIp || headersList.get("x-real-ip")?.trim() || null;
+}
+
+function scoreSuspicion(
+  samples: CheckinGpsSample[] | undefined,
+  finalLat: number,
+  finalLng: number,
+  location: ActiveLocation,
+): { suspicious: boolean; reasons: string[] } {
+  // Tunable anti-spoof thresholds. Strong signals flag alone; supporting signals flag when 2+ fire.
+  const MIN_SAMPLES_FOR_SIGNAL = 3;
+  const JITTER_MIN_M = 0.5;
+  const ACCURACY_UNREALISTIC_MAX_M = 5;
+  const CENTROID_EPS_M = 1;
+
+  const validSamples = (samples ?? []).filter(
+    (sample) =>
+      Number.isFinite(sample.lat) &&
+      sample.lat >= -90 &&
+      sample.lat <= 90 &&
+      Number.isFinite(sample.lng) &&
+      sample.lng >= -180 &&
+      sample.lng <= 180 &&
+      Number.isFinite(sample.accuracy),
+  );
+
+  const strongReasons: string[] = [];
+  const supportingReasons: string[] = [];
+
+  if (validSamples.length >= MIN_SAMPLES_FOR_SIGNAL) {
+    const jitterM = maxPairwiseDistance(validSamples);
+    if (jitterM < JITTER_MIN_M) {
+      strongReasons.push(`zero_jitter: ${validSamples.length} samples max pairwise distance ${jitterM.toFixed(2)} m < ${JITTER_MIN_M} m`);
+    }
+
+    if (validSamples.every((sample) => sample.altitude === null)) {
+      supportingReasons.push("altitude_absent: altitude null on all fixes");
+    }
+
+    const firstAccuracy = validSamples[0].accuracy;
+    if (firstAccuracy <= ACCURACY_UNREALISTIC_MAX_M && validSamples.every((sample) => sample.accuracy === firstAccuracy)) {
+      supportingReasons.push(`constant_unrealistic_accuracy: accuracy identical at ${firstAccuracy} m <= ${ACCURACY_UNREALISTIC_MAX_M} m`);
+    }
+  }
+
+  const centroidDistanceM = haversineDistance(finalLat, finalLng, location.lat, location.lng);
+  if (centroidDistanceM < CENTROID_EPS_M) {
+    strongReasons.push(`exact_centroid_match: submitted point ${centroidDistanceM.toFixed(2)} m from ${location.name} center < ${CENTROID_EPS_M} m`);
+  }
+
+  const suspicious = strongReasons.length > 0 || supportingReasons.length >= 2;
+  return { suspicious, reasons: [...strongReasons, ...supportingReasons] };
+}
+
 /**
  * Mirrors legacy student/checkin_submit.php step 2: re-derives distance from the coordinates the client
  * just captured (no server-side "pending GPS" session state — the client re-sends what it captured),
@@ -116,11 +185,17 @@ function formatThaiDateTime(date: Date): string {
  * the attendance_record. No device-approval gate (that legacy system is intentionally dropped — LINE
  * Login identity binding from M3 is the replacement).
  */
-export async function submitCheckin(lat: number | null, lng: number | null, accuracy: number | null): Promise<SubmitResult> {
+export async function submitCheckin(
+  lat: number | null,
+  lng: number | null,
+  accuracy: number | null,
+  samples?: CheckinGpsSample[],
+): Promise<SubmitResult> {
   const session = await requireSession();
   if (session.role !== "student") return { ok: false, message: "เฉพาะนักเรียนเท่านั้น" };
 
   const student = await prisma.student.findUniqueOrThrow({ where: { studentId: session.id } });
+  const clientIp = await getClientIp();
   const { dateOnly: today, hms: nowHms, wallClock: checkTime } = nowInBangkok();
 
   const holiday = await holidayBlockReason(today);
@@ -199,6 +274,13 @@ export async function submitCheckin(lat: number | null, lng: number | null, accu
     await logEvent(student.studentId, "out_of_radius", `เช็คอินนอกรัศมี: ห่าง ${Math.round(distance)} เมตร สภาพถูกจัดไว้ให้รอครูตรวจ`);
   }
 
+  const spoofScore = scoreSuspicion(samples, lat!, lng!, location);
+  if (spoofScore.suspicious) {
+    finalStatus = "flagged";
+    isSuspicious = true;
+    await logEvent(student.studentId, "spoof_suspected", spoofScore.reasons.join("; "));
+  }
+
   await prisma.attendanceRecord.create({
     data: {
       sessionId: attendanceSession.id,
@@ -208,6 +290,7 @@ export async function submitCheckin(lat: number | null, lng: number | null, accu
       latitude: lat,
       longitude: lng,
       distanceM: distance !== null ? Math.round(distance) : null,
+      ipAddress: clientIp,
       isSuspicious: isSuspicious ? 1 : 0,
     },
   });

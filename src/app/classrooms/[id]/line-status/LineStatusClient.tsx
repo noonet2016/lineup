@@ -24,11 +24,13 @@ export default function LineStatusClient({
   roomName,
   fullName,
   students,
+  adminBack,
 }: {
   classroomId: number;
   roomName: string;
   fullName: string;
   students: StudentRow[];
+  adminBack: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -80,7 +82,7 @@ export default function LineStatusClient({
   const linkedCount = students.filter((s) => s.linked).length;
 
   return (
-    <TeacherShell active="devices" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+    <TeacherShell active="devices" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
       <LightboxProvider>
       <main className="max-w-full safe-px py-8">
         <div className="mx-auto w-full max-w-3xl space-y-6">

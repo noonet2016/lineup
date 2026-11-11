@@ -6,6 +6,8 @@ import { TeacherShell } from "@/app/_components/LegacyChrome";
 import {
   addHoliday,
   addLocation,
+  clearRoomLocationOverride,
+  clearRoomTimeOverride,
   deleteHoliday,
   deleteLocation,
   editLocation,
@@ -13,9 +15,11 @@ import {
   setActiveLocation,
   updateClassroomTimes,
 } from "@/lib/actions/settings";
+import MapPicker, { type MapPoint } from "@/app/_components/MapPicker";
+import AssemblyTimeFields from "@/app/_components/AssemblyTimeFields";
 import { changeTeacherPassword } from "@/lib/actions/teacherAccount";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
-type ClassroomTimes = { check_start: string; late_after: string; check_end: string; scanfailAlertRadiusM: string };
+type ClassroomTimes = { check_start: string; late_after: string; check_end: string; scanfailAlertRadiusM: string; hasTimeOverride: boolean };
 type Holiday = { dateStr: string; label: string; name: string };
 type Location = { id: number; name: string; lat: number; lng: number; radius: number; isActive: boolean };
 
@@ -28,7 +32,8 @@ export default function SettingsClient({
   holiday,
   holidays,
   locations,
-  isOwner,
+  isAdmin,
+  adminBack,
 }: {
   classroomId: number;
   roomName: string;
@@ -38,7 +43,8 @@ export default function SettingsClient({
   holiday: string | null;
   holidays: Holiday[];
   locations: Location[];
-  isOwner: boolean;
+  isAdmin: boolean;
+  adminBack: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -49,21 +55,23 @@ export default function SettingsClient({
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const passwordFormRef = useRef<HTMLFormElement | null>(null);
-  const locLatRef = useRef<HTMLInputElement | null>(null);
-  const locLngRef = useRef<HTMLInputElement | null>(null);
   const [gpsStatus, setGpsStatus] = useState<{ icon: string; text: string } | null>(null);
   const [gpsBusy, setGpsBusy] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationPoint, setLocationPoint] = useState<MapPoint>({ lat: 17.1968614, lng: 104.0849387, radiusM: 400 });
 
   function openAddLocation() {
     setEditingLocationId(null);
     setGpsStatus(null);
+    setLocationPoint({ lat: 17.1968614, lng: 104.0849387, radiusM: 400 });
     setShowLocationModal(true);
   }
 
   function openEditLocation(id: number) {
     setEditingLocationId(id);
     setGpsStatus(null);
+    const location = locations.find((item) => item.id === id);
+    if (location) setLocationPoint({ lat: location.lat, lng: location.lng, radiusM: location.radius });
     setShowLocationModal(true);
   }
 
@@ -82,8 +90,7 @@ export default function SettingsClient({
     setGpsStatus({ icon: "⏳", text: "กำลังดึงตำแหน่ง..." });
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        if (locLatRef.current) locLatRef.current.value = pos.coords.latitude.toFixed(7);
-        if (locLngRef.current) locLngRef.current.value = pos.coords.longitude.toFixed(7);
+        setLocationPoint((current) => ({ ...current, lat: pos.coords.latitude, lng: pos.coords.longitude }));
         setGpsStatus({ icon: "✅", text: `ได้ตำแหน่งแล้ว (±${Math.round(pos.coords.accuracy)} ม.)` });
         setGpsBusy(false);
       },
@@ -116,7 +123,7 @@ export default function SettingsClient({
   const editingLocation = locations.find((l) => l.id === editingLocationId) ?? null;
 
   return (
-    <TeacherShell active="settings" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+    <TeacherShell active="settings" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
       <main className="max-w-full mx-auto safe-px py-8 space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-extrabold text-white">จัดการการตั้งค่า</h1>
@@ -125,13 +132,13 @@ export default function SettingsClient({
       <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
 
       <div className="max-w-full mx-auto">
-        {isOwner && (
+        {isAdmin && (
           <a
             href="/admin"
             className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 hover:bg-amber-500/15 transition-colors"
           >
             <span className="text-sm font-bold text-amber-200">👥 จัดการครู &amp; ห้องเรียน</span>
-            <span className="text-xs text-amber-300/80">เจ้าของระบบ · เพิ่มบัญชีครู →</span>
+            <span className="text-xs text-amber-300/80">ผู้ดูแลระบบ · เพิ่มบัญชีครู →</span>
           </a>
         )}
         <div className="flex gap-2 mb-5 overflow-x-auto whitespace-nowrap no-scrollbar">
@@ -176,25 +183,13 @@ export default function SettingsClient({
             </div>
           )}
         </div>
-        <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-semibold">🏠 เวลาของห้อง</span>
-          <span>ค่าเริ่มต้นมาจากโรงเรียน — แก้เพื่อกำหนดเวลาเฉพาะห้องนี้</span>
+          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 font-semibold ${classroomTimes.hasTimeOverride ? "border-amber-500/25 bg-amber-500/10 text-amber-200" : "border-teal-500/25 bg-teal-500/10 text-teal-200"}`}>{classroomTimes.hasTimeOverride ? "กำหนดเวลาเฉพาะห้องนี้" : "ใช้เวลาส่วนกลาง (จากโรงเรียน)"}</span>
+          {classroomTimes.hasTimeOverride && <button type="button" disabled={pending} onClick={() => run(clearRoomTimeOverride)} className="rounded-lg border border-teal-500/35 bg-teal-500/15 px-3 py-2 text-xs font-bold text-teal-100 transition-colors hover:bg-teal-500/25 disabled:opacity-50">กลับไปใช้เวลาส่วนกลาง</button>}
         </div>
         <form action={(formData) => run(() => updateClassroomTimes(formData))} className="space-y-4 mb-7">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label>
-              <span className="block text-xs font-semibold text-slate-400 mb-2">เริ่มเช็คเวลา (Start)</span>
-              <input type="time" name="check_start" defaultValue={classroomTimes.check_start.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-            </label>
-            <label>
-              <span className="block text-xs font-semibold text-slate-400 mb-2">บันทึกสาย (Late)</span>
-              <input type="time" name="late_after" defaultValue={classroomTimes.late_after.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-            </label>
-            <label>
-              <span className="block text-xs font-semibold text-slate-400 mb-2">สิ้นสุดการเข้าแถวเวลา (End)</span>
-              <input type="time" name="check_end" defaultValue={classroomTimes.check_end.slice(0, 5)} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-            </label>
-          </div>
+          <AssemblyTimeFields defaultValues={{ checkStart: classroomTimes.check_start, lateAfter: classroomTimes.late_after, checkEnd: classroomTimes.check_end }} />
           <label className="block">
             <span className="block text-xs font-semibold text-slate-400 mb-2">
               รัศมีแจ้งเตือน &ldquo;สแกนหน้าไม่ติด&rdquo; (เมตร)
@@ -224,9 +219,9 @@ export default function SettingsClient({
           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">📅 วันหยุด</span>
         </div>
         <p className="text-slate-400 text-sm mb-4">
-          ปฏิทินวันหยุดใช้ร่วมกันทั้งโรงเรียน{isOwner ? " — เพิ่มวันหยุดพิเศษเพื่อไม่บันทึกการขาดเข้าแถวในวันนั้น" : " · เฉพาะเจ้าของระบบเพิ่ม/ลบได้"}
+          ปฏิทินวันหยุดใช้ร่วมกันทั้งโรงเรียน{isAdmin ? " — เพิ่มวันหยุดพิเศษเพื่อไม่บันทึกการขาดเข้าแถวในวันนั้น" : " · เฉพาะผู้ดูแลระบบเพิ่ม/ลบได้"}
         </p>
-        {isOwner && (
+        {isAdmin && (
         <form action={(formData) => run(() => addHoliday(formData))} className="flex flex-col sm:flex-row gap-3 mb-6">
           <input type="date" name="holiday_date" required className="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
           <input name="holiday_name" placeholder="ชื่อวันหยุด เช่น วันมาฆบูชา" required className="flex-grow bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
@@ -243,7 +238,7 @@ export default function SettingsClient({
                 <span className="text-sm font-semibold text-white">{h.name}</span>
                 <span className="block text-xs text-slate-500 font-mono">{h.label}</span>
               </div>
-              {isOwner && (
+              {isAdmin && (
                 <button
                   disabled={pending}
                   onClick={() => run(() => deleteHoliday(h.dateStr))}
@@ -264,6 +259,14 @@ export default function SettingsClient({
           <span className="shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold whitespace-nowrap">📍 หลายจุด</span>
         </div>
         <p className="text-slate-400 text-sm mb-4">ตั้งได้หลายจุด แล้ว <strong className="text-cyan-300">เลือกจุดที่ใช้งาน</strong> การเช็คอินจะคำนวณระยะเทียบจุดที่เลือกทันที</p>
+        {locations.some((location) => location.isActive) ? (
+          <div className="mb-4 flex flex-col gap-3 rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm font-semibold text-cyan-200">ใช้จุดของห้อง: {locations.find((location) => location.isActive)?.name}</span>
+            <button type="button" disabled={pending} onClick={() => run(clearRoomLocationOverride)} className="rounded-lg border border-amber-500/35 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100 transition-colors hover:bg-amber-500/25 disabled:opacity-50">กลับไปใช้จุดส่วนกลาง</button>
+          </div>
+        ) : (
+          <div className="mb-4 rounded-xl border border-indigo-500/25 bg-indigo-500/10 p-3 text-sm font-semibold text-indigo-200">ใช้จุดส่วนกลาง (โดม)</div>
+        )}
         <button
           type="button"
           onClick={openAddLocation}
@@ -386,11 +389,7 @@ export default function SettingsClient({
               className="space-y-2.5"
             >
               <input name="loc_name" defaultValue={editingLocation?.name} placeholder="ชื่อจุด" required className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-              <div className="grid grid-cols-3 gap-2">
-                <input ref={locLatRef} name="loc_lat" defaultValue={editingLocation?.lat} placeholder="ละติจูด" required className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-                <input ref={locLngRef} name="loc_lng" defaultValue={editingLocation?.lng} placeholder="ลองจิจูด" required className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-                <input name="loc_radius" type="number" defaultValue={editingLocation?.radius} placeholder="รัศมี (ม.)" required className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-              </div>
+              <MapPicker value={locationPoint} onChange={setLocationPoint} inputNames={{ lat: "loc_lat", lng: "loc_lng", radiusM: "loc_radius" }} />
               <button
                 type="button"
                 disabled={gpsBusy}

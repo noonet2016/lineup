@@ -806,3 +806,73 @@ Feature batch on the live app + local DB brought in sync with production. All wo
 - WORKLOG.md.bak is an untracked local backup (intentionally not committed). Can be trashed once comfortable.
 - classroom-today: currently shows leave/activity only (Trainer's choice), NOT absent/late (those need assembly done + were deemed privacy-sensitive). If they later want a fuller board, that's a follow-up.
 - LIFF P3 (OA rich menu) still deferred — access via LIFF URL pinned in each classroom LINE group.
+
+## 2026-07-15 — Admin mode (dedicated system-manager role)
+- Rudolf: moved DB dump from Desktop -> scratch/db-dumps/ (organized), added gitignore rules (*.sql, /scratch/db-dumps/); imported prod dump into lineup_dev (backup taken: lineup_dev_prerestore_20260715_091820.sql); verified via app Prisma + dev server.
+- Design (docs/ADMIN_MODE_PLAN.md): dedicated `admin` subrole = sole system manager; deprecated `owner` (demoted to advisor). No schema migration (role is VarChar).
+- Tokai Teio: migrated all `owner` privilege checks -> `admin` (requireOwner->requireAdmin, isOwner->isAdmin), classroom bypass admin-only, added createAdmin() action + admin form, added /admin "📊 ภาพรวม" overview tab, /account redirects admin->/admin. 11 files. Build passed.
+- Rudolf: data migration (scratch/migrate-admin-role.mjs) — demoted owner `advisor1`->advisor, created `admin` account id=5 (temp pw — see scratch/DEV_CREDENTIALS.local.md).
+- Rudolf: found privilege gap — 9 raw inline `advisorId !== session.id` gates in classroom sub-pages blocked admin. Teio fixed all 9 (admin bypass via isAdmin()), build passed.
+- Rudolf: verified auth flow 8/8 via minted cookies — admin reaches every classroom + /admin; demoted advisor still blocked from other rooms and /admin. DONE.
+- Tokai Teio: added discreet dedicated admin login — loginAdmin action (rejects non-admin before session), /admin/login page + AdminLoginForm client. Public /login tabs untouched. Build passed.
+- Rudolf: verified /admin/login 200 (no session), already-admin redirects to /admin, loginAdmin rejects non-admin (role check at auth.ts:59 before createSession:61). DONE.
+- Tokai Teio: built AdminShell (admin sidebar+mobile nav: คอนโซล /admin, ห้องเรียนทั้งหมด /classrooms, logout). /admin + /classrooms now use it; /classrooms restricted to admin (advisors redirect to own room). Admin drilling into a room gets "← ห้องเรียนทั้งหมด" back-link via adminBack prop (24 files). Build passed.
+- Rudolf: verified via rendered HTML — AdminShell nav present on /classrooms, admin back-link inside rooms, advisor menu unchanged (no admin link), /classrooms admin-only guard works. Playwright not connected this session so used curl+HTML grep. DONE.
+- BUG (admin overview): aggregation counted only existing attendance_records, so enrolled students with no record were ignored -> showed "absent 0 / 100%" (looked like mockup/unsynced). Root cause: didn't follow dashboard.ts semantics (missing record = absent).
+- Tokai Teio: rewrote overview aggregation (admin/page.tsx) to enrolled-based semantics matching dashboard.ts (record -> exemption=leave -> absent); fixed today summary, 7-day trend, per-room rates, top-10 absentees (30d), rate=(present+late)/(present+late+absent). Build passed.
+- Rudolf: verified rendered today = present 93 / late 0 / absent 63 / leave 1 / rate 60%. 93+63+1=157 enrolled (exact), rate 93/156=60%. Correct + synced. DONE.
+- Tokai Teio: central check-in point + per-room override + MAP PICKER. Installed leaflet@1.9.4, react-leaflet@5.0.0, @types/leaflet. New MapPicker (SSR via dynamic ssr:false, custom divIcon so no marker 404, click/drag/radius-circle/GPS). Admin "📍 จุดเข้าแถว" tab (updateCentralCheckinPoint, admin-only, validated upsert of dome_lat/lng/radius_m + override count). Room settings: status badge + "กลับไปใช้จุดส่วนกลาง" (clearRoomLocationOverride) + map in room location form. getActiveLocation/checkin logic untouched. Build passed. 8 files.
+- Rudolf: verified — central reads (radius 150), override resolution intact (all 4 rooms override, overrideCount=4 shown), admin location tab + MapPicker render, room1 badge "ใช้จุดของห้อง", both new actions correct (requireAdmin validated upsert; clear sets isActive=0 -> central fallback). Playwright not connected so map rendering itself to be eyeballed by Trainer in browser. DONE.
+- Rudolf: fixed map z-index (MapPickerInner wrapper `relative isolate z-0` so Leaflet's internal z-index can't cover modals; PopupAlert overlay z-[120]->z-[2000]). Added free satellite toggle (Esri World Imagery, no API key) with 🛰️/🗺️ switch button. Build passed. Confirmed the PrismaClientValidationError in devserver.log was STALE (old `checkinLocations` relation name, already corrected to `locations`); fresh /admin = 200 no error.
+- Tokai Teio: moved school-wide general settings (assembly times + session_timeout) to Admin Mode, central+override pattern (mirrors central checkin point). New updateGeneralSettings (admin, validated upsert to system_settings), clearRoomTimeOverride (teacher, nulls room times + resyncs today session). Admin "⚙️ ตั้งค่าทั่วไป" tab; room settings show central/override badge + "กลับไปใช้เวลาส่วนกลาง" button. getTimeWindow/resolveClassroomTimes untouched. Build passed. 5 files.
+- Rudolf: verified — admin general tab seeds real central times (07:45/08:20/08:30/30), room1 badge "กำหนดเวลาเฉพาะห้อง", both actions correct (requireAdmin validated upsert; clear sets nulls+resync), no runtime errors. DONE.
+- Removed dead `session_timeout` field from admin general-settings form (was never wired — real session age hardcoded 12h in session.ts). 4 spots cleaned, build passed.
+- Feedback (Trainer): don't rebuild a minimal form — LIFT/reuse the existing teacher settings UI. Teio extracted shared <AssemblyTimeFields> (Start/Late/End), now used by BOTH teacher SettingsClient and admin AdminClient (identical design); admin adds "🏫 ค่าเริ่มต้นทั้งโรงเรียน" badge. Confirmed scanfail radius is per-room only (falls back to location radius, not central) so NOT added to admin; only 3 times have central resolution. Build passed. Verified single source of check_start/late_after/check_end markup.
+- Tokai Teio: made scanfail alert radius a CENTRAL default (was per-room only, previously dead central value). New resolveScanFailAlertRadius() used by BOTH scanfail.ts spots: room scanfailAlertRadiusM>0 -> else central system_settings.scanfail_alert_radius_m>0 -> else location.radius. Added field to admin 📍 จุดเข้าแถว tab; updateCentralCheckinPoint validates+upserts scanfail_alert_radius_m (blank=leave unchanged). Build passed. 4 files.
+- Rudolf: verified helper logic correct; data check — rooms 1-3 override (500), room4 (null) now uses central 500 (was location radius 300). /admin 200 no error. DONE.
+- Tokai Teio: split admin console — /admin = overview (analytics) only, /admin/settings = teachers/activities/location/general tabs. AdminShell nav now 3 items (📊 ภาพรวม /admin, ⚙️ ตั้งค่าระบบ /admin/settings, 🏫 ห้องเรียนทั้งหมด /classrooms); AdminActive = overview|settings|classrooms. New OverviewClient + settings/page.tsx; data fetching split per route. Both admin-guarded; /account still lands admin on /admin. Build passed. 5 files.
+- Rudolf: verified /admin=overview 200, /admin/settings=all 4 config tabs 200, advisor blocked from both (->/account), no overview leak into settings, 3 nav items present. DONE.
+
+## ═══ CHECKPOINT 2026-07-16 (Admin Mode — พักไว้ กลับมาทำต่อ) ═══
+
+### Current task
+Admin Mode ทั้งชุดทำเสร็จ + verify บน **dev** แล้ว. ค้างเฉพาะ **deploy ขึ้น prod**.
+
+### State (เสร็จหมดบน dev, build ผ่านทุกครั้ง)
+สิ่งที่ทำไปทั้งหมดในเซสชันนี้ (ทั้งหมดบน dev DB `lineup_dev`, ยังไม่แตะ prod):
+1. **ย้ายข้อมูล prod → dev**: import `scratch/db-dumps/thatnara_lineup_prod_15072569_0912.sql` เข้า lineup_dev. Backup ก่อน import: `scratch/db-dumps/lineup_dev_prerestore_20260715_091820.sql`.
+2. **Role migration owner→admin**: ทุกจุด `role==="owner"` → `"admin"` (requireOwner→requireAdmin, isOwner→isAdmin). owner เดิม (teacher id=1 advisor1) ถูก demote เป็น advisor. สร้างบัญชี **admin** teacher id=5, username `admin`, temp pw (see `scratch/DEV_CREDENTIALS.local.md`). Script: `scratch/migrate-admin-role.mjs`.
+3. **Privilege gap fix**: 9 inline `advisorId !== session.id` gates ในหน้า classroom sub-pages ให้ admin ผ่านได้ (advisor ปกติยังบล็อก).
+4. **`/admin/login`**: หน้า login แยกเฉพาะ admin (discreet), action `loginAdmin` รับเฉพาะ role=admin.
+5. **AdminShell**: sidebar+mobile nav. ตอนนี้ 3 เมนู: 📊 ภาพรวม `/admin` · ⚙️ ตั้งค่าระบบ `/admin/settings` · 🏫 ห้องเรียนทั้งหมด `/classrooms`.
+6. **แยกภาพรวม/ตั้งค่า**: `/admin`=overview only (OverviewClient), `/admin/settings`=teachers/activities/location/general (AdminClient).
+7. **Overview bug fix**: aggregation ใช้ enrolled-based semantics (ตรง dashboard.ts: ไม่มี record=ขาด). แก้ bar chart trend ให้แท่งขึ้น (isolate stacking).
+8. **จุดเข้าแถวส่วนกลาง + override**: MapPicker (leaflet 1.9.4 + react-leaflet 5.0.0 + Esri satellite toggle ฟรี). action updateCentralCheckinPoint (admin) + clearRoomLocationOverride (teacher). getActiveLocation resolution เดิมไม่แตะ.
+9. **ตั้งค่าทั่วไปส่วนกลาง + override**: เวลาเข้าแถว (check_start/late_after/check_end) ใน system_settings. action updateGeneralSettings (admin) + clearRoomTimeOverride (teacher). Shared `AssemblyTimeFields` component ใช้ทั้งครู+admin.
+10. **รัศมีสแกนหน้าไม่ติด central**: resolveScanFailAlertRadius() = ห้อง>0 → central system_settings.scanfail_alert_radius_m>0 → location.radius. อยู่ในแท็บ 📍 จุดเข้าแถว.
+- **ลบทิ้ง**: session_timeout (ค่าตาย ไม่เคย wire — session อายุ hardcode 12h ใน session.ts).
+
+### Design docs
+- `docs/ADMIN_MODE_PLAN.md`, `docs/CENTRAL_CHECKIN_POINT_PLAN.md`
+
+### Next steps (กลับมาทำ)
+1. **เตรียม prod migration script** (ยังไม่ได้ทำ): demote prod owner→advisor + สร้างบัญชี admin บน prod DB. อ้างอิง `scratch/migrate-admin-role.mjs` (ปรับ DBURL เป็น prod).
+2. Deploy code ขึ้น prod (Hostatom/Plesk) + `npm run build` + รัน migration.
+3. ตั้ง pw admin จริงบน prod (อย่าใช้ pw ของ dev บน prod).
+4. Verify flow บน prod: admin login → /admin → เข้าทุกห้อง; owner เดิมเป็นครูปกติ.
+
+### Open questions
+- prod: จะเก็บ owner เดิม (advisor1) ไว้เป็นครูจริงไหม หรือมีครูจริงอยู่แล้ว?
+- pw admin prod ให้ Trainer กำหนดเอง.
+
+### Env / how to resume
+- dev server: `cd projects/lineup-nextjs && npm run dev` (พอร์ต 3000). มัน hot-reload; ก่อนหน้านี้ถูก kill เป็นระยะ.
+- admin login (dev): `/admin/login` → admin / (pw ใน scratch/DEV_CREDENTIALS.local.md) (teacher id=5).
+- verify auth ด้วย mint-cookie pattern (ดู commands เก่าใน session / scratch).
+
+## ═══ 2026-07-23 — Anti-GPS-spoof (Plan A: detect + flag) ═══
+- Problem (Trainer): students on-campus but away from assembly (Bldg 2 robotics room, ~50m) use free fake-GPS/mock-location apps to report the dome coords and check in "present" — one taunted the teacher about it. Web/LIFF can't read Android isMock; IP geoloc too coarse (city-level) to split two points 50m apart. Decided (Trainer): DETECT + FLAG for teacher review (near-zero labor), not prevent. Rejected QR-scan (= manual roll-call + relayable) and beacon/NFC (no iOS webview support). See docs/ANTISPOOF_PLAN.md.
+- Tokai Teio: implemented silent spoof detection. src/lib/checkin.ts scoreSuspicion() — strong signals flag alone, supporting need 2+. Consts: MIN_SAMPLES_FOR_SIGNAL=3, JITTER_MIN_M=0.5, ACCURACY_UNREALISTIC_MAX_M=5, CENTROID_EPS_M=1. Signals: zero_jitter (maxPairwiseDistance<0.5m over ≥3 samples), exact_centroid_match (<1m from center = copied coords) [strong]; altitude_absent, constant_unrealistic_accuracy [supporting]. On suspicion: status='flagged'+isSuspicious=1 (SILENT — still records + returns success so cheater doesn't iterate), logEvent 'spoof_suspected'. Stores attendance_records.ipAddress from x-forwarded-for (forensics only, NOT auto-flagged — school WiFi NAT shares one IP). ZERO migration (reused isSuspicious/status/ipAddress/attendance_logs). geo.ts += maxPairwiseDistance. Files: CheckinClient.tsx, checkin.ts, geo.ts. Build passed.
+- Tokai Teio: strengthened zero_jitter — client requestLocation() now collects ≥3 samples before settling (was: settle on first fix ≤50m accuracy → often 1 sample → zero_jitter never fired). New consts MIN_SAMPLES=3, MIN_COLLECT_MS=3000. Settle = best≠null && samples≥3 && (accuracy≤50 || 3s elapsed); goodFixTimeout(3s) caps wait if browser stops emitting; MAX_WAIT_MS=15000 backstop. getBestEffortGps (scan-fail path) untouched. Build passed.
+- Rudolf: verified scoreSuspicion logic (low false-positive: centroid<1m improbable for real GPS; jitter needs ≥3 samples) + client settle logic (no leak/hang, clearTimers+clearWatch all paths, permission-denied handled). All on DEV only — prod untouched, no schema change.
+- NEXT: Trainer to test on dev (fake-GPS app → expect flagged ⚠️), then deploy to prod (Hostatom/Plesk, code-only, no DB migration). Honest limit: catches casual free-app spoofers (~99%); a geek injecting fake jitter into the payload still defeats it — no web-only fix for that.

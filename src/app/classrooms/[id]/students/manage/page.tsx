@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { isOwner } from "@/lib/teacher";
+import { isAdmin } from "@/lib/teacher";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import ManageStudentsClient from "./ManageStudentsClient";
 
@@ -18,7 +18,8 @@ export default async function ManageStudentsPage({ params }: { params: Promise<{
 
   const classroom = await prisma.classroom.findUnique({ where: { id: classroomId }, include: { advisor: { select: { fullName: true } } } });
   if (!classroom) redirect(`/classrooms/${classroomId}`);
-  const canManage = classroom.advisorId === Number(session.id) || (await isOwner());
+  const admin = await isAdmin();
+  const canManage = classroom.advisorId === Number(session.id) || admin;
   if (!canManage) redirect(`/classrooms/${classroomId}`);
 
   const students = await prisma.student.findMany({
@@ -43,7 +44,7 @@ export default async function ManageStudentsPage({ params }: { params: Promise<{
   });
 
   return (
-    <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId}>
+    <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId} adminBack={admin}>
       <main className="max-w-full safe-px py-8">
         <div className="mx-auto w-full max-w-3xl space-y-6">
           <div>

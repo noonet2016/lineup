@@ -45,3 +45,14 @@ next-env.d.ts
 
 # scratch: db dumps, exports — contains real student PII
 /scratch
+
+# database dumps / backups — NEVER commit (real student PII)
+/scratch/db-dumps/
+*.sql
+*.dump
+*.sql.gz
+
+# generated / local-only
+graphify-out/
+*.bak
+*.bak-*

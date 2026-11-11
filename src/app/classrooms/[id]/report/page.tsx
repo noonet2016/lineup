@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { isAdmin } from "@/lib/teacher";
 import { formatDateInput, formatWallClockDate, parseDateInput, todayInBangkok } from "@/lib/time";
 import { loadReportSummary, loadStudentReport } from "@/lib/report";
 import ReportClient from "./ReportClient";
@@ -27,7 +28,8 @@ export default async function ClassroomReportPage({
     where: { id: classroomId },
     include: { advisor: { select: { fullName: true } } },
   });
-  if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
+  const admin = await isAdmin();
+  if (!classroom || (!admin && classroom.advisorId !== Number(session.id))) redirect(`/classrooms/${classroomId}`);
 
   const { start_date, end_date, error, view } = await searchParams;
   const today = todayInBangkok();
@@ -45,6 +47,7 @@ export default async function ClassroomReportPage({
         startDate={formatDateInput(startDate)}
         endDate={formatDateInput(endDate)}
         errorMessage={error ?? null}
+        adminBack={admin}
         rows={rows.map((row) => ({
           ...row,
           days: row.days.map((day) => ({
@@ -67,6 +70,7 @@ export default async function ClassroomReportPage({
       startDate={formatDateInput(startDate)}
       endDate={formatDateInput(endDate)}
       errorMessage={error ?? null}
+      adminBack={admin}
       rows={reportRows.map((r) => ({
         sessionId: r.sessionId,
         sessionDate: formatDateInput(r.sessionDate),

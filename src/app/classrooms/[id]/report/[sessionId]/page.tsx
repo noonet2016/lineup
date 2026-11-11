@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { isAdmin } from "@/lib/teacher";
 import { formatDateInput, formatWallClockDate, formatWallClockTime } from "@/lib/time";
 import { loadReportDay } from "@/lib/report";
 import ReportDayClient from "./ReportDayClient";
@@ -25,7 +26,8 @@ export default async function ClassroomReportDayPage({
     where: { id: classroomId },
     include: { advisor: { select: { fullName: true } } },
   });
-  if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
+  const admin = await isAdmin();
+  if (!classroom || (!admin && classroom.advisorId !== Number(session.id))) redirect(`/classrooms/${classroomId}`);
 
   const data = await loadReportDay(classroomId, sessionId);
   if (!data) redirect(`/classrooms/${classroomId}/report?error=${encodeURIComponent("ไม่พบรอบนี้ หรือไม่ใช่ห้องเรียนที่คุณดูแล")}`);
@@ -37,6 +39,7 @@ export default async function ClassroomReportDayPage({
       classroomId={classroomId}
       roomName={classroom.roomName}
       fullName={classroom.advisor?.fullName ?? ""}
+      adminBack={admin}
       sessionDateLabel={formatWallClockDate(data.session.sessionDate)}
       timeRangeLabel={`${formatWallClockTime(data.session.startTime)}–${formatWallClockTime(data.session.endTime)}`}
       exportHref={`/api/classrooms/${classroomId}/report/export?start_date=${dateStr}&end_date=${dateStr}`}

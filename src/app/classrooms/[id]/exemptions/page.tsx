@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { isAdmin } from "@/lib/teacher";
 import { formatWallClockDate, todayInBangkok } from "@/lib/time";
 import ExemptionsClient from "./ExemptionsClient";
 
@@ -19,7 +20,8 @@ export default async function ClassroomExemptionsPage({ params }: { params: Prom
     where: { id: classroomId },
     include: { advisor: { select: { fullName: true } } },
   });
-  if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
+  const admin = await isAdmin();
+  if (!classroom || (!admin && classroom.advisorId !== Number(session.id))) redirect(`/classrooms/${classroomId}`);
 
   const [students, exemptions] = await Promise.all([
     prisma.student.findMany({ where: { classroomId, status: 1 }, orderBy: { numberInClass: "asc" } }),
@@ -38,6 +40,7 @@ export default async function ClassroomExemptionsPage({ params }: { params: Prom
       roomName={classroom.roomName}
       fullName={classroom.advisor?.fullName ?? ""}
       todayLabel={todayLabel}
+      adminBack={admin}
       students={students.map((s) => ({ studentId: s.studentId, fullName: s.fullName, nickname: s.nickname, numberInClass: s.numberInClass }))}
       exemptions={exemptions.map((e) => ({
         id: e.id,

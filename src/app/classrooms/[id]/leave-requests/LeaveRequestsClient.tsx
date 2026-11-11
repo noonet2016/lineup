@@ -50,6 +50,7 @@ export default function LeaveRequestsClient({
   todayDate,
   isToday,
   requests,
+  adminBack,
 }: {
   classroomId: number;
   roomName: string;
@@ -59,6 +60,7 @@ export default function LeaveRequestsClient({
   todayDate: string;
   isToday: boolean;
   requests: LeaveRequest[];
+  adminBack: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -125,7 +127,7 @@ export default function LeaveRequestsClient({
   }
 
   return (
-    <TeacherShell active="dashboard" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+    <TeacherShell active="dashboard" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-white">📝 คำขอลาเรียน</h1>

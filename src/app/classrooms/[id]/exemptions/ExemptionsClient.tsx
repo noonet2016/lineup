@@ -29,6 +29,7 @@ export default function ExemptionsClient({
   students,
   exemptions,
   todayLabel,
+  adminBack,
 }: {
   classroomId: number;
   roomName: string;
@@ -36,6 +37,7 @@ export default function ExemptionsClient({
   students: StudentOpt[];
   exemptions: Exemption[];
   todayLabel: string;
+  adminBack: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -65,7 +67,7 @@ export default function ExemptionsClient({
   }
 
   return (
-    <TeacherShell active="exemptions" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+    <TeacherShell active="exemptions" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-white">🎌 ยกเว้นเข้าแถว</h1>

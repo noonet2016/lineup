@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { isAdmin } from "@/lib/teacher";
 import PollRefresh from "@/app/_components/PollRefresh";
 import ScanFailListClient from "./ScanFailListClient";
 import { getUnmatchedScanFailReports } from "@/lib/actions/scanfail";
@@ -41,7 +42,8 @@ export default async function ClassroomScanFailPage({
     where: { id: classroomId },
     include: { advisor: { select: { fullName: true } } },
   });
-  if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
+  const admin = await isAdmin();
+  if (!classroom || (!admin && classroom.advisorId !== Number(session.id))) redirect(`/classrooms/${classroomId}`);
 
   const { selectedDate, sessionDate, isToday } = resolveSelectedDate(date);
   // Always include matched students (today + historical) so the report is a full
@@ -62,6 +64,7 @@ export default async function ClassroomScanFailPage({
         selectedDate={selectedDate}
         todayDate={todayDate}
         isToday={isToday}
+        adminBack={admin}
       />
     </>
   );

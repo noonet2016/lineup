@@ -37,7 +37,7 @@ export function PopupAlertModal({
   const meta = META[alert.type];
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+      className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
       onClick={onClose}
       role="dialog"
       aria-modal="true"

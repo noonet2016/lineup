@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { isAdmin } from "@/lib/teacher";
 import { prisma } from "@/lib/prisma";
 import { StudentShell, TeacherShell } from "@/app/_components/LegacyChrome";
 import { historyStatusMeta, leaveMeta, loadStudentHistory } from "@/lib/studentHistory";
@@ -65,7 +66,8 @@ export default async function StudentHistoryPage({
       : null;
 
   const isOwnStudent = session.role === "student" && session.id === studentId;
-  const isAdvisor = session.role === "teacher" && classroom?.advisorId === Number(session.id);
+  const admin = session.role === "teacher" && (await isAdmin());
+  const isAdvisor = session.role === "teacher" && (classroom?.advisorId === Number(session.id) || admin);
   if (!isOwnStudent && !isAdvisor) redirect(`/classrooms/${classroomId}`);
 
   const todayBadge = historyStatusMeta(
@@ -291,7 +293,7 @@ export default async function StudentHistoryPage({
   }
 
   return (
-    <TeacherShell active="dashboard" fullName={classroom?.advisor?.fullName ?? ""} roomName={classroom?.roomName ?? ""} classroomId={classroomId}>
+    <TeacherShell active="dashboard" fullName={classroom?.advisor?.fullName ?? ""} roomName={classroom?.roomName ?? ""} classroomId={classroomId} adminBack={admin}>
       {content}
     </TeacherShell>
   );

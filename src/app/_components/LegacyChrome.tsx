@@ -1,9 +1,10 @@
 import { logout } from "@/lib/actions/auth";
-import { TeacherMobileNav } from "@/app/_components/TeacherMobileNav";
+import { AdminMobileNav, TeacherMobileNav } from "@/app/_components/TeacherMobileNav";
 import PullToRefresh from "@/app/_components/PullToRefresh";
 
 type TeacherActive = "dashboard" | "devices" | "exemptions" | "leave" | "scanfail" | "settings" | "report" | "students" | "activities";
 type StudentActive = "checkin" | "history" | "profile" | "leave" | "classroomToday";
+type AdminActive = "overview" | "settings" | "classrooms";
 
 const teacherItems: { key: TeacherActive; label: string; href: string; path: string }[] = [
   {
@@ -70,6 +71,12 @@ const studentItems: { label: string; href: string; key: StudentActive; path: str
   { label: "โปรไฟล์", href: "/account", key: "profile", path: "M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" },
 ];
 
+const adminItems: { key: AdminActive; label: string; href: string; path: string }[] = [
+  { key: "overview", label: "📊 ภาพรวม", href: "/admin", path: "M3.75 3.75h6v6h-6v-6zM14.25 3.75h6v6h-6v-6zM3.75 14.25h6v6h-6v-6zM14.25 14.25h6v6h-6v-6z" },
+  { key: "settings", label: "⚙️ ตั้งค่าระบบ", href: "/admin/settings", path: "M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a6.759 6.759 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.397-1.11-.94l-.213-1.28c-.062-.375-.312-.687-.644-.87a6.52 6.52 0 01-.22-.128c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.759 6.759 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" },
+  { key: "classrooms", label: "🏫 ห้องเรียนทั้งหมด", href: "/classrooms", path: "M3.75 20.25h16.5M5.25 20.25V9.75L12 3.75l6.75 6v10.5M9 20.25v-4.5h6v4.5M8.25 10.5h.008v.008H8.25V10.5zm7.5 0h.008v.008h-.008V10.5z" },
+];
+
 function Icon({ path, className = "w-5 h-5", strokeWidth = 1.8 }: { path: string; className?: string; strokeWidth?: number }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={strokeWidth} stroke="currentColor" className={className}>
@@ -102,12 +109,14 @@ export function TeacherShell({
   fullName,
   roomName,
   classroomId,
+  adminBack,
   children,
 }: {
   active: TeacherActive;
   fullName?: string;
   roomName?: string;
   classroomId?: number;
+  adminBack?: boolean;
   children: React.ReactNode;
 }) {
   const items = teacherItems.map((item) => ({
@@ -137,7 +146,7 @@ export function TeacherShell({
     <>
       <BackgroundGlow variant="purple" />
       <div className="md:hidden sticky top-0 z-30 flex items-center justify-between h-14 safe-px safe-pt bg-slate-950/90 backdrop-blur border-b border-slate-900">
-        <TeacherMobileNav items={items} active={active} fullName={fullName} roomName={roomName} />
+        <TeacherMobileNav items={items} active={active} fullName={fullName} roomName={roomName} backHref={adminBack ? "/classrooms" : undefined} backLabel={adminBack ? "← ห้องเรียนทั้งหมด" : undefined} />
         <span className="font-bold text-white tracking-wider text-sm">TEACHER PORTAL</span>
         <form action={logout}>
           <button type="submit" className="text-slate-400 hover:text-rose-400 p-2 -mr-2" aria-label="ออกระบบ">
@@ -151,6 +160,7 @@ export function TeacherShell({
           <span className="font-bold text-white tracking-wider text-sm">TEACHER PORTAL</span>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
+          {adminBack && <a href="/classrooms" className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20 transition-colors text-sm font-medium">← ห้องเรียนทั้งหมด</a>}
           {items.map((item) => {
             const on = active === item.key;
             return (
@@ -173,6 +183,48 @@ export function TeacherShell({
             <button type="submit" className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-500/5 transition-colors">
               ออกจากระบบ
             </button>
+          </form>
+        </div>
+      </aside>
+      <div className="md:pl-60 flex min-h-full flex-1 flex-col [&>main]:w-full md:[&>main]:max-w-[60vw]">
+        {children}
+        <Footer />
+      </div>
+    </>
+  );
+}
+
+export function AdminShell({ active, fullName, children }: { active: AdminActive; fullName?: string; children: React.ReactNode }) {
+  return (
+    <>
+      <BackgroundGlow variant="purple" />
+      <div className="md:hidden sticky top-0 z-30 flex items-center justify-between h-14 safe-px safe-pt bg-slate-950/90 backdrop-blur border-b border-slate-900">
+        <AdminMobileNav items={adminItems} active={active} fullName={fullName} />
+        <span className="font-bold text-white tracking-wider text-sm">ADMIN PORTAL</span>
+        <form action={logout}>
+          <button type="submit" className="text-slate-300 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl p-2 -mr-2 transition-colors" aria-label="ออกระบบ">⎋</button>
+        </form>
+      </div>
+      <aside className="fixed top-0 left-0 z-50 h-full w-60 bg-slate-950/95 backdrop-blur border-r border-slate-900 hidden md:flex flex-col safe-pt">
+        <div className="flex items-center gap-2.5 h-16 px-5 border-b border-slate-900">
+          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+          <span className="font-bold text-white tracking-wider text-sm">ADMIN PORTAL</span>
+        </div>
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
+          {adminItems.map((item) => {
+            const on = active === item.key;
+            return (
+              <a key={item.key} href={item.href} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors ${on ? "bg-cyan-500/15 border-cyan-500/30 text-white" : "border-transparent text-slate-300 hover:text-white hover:bg-slate-900/60"}`}>
+                <Icon path={item.path} className="w-5 h-5 shrink-0" />
+                <span>{item.label}</span>
+              </a>
+            );
+          })}
+        </nav>
+        <div className="border-t border-slate-900 p-4">
+          {fullName && <p className="text-xs text-slate-300 mb-3 px-1 truncate">สวัสดี, {fullName} (ผู้ดูแลระบบ)</p>}
+          <form action={logout}>
+            <button type="submit" className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-rose-300 hover:bg-rose-500/10 transition-colors">ออกจากระบบ</button>
           </form>
         </div>
       </aside>

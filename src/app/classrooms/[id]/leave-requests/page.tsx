@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { isAdmin } from "@/lib/teacher";
 import PollRefresh from "@/app/_components/PollRefresh";
 import { formatDateInput, formatWallClockDate, formatWallClockTime, nowInBangkok, parseDateInput } from "@/lib/time";
 import LeaveRequestsClient from "./LeaveRequestsClient";
@@ -48,7 +49,8 @@ export default async function ClassroomLeaveRequestsPage({
     where: { id: classroomId },
     include: { advisor: { select: { fullName: true } } },
   });
-  if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
+  const admin = await isAdmin();
+  if (!classroom || (!admin && classroom.advisorId !== Number(session.id))) redirect(`/classrooms/${classroomId}`);
 
   const { selectedDate, selectedDay, todayDate, isToday } = resolveSelectedDate(date);
   const selectedDateLabel = formatWallClockDate(selectedDay);
@@ -100,6 +102,7 @@ export default async function ClassroomLeaveRequestsPage({
         selectedDateLabel={selectedDateLabel}
         todayDate={todayDate}
         isToday={isToday}
+        adminBack={admin}
         requests={sortedRequests.map((request) => ({
           id: request.id,
           reason: request.reason,

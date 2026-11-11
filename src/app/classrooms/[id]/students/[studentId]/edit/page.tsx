@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { isAdmin } from "@/lib/teacher";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import EditStatusForm from "./EditStatusForm";
 
@@ -24,7 +25,8 @@ export default async function EditStatusPage({
   if (session.role !== "teacher") redirect(`/classrooms/${classroomId}/students/${studentId}`);
 
   const classroom = await prisma.classroom.findUnique({ where: { id: classroomId }, include: { advisor: { select: { fullName: true } } } });
-  if (!classroom || classroom.advisorId !== Number(session.id)) {
+  const admin = await isAdmin();
+  if (!classroom || (!admin && classroom.advisorId !== Number(session.id))) {
     redirect(`/classrooms/${classroomId}/students/${studentId}`);
   }
 
@@ -37,7 +39,7 @@ export default async function EditStatusPage({
     : null;
 
   return (
-    <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId}>
+    <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId} adminBack={admin}>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div>
           <a href={backHref} className="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1">

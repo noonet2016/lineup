@@ -3,13 +3,13 @@
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireOwner } from "@/lib/teacher";
+import { requireAdmin } from "@/lib/teacher";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string };
 
-/** Owner-only: create a new advisor teacher account + their homeroom classroom in one step. */
+/** Admin-only: create a new advisor teacher account + their homeroom classroom in one step. */
 export async function createTeacherWithClassroom(formData: FormData): Promise<ActionResult> {
-  await requireOwner();
+  await requireAdmin();
 
   const fullName = String(formData.get("full_name") ?? "").trim();
   const username = String(formData.get("username") ?? "").trim();
@@ -38,9 +38,9 @@ export async function createTeacherWithClassroom(formData: FormData): Promise<Ac
   return { ok: true, message: `เพิ่มครู "${fullName}" (ห้อง ม.${roomName}) เรียบร้อยแล้ว` };
 }
 
-/** Owner-only: edit a teacher's name/username and their homeroom's room name. */
+/** Admin-only: edit a teacher's name/username and their homeroom's room name. */
 export async function updateTeacher(teacherId: number, formData: FormData): Promise<ActionResult> {
-  await requireOwner();
+  await requireAdmin();
 
   const fullName = String(formData.get("full_name") ?? "").trim();
   const username = String(formData.get("username") ?? "").trim();
@@ -70,10 +70,10 @@ export async function updateTeacher(teacherId: number, formData: FormData): Prom
   return { ok: true, message: `แก้ไขข้อมูลครู "${fullName}" เรียบร้อยแล้ว` };
 }
 
-/** Owner-only: delete a teacher and their (empty) homeroom. Refuses if any room still has students or attendance history, to protect data. */
+/** Admin-only: delete a teacher and their (empty) homeroom. Refuses if any room still has students or attendance history, to protect data. */
 export async function deleteTeacher(teacherId: number): Promise<ActionResult> {
-  const owner = await requireOwner();
-  if (teacherId === owner.teacherId) return { ok: false, message: "ลบบัญชีเจ้าของระบบไม่ได้" };
+  const admin = await requireAdmin();
+  if (teacherId === admin.teacherId) return { ok: false, message: "ลบบัญชีผู้ดูแลระบบไม่ได้" };
 
   const teacher = await prisma.teacher.findUnique({
     where: { id: teacherId },
@@ -82,7 +82,7 @@ export async function deleteTeacher(teacherId: number): Promise<ActionResult> {
     },
   });
   if (!teacher) return { ok: false, message: "ไม่พบบัญชีครู" };
-  if (teacher.role === "owner") return { ok: false, message: "ลบบัญชีเจ้าของระบบไม่ได้" };
+  if (teacher.role === "admin") return { ok: false, message: "ลบบัญชีผู้ดูแลระบบไม่ได้" };
 
   const blocked = teacher.advisedClassrooms.some((c) => c._count.students > 0 || c._count.sessions > 0);
   if (blocked) {
@@ -102,11 +102,11 @@ export async function deleteTeacher(teacherId: number): Promise<ActionResult> {
   return { ok: true, message: `ลบบัญชีครู "${teacher.fullName}" เรียบร้อยแล้ว` };
 }
 
-/** Owner-only: reset a teacher's login password. */
+/** Admin-only: reset a teacher's login password. */
 export async function resetTeacherPassword(teacherId: number, newPassword: string): Promise<ActionResult> {
-  const owner = await requireOwner();
-  if (teacherId === owner.teacherId) {
-    return { ok: false, message: "รหัสผ่านของเจ้าของระบบ เปลี่ยนได้ที่แท็บบัญชี" };
+  const admin = await requireAdmin();
+  if (teacherId === admin.teacherId) {
+    return { ok: false, message: "รหัสผ่านของผู้ดูแลระบบ เปลี่ยนได้ที่แท็บบัญชี" };
   }
   if (newPassword.length < 6) return { ok: false, message: "รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร" };
 
@@ -118,4 +118,28 @@ export async function resetTeacherPassword(teacherId: number, newPassword: strin
 
   revalidatePath("/admin");
   return { ok: true, message: `รีเซ็ตรหัสผ่านครู "${teacher.fullName}" เรียบร้อยแล้ว` };
+}
+
+/** Admin-only: create a system manager account without a homeroom classroom. */
+export async function createAdmin(formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const username = String(formData.get("username") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+
+  if (!fullName) return { ok: false, message: "กรุณาระบุชื่อ-นามสกุลผู้ดูแลระบบ" };
+  if (!/^[a-zA-Z0-9_.]{3,}$/.test(username)) {
+    return { ok: false, message: "username ต้องเป็นภาษาอังกฤษ/ตัวเลข/._ อย่างน้อย 3 ตัวอักษร" };
+  }
+  if (password.length < 6) return { ok: false, message: "รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร" };
+
+  const existing = await prisma.teacher.findUnique({ where: { username } });
+  if (existing) return { ok: false, message: `username "${username}" ถูกใช้ไปแล้ว` };
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.teacher.create({ data: { username, passwordHash, fullName, role: "admin" } });
+
+  revalidatePath("/admin");
+  return { ok: true, message: `เพิ่มผู้ดูแลระบบ "${fullName}" เรียบร้อยแล้ว` };
 }

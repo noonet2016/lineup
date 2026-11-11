@@ -35,6 +35,7 @@ export default function ReportDayClient({
   classroomId,
   roomName,
   fullName,
+  adminBack,
   sessionDateLabel,
   timeRangeLabel,
   exportHref,
@@ -44,6 +45,7 @@ export default function ReportDayClient({
   classroomId: number;
   roomName: string;
   fullName: string;
+  adminBack: boolean;
   sessionDateLabel: string;
   timeRangeLabel: string;
   exportHref: string;
@@ -54,7 +56,7 @@ export default function ReportDayClient({
   const filteredStudents = filter === "all" ? students : students.filter((s) => s.displayStatus === filter);
 
   return (
-    <TeacherShell active="report" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+    <TeacherShell active="report" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>

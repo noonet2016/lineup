@@ -16,6 +16,7 @@ type Props = {
   selectedDate: string;
   todayDate: string;
   isToday: boolean;
+  adminBack: boolean;
 };
 
 export default function ScanFailListClient({
@@ -27,6 +28,7 @@ export default function ScanFailListClient({
   selectedDate,
   todayDate,
   isToday,
+  adminBack,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -63,7 +65,7 @@ export default function ScanFailListClient({
   }
 
   return (
-    <TeacherShell active="dashboard" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+    <TeacherShell active="dashboard" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
       <LightboxProvider>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="text-center space-y-2">

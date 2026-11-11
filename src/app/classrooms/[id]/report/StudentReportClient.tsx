@@ -145,6 +145,7 @@ export default function StudentReportClient({
   startDate,
   endDate,
   errorMessage,
+  adminBack,
   rows,
 }: {
   classroomId: number;
@@ -153,6 +154,7 @@ export default function StudentReportClient({
   startDate: string;
   endDate: string;
   errorMessage: string | null;
+  adminBack: boolean;
   rows: StudentReportRow[];
 }) {
   const router = useRouter();
@@ -220,7 +222,7 @@ export default function StudentReportClient({
   }
 
   return (
-    <TeacherShell active="report" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+    <TeacherShell active="report" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
      <LightboxProvider>
       <main className="max-w-full safe-px py-8">
         <div className="mx-auto w-full max-w-3xl space-y-6">

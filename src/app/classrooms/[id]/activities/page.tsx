@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { isOwner } from "@/lib/teacher";
+import { isAdmin } from "@/lib/teacher";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import ClassroomActivitiesClient from "./ClassroomActivitiesClient";
 
@@ -18,7 +18,8 @@ export default async function ClassroomActivitiesPage({ params }: { params: Prom
 
   const classroom = await prisma.classroom.findUnique({ where: { id: classroomId }, include: { advisor: { select: { fullName: true } } } });
   if (!classroom) redirect(`/classrooms/${classroomId}`);
-  const canManage = classroom.advisorId === Number(session.id) || (await isOwner());
+  const admin = await isAdmin();
+  const canManage = classroom.advisorId === Number(session.id) || admin;
   if (!canManage) redirect(`/classrooms/${classroomId}`);
 
   const [activities, students] = await Promise.all([
@@ -41,7 +42,7 @@ export default async function ClassroomActivitiesPage({ params }: { params: Prom
   ]);
 
   return (
-    <TeacherShell active="activities" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId}>
+    <TeacherShell active="activities" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroomId} adminBack={admin}>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div>
           <a href={`/classrooms/${classroomId}`} className="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1">

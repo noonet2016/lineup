@@ -5,8 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ActivityBadge from "@/app/_components/ActivityBadge";
 import { PopupAlertModal, usePopupAlert } from "@/app/_components/PopupAlert";
+import MapPicker, { type MapPoint } from "@/app/_components/MapPicker";
+import AssemblyTimeFields from "@/app/_components/AssemblyTimeFields";
 import { assignActivityMembers, createActivity, deleteActivity, updateActivity } from "@/lib/actions/activities";
-import { createTeacherWithClassroom, deleteTeacher, resetTeacherPassword, updateTeacher } from "@/lib/actions/admin";
+import { createAdmin, createTeacherWithClassroom, deleteTeacher, resetTeacherPassword, updateTeacher } from "@/lib/actions/admin";
+import { updateCentralCheckinPoint, updateGeneralSettings } from "@/lib/actions/settings";
 
 type TeacherRow = {
   id: number;
@@ -37,7 +40,6 @@ type StudentRow = {
 };
 
 type ActivityForm = { name: string; color: string; isActive: boolean };
-
 const DEFAULT_ACTIVITY_FORM: ActivityForm = { name: "", color: "slate", isActive: true };
 const COLOR_OPTIONS = ["fuchsia", "amber", "lime", "sky", "violet", "rose", "slate"] as const;
 
@@ -47,15 +49,21 @@ function studentLabel(student: StudentRow) {
 }
 
 export default function AdminClient({
-  ownerId,
+  adminId,
   teachers,
   activities: initialActivities,
   students,
+  centralPoint,
+  centralScanFailRadiusM,
+  generalSettings,
 }: {
-  ownerId: number;
+  adminId: number;
   teachers: TeacherRow[];
   activities: ActivityRow[];
   students: StudentRow[];
+  centralPoint: MapPoint & { overrideCount: number };
+  centralScanFailRadiusM: number | null;
+  generalSettings: { checkStart: string; lateAfter: string; checkEnd: string };
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -63,10 +71,12 @@ export default function AdminClient({
   const [resetFor, setResetFor] = useState<TeacherRow | null>(null);
   const [newPw, setNewPw] = useState("");
   const [showAddPw, setShowAddPw] = useState(false);
+  const [showAdminPw, setShowAdminPw] = useState(false);
   const [showResetPw, setShowResetPw] = useState(false);
   const [editFor, setEditFor] = useState<TeacherRow | null>(null);
   const [deleteFor, setDeleteFor] = useState<TeacherRow | null>(null);
-  const [tab, setTab] = useState<"teachers" | "activities">("teachers");
+  const [tab, setTab] = useState<"teachers" | "activities" | "location" | "general">("teachers");
+  const [centralValue, setCentralValue] = useState<MapPoint>(centralPoint);
   const [activities, setActivities] = useState<ActivityRow[]>(initialActivities);
   const [newActivity, setNewActivity] = useState<ActivityForm>(DEFAULT_ACTIVITY_FORM);
   const [editActivity, setEditActivity] = useState<{ id: number; form: ActivityForm } | null>(null);
@@ -78,6 +88,23 @@ export default function AdminClient({
   useEffect(() => {
     setActivities(initialActivities);
   }, [initialActivities]);
+  useEffect(() => setCentralValue(centralPoint), [centralPoint]);
+
+  function saveCentralPoint(formData: FormData) {
+    startTransition(async () => {
+      const result = await updateCentralCheckinPoint(formData);
+      showResult(result);
+      if (result.ok) router.refresh();
+    });
+  }
+
+  function saveGeneralSettings(formData: FormData) {
+    startTransition(async () => {
+      const result = await updateGeneralSettings(formData);
+      showResult(result);
+      if (result.ok) router.refresh();
+    });
+  }
 
   function submitEdit(formData: FormData) {
     if (!editFor) return;
@@ -109,6 +136,17 @@ export default function AdminClient({
       showResult(result);
       if (result.ok) {
         (document.getElementById("add-teacher-form") as HTMLFormElement | null)?.reset();
+        router.refresh();
+      }
+    });
+  }
+
+  function addAdmin(formData: FormData) {
+    startTransition(async () => {
+      const result = await createAdmin(formData);
+      showResult(result);
+      if (result.ok) {
+        (document.getElementById("add-admin-form") as HTMLFormElement | null)?.reset();
         router.refresh();
       }
     });
@@ -223,10 +261,10 @@ export default function AdminClient({
 
       <div className="text-center">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white">⚙️ จัดการระบบ</h1>
-        <p className="text-slate-400 text-sm mt-1">เฉพาะเจ้าของระบบ</p>
+        <p className="text-slate-400 text-sm mt-1">เฉพาะผู้ดูแลระบบ</p>
       </div>
 
-      <div className="glass-panel rounded-2xl p-2 shadow-xl flex gap-2">
+      <div className="glass-panel rounded-2xl p-2 shadow-xl flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setTab("teachers")}
@@ -241,7 +279,60 @@ export default function AdminClient({
         >
           🎗️ กิจกรรมนักเรียน
         </button>
+        <button
+          type="button"
+          onClick={() => setTab("location")}
+          className={`flex-1 text-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${tab === "location" ? "bg-cyan-500 text-white shadow-md" : "text-slate-400 hover:text-white hover:bg-slate-900/70"}`}
+        >
+          📍 จุดเข้าแถว
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("general")}
+          className={`flex-1 text-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${tab === "general" ? "bg-teal-500 text-white shadow-md" : "text-slate-400 hover:text-white hover:bg-slate-900/70"}`}
+        >
+          ⚙️ ตั้งค่าทั่วไป
+        </button>
       </div>
+
+      {tab === "location" && (
+        <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+            <div><h2 className="text-lg font-bold text-white">📍 จุดเข้าแถวส่วนกลาง (โดม)</h2><p className="mt-1 text-sm text-slate-400">ใช้กับทุกห้องที่ยังไม่ได้เลือกจุดเข้าแถวของตัวเอง</p></div>
+            <span className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-200">มี {centralPoint.overrideCount} ห้องที่ใช้จุดของห้องเอง</span>
+          </div>
+          <form action={saveCentralPoint} className="space-y-4">
+            <MapPicker value={centralValue} onChange={setCentralValue} inputNames={{ lat: "dome_lat", lng: "dome_lng", radiusM: "radius_m" }} />
+            <label className="block">
+              <span className="block text-xs font-semibold text-slate-400 mb-2">รัศมีแจ้งเตือน สแกนหน้าไม่ติด (เมตร)</span>
+              <input
+                type="number"
+                min={1}
+                name="scanfail_alert_radius_m"
+                defaultValue={centralScanFailRadiusM ?? ""}
+                placeholder="เว้นว่าง = ไม่เปลี่ยนค่าเดิม"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+              />
+              <span className="block text-[11px] text-slate-500 mt-1.5">ถ้านักเรียนแจ้งจากระยะไกลเกินค่านี้ ครูจะเห็น badge นอกรัศมี (ไม่บล็อกการแจ้ง)</span>
+            </label>
+            <button type="submit" disabled={pending} className="w-full rounded-xl bg-cyan-500 px-4 py-3 font-bold text-white shadow-lg shadow-cyan-500/20 transition-colors hover:bg-cyan-600 disabled:opacity-50">บันทึกจุดส่วนกลาง</button>
+          </form>
+        </section>
+      )}
+
+      {tab === "general" && (
+        <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <div className="mb-5">
+            <h2 className="text-lg font-bold text-white">⚙️ ตั้งค่าทั่วไป</h2>
+            <p className="mt-1 text-sm text-slate-400">ค่าเริ่มต้นสำหรับทุกห้องที่ยังไม่ได้กำหนดเวลาเฉพาะห้อง</p>
+            <span className="mt-3 inline-flex items-center gap-1 rounded-md border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-xs font-semibold text-cyan-300">🏫 ค่าเริ่มต้นทั้งโรงเรียน — ทุกห้องใช้ค่านี้ ถ้าไม่กำหนดเวลาเฉพาะห้อง</span>
+          </div>
+          <form action={saveGeneralSettings} className="space-y-4">
+            <AssemblyTimeFields defaultValues={{ checkStart: generalSettings.checkStart, lateAfter: generalSettings.lateAfter, checkEnd: generalSettings.checkEnd }} />
+            <button type="submit" disabled={pending} className="w-full rounded-xl bg-teal-500 px-4 py-3 font-bold text-white shadow-lg shadow-teal-500/20 transition-colors hover:bg-teal-600 disabled:opacity-50">บันทึกการตั้งค่าทั่วไป</button>
+          </form>
+        </section>
+      )}
 
       {tab === "teachers" && (
       <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
@@ -282,6 +373,19 @@ export default function AdminClient({
             </button>
             <p className="text-[11px] text-slate-500 mt-2">ครูที่เพิ่มจะเป็น &ldquo;ที่ปรึกษา&rdquo; ของห้องที่สร้าง — ล็อกอินแล้วตั้งจุดเช็คอิน + เพิ่มนักเรียนของห้องตัวเองได้ทันที</p>
           </div>
+        </form>
+      </section>
+      )}
+
+      {tab === "teachers" && (
+      <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
+        <h2 className="text-lg font-bold text-white mb-2">เพิ่มผู้ดูแลระบบ (admin)</h2>
+        <p className="text-xs text-slate-400 mb-5">ผู้ดูแลระบบไม่มีห้องที่ปรึกษา และจัดการระบบได้ทุกห้อง</p>
+        <form id="add-admin-form" action={addAdmin} className="grid sm:grid-cols-3 gap-4">
+          <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">ชื่อ - นามสกุล</span><input name="full_name" required placeholder="เช่น ผู้ดูแลระบบ" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /></label>
+          <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">Username</span><input name="username" required autoComplete="off" placeholder="เช่น admin2" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /></label>
+          <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">รหัสผ่านเริ่มต้น (≥ 6 ตัว)</span><div className="relative"><input name="password" type={showAdminPw ? "text" : "password"} required minLength={6} autoComplete="new-password" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-12 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /><button type="button" onClick={() => setShowAdminPw((value) => !value)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-300 text-xs font-semibold">{showAdminPw ? "ซ่อน" : "แสดง"}</button></div></label>
+          <div className="sm:col-span-3"><button type="submit" disabled={pending} className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl transition-colors">{pending ? "กำลังบันทึก..." : "+ เพิ่มผู้ดูแลระบบ"}</button></div>
         </form>
       </section>
       )}
@@ -424,8 +528,8 @@ export default function AdminClient({
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-semibold text-white break-words">{teacher.fullName}</span>
-                  {teacher.role === "owner" && (
-                    <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300">เจ้าของระบบ</span>
+                  {teacher.role === "admin" && (
+                    <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300">ผู้ดูแลระบบ</span>
                   )}
                 </div>
                 <p className="text-[11px] text-slate-500 font-mono">@{teacher.username}</p>
@@ -445,7 +549,7 @@ export default function AdminClient({
                 ) : null}
               </div>
               <div className="shrink-0 flex items-center gap-1.5">
-                {teacher.id !== ownerId && (
+                {teacher.id !== adminId && (
                   <button
                     onClick={() => {
                       setResetFor(teacher);
@@ -459,7 +563,7 @@ export default function AdminClient({
                 <button onClick={() => setEditFor(teacher)} className="text-xs font-semibold text-indigo-300 hover:text-indigo-200 px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 transition-all">
                   แก้ไข
                 </button>
-                {teacher.id !== ownerId && (
+                {teacher.id !== adminId && teacher.role !== "admin" && (
                   <button onClick={() => setDeleteFor(teacher)} className="text-xs font-semibold text-rose-400 hover:text-rose-300 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-all">
                     ลบ
                   </button>

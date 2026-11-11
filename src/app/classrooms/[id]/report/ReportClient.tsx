@@ -23,6 +23,7 @@ export default function ReportClient({
   startDate,
   endDate,
   errorMessage,
+  adminBack,
   rows,
 }: {
   classroomId: number;
@@ -31,6 +32,7 @@ export default function ReportClient({
   startDate: string;
   endDate: string;
   errorMessage: string | null;
+  adminBack: boolean;
   rows: ReportRow[];
 }) {
   const router = useRouter();
@@ -44,7 +46,7 @@ export default function ReportClient({
   const exportHref = `/api/classrooms/${classroomId}/report/export?start_date=${startDate}&end_date=${endDate}`;
 
   return (
-    <TeacherShell active="report" fullName={fullName} roomName={roomName} classroomId={classroomId}>
+    <TeacherShell active="report" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
       <main className="max-w-full! mx-auto safe-px py-8 space-y-6">
         <div>
           <h1 className="text-3xl font-extrabold text-white">รายงานผลการเข้าแถว</h1>

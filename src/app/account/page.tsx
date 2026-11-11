@@ -35,10 +35,11 @@ export default async function AccountPage({
         })
       : await prisma.teacher.findUnique({
           where: { id: Number(session.id) },
-          select: { fullName: true, lineUserId: true, lineDisplayName: true, linePictureUrl: true },
+          select: { fullName: true, role: true, lineUserId: true, lineDisplayName: true, linePictureUrl: true },
         });
 
   if (!account) redirect("/login");
+  if (session.role === "teacher" && "role" in account && account.role === "admin") redirect("/admin");
 
   const studentAccount =
     session.role === "student"

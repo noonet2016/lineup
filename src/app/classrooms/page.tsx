@@ -2,12 +2,24 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { AdminShell } from "@/app/_components/LegacyChrome";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClassroomsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.role !== "teacher") redirect("/checkin");
+
+  const teacher = await prisma.teacher.findUnique({
+    where: { id: Number(session.id) },
+    select: { fullName: true, role: true, advisedClassrooms: { select: { id: true }, orderBy: { id: "asc" }, take: 1 } },
+  });
+  if (!teacher) redirect("/account");
+  if (teacher.role !== "admin") {
+    const ownRoom = teacher.advisedClassrooms[0];
+    redirect(ownRoom ? `/classrooms/${ownRoom.id}` : "/account");
+  }
 
   const classrooms = await prisma.classroom.findMany({
     orderBy: { roomName: "asc" },
@@ -18,6 +30,7 @@ export default async function ClassroomsPage() {
   });
 
   return (
+    <AdminShell active="classrooms" fullName={teacher.fullName}>
     <main className="max-w-full mx-auto px-4 py-8 space-y-6">
       <h1 className="text-2xl font-extrabold text-white">ห้องเรียนทั้งหมด</h1>
       <div className="grid gap-3">
@@ -41,5 +54,6 @@ export default async function ClassroomsPage() {
         ))}
       </div>
     </main>
+    </AdminShell>
   );
 }

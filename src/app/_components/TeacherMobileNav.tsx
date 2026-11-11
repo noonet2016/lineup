@@ -16,6 +16,10 @@ type TeacherMobileNavProps = {
   active: string;
   fullName?: string;
   roomName?: string;
+  portalLabel?: string;
+  greetingSuffix?: string;
+  backHref?: string;
+  backLabel?: string;
 };
 
 function Icon({ path, className = "w-5 h-5", strokeWidth = 1.8 }: { path: string; className?: string; strokeWidth?: number }) {
@@ -26,7 +30,7 @@ function Icon({ path, className = "w-5 h-5", strokeWidth = 1.8 }: { path: string
   );
 }
 
-export function TeacherMobileNav({ items, active, fullName, roomName }: TeacherMobileNavProps) {
+export function TeacherMobileNav({ items, active, fullName, roomName, portalLabel = "TEACHER PORTAL", greetingSuffix, backHref, backLabel }: TeacherMobileNavProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -74,7 +78,7 @@ export function TeacherMobileNav({ items, active, fullName, roomName }: TeacherM
         <div className="flex items-center justify-between h-12 border-b border-slate-900 pb-4">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
-            <span className="font-bold text-white tracking-wider text-sm">TEACHER PORTAL</span>
+            <span className="font-bold text-white tracking-wider text-sm">{portalLabel}</span>
           </div>
           <button
             type="button"
@@ -87,6 +91,11 @@ export function TeacherMobileNav({ items, active, fullName, roomName }: TeacherM
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 space-y-1.5">
+          {backHref && backLabel && (
+            <a href={backHref} onClick={() => setOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20 transition-colors text-sm font-medium">
+              {backLabel}
+            </a>
+          )}
           {items.map((item) => {
             const on = active === item.key;
             return (
@@ -110,6 +119,7 @@ export function TeacherMobileNav({ items, active, fullName, roomName }: TeacherM
             <p className="text-xs text-slate-400 mb-3 px-1 truncate">
               สวัสดี, {fullName}
               {roomName ? ` (ม.${roomName})` : ""}
+              {greetingSuffix}
             </p>
           )}
           <form action={logout}>
@@ -124,4 +134,8 @@ export function TeacherMobileNav({ items, active, fullName, roomName }: TeacherM
         )}
     </>
   );
+}
+
+export function AdminMobileNav(props: Omit<TeacherMobileNavProps, "portalLabel" | "greetingSuffix">) {
+  return <TeacherMobileNav {...props} portalLabel="ADMIN PORTAL" greetingSuffix=" (ผู้ดูแลระบบ)" />;
 }

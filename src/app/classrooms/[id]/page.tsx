@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { holidayBlockReason, loadDashboard, type DashboardFilter } from "@/lib/dashboard";
 import { formatWallClockDate, todayInBangkok } from "@/lib/time";
 import { getSession } from "@/lib/session";
+import { isAdmin } from "@/lib/teacher";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import DashboardLive from "./DashboardLive";
 import PullToRefresh from "@/app/_components/PullToRefresh";
@@ -42,7 +43,8 @@ export default async function ClassroomDashboardPage({
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "teacher") redirect("/checkin");
-  if (classroom.advisorId !== Number(session.id)) {
+  const admin = await isAdmin();
+  if (!admin && classroom.advisorId !== Number(session.id)) {
     const own = await prisma.classroom.findFirst({
       where: { advisorId: Number(session.id) },
       select: { id: true },
@@ -115,7 +117,7 @@ export default async function ClassroomDashboardPage({
 
   if (isAdvisor) {
     return (
-      <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroom.id}>
+      <TeacherShell active="dashboard" fullName={classroom.advisor?.fullName ?? ""} roomName={classroom.roomName} classroomId={classroom.id} adminBack={admin}>
         {page}
       </TeacherShell>
     );

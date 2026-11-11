@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireClassroomManager, requireOwner } from "@/lib/teacher";
+import { requireAdmin, requireClassroomManager } from "@/lib/teacher";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string };
 export type ActivityColor = "fuchsia" | "amber" | "lime" | "sky" | "violet" | "rose" | "slate";
@@ -21,7 +21,7 @@ function normalizeIds(values: (string | number)[]): number[] {
 }
 
 export async function createActivity(name: string, color: string): Promise<ActionResult> {
-  await requireOwner();
+  await requireAdmin();
 
   const normalizedName = normalizeName(name);
   const normalizedColor = normalizeColor(color);
@@ -41,7 +41,7 @@ export async function createActivity(name: string, color: string): Promise<Actio
 }
 
 export async function updateActivity(id: number, name: string, color: string, isActive: boolean): Promise<ActionResult> {
-  await requireOwner();
+  await requireAdmin();
 
   const normalizedName = normalizeName(name);
   const normalizedColor = normalizeColor(color);
@@ -65,7 +65,7 @@ export async function updateActivity(id: number, name: string, color: string, is
 }
 
 export async function deleteActivity(id: number): Promise<ActionResult> {
-  await requireOwner();
+  await requireAdmin();
   if (!Number.isInteger(id) || id <= 0) return { ok: false, message: "ไม่พบกิจกรรม" };
 
   const activity = await prisma.schoolActivity.findUnique({ where: { id }, select: { name: true } });
@@ -78,7 +78,7 @@ export async function deleteActivity(id: number): Promise<ActionResult> {
 }
 
 export async function assignActivityMembers(activityId: number, studentIds: string[]): Promise<ActionResult> {
-  await requireOwner();
+  await requireAdmin();
   if (!Number.isInteger(activityId) || activityId <= 0) return { ok: false, message: "ไม่พบกิจกรรม" };
 
   const normalizedStudentIds = [...new Set(studentIds.map((id) => String(id).trim()).filter(Boolean))];
@@ -152,7 +152,7 @@ export async function setStudentActivities(studentId: string, activityIds: numbe
 }
 
 /**
- * Advisor-or-owner: set who is in ONE activity, scoped to ONE classroom's active students only.
+ * Advisor-or-admin: set who is in ONE activity, scoped to ONE classroom's active students only.
  * Add/remove is limited to this room — members from other classrooms are never touched, and any
  * studentId not belonging to this room is ignored (defence against tampered input).
  */

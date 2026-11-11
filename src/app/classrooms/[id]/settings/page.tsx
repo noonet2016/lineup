@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { holidayBlockReason } from "@/lib/dashboard";
-import { isOwner as checkIsOwner } from "@/lib/teacher";
+import { isAdmin as checkIsAdmin } from "@/lib/teacher";
 import { formatWallClockDate, nowInBangkok } from "@/lib/time";
 import SettingsClient from "./SettingsClient";
 
@@ -18,7 +18,8 @@ export default async function ClassroomSettingsPage({ params }: { params: Promis
   if (session.role !== "teacher") redirect(`/classrooms/${classroomId}`);
 
   const classroom = await prisma.classroom.findUnique({ where: { id: classroomId }, include: { advisor: { select: { fullName: true } } } });
-  if (!classroom || classroom.advisorId !== Number(session.id)) redirect(`/classrooms/${classroomId}`);
+  const isAdmin = await checkIsAdmin();
+  if (!classroom || (classroom.advisorId !== Number(session.id) && !isAdmin)) redirect(`/classrooms/${classroomId}`);
 
   const { dateOnly: today } = nowInBangkok();
   const [settingsRows, todaySession, holiday, holidays, locations] = await Promise.all([
@@ -30,11 +31,10 @@ export default async function ClassroomSettingsPage({ params }: { params: Promis
   ]);
 
   const settings = Object.fromEntries(settingsRows.map((s) => [s.settingKey, s.settingValue]));
-  const owner = await checkIsOwner();
-
   return (
     <SettingsClient
-      isOwner={owner}
+      isAdmin={isAdmin}
+      adminBack={isAdmin}
       classroomId={classroomId}
       roomName={classroom.roomName}
       fullName={classroom.advisor?.fullName ?? ""}
@@ -43,6 +43,7 @@ export default async function ClassroomSettingsPage({ params }: { params: Promis
         late_after: classroom.lateAfter ?? settings.late_after ?? "08:00",
         check_end: classroom.checkEnd ?? settings.check_end ?? "08:15",
         scanfailAlertRadiusM: classroom.scanfailAlertRadiusM === null ? "" : String(classroom.scanfailAlertRadiusM),
+        hasTimeOverride: classroom.checkStart !== null || classroom.lateAfter !== null || classroom.checkEnd !== null,
       }}
       sessionOpen={Boolean(todaySession)}
       holiday={holiday}

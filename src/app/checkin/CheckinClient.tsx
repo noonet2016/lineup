@@ -71,6 +71,16 @@ type Props = {
 
 type Step = "locate" | "confirm" | "done";
 type Alert = { type: "error" | "success" | "warning"; message: string } | null;
+type GpsSample = {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  altitude: number | null;
+  altitudeAccuracy: number | null;
+  speed: number | null;
+  heading: number | null;
+  timestamp: number;
+};
 
 export default function CheckinClient({
   fullName,
@@ -116,10 +126,11 @@ export default function CheckinClient({
       ? `คุณได้ทำการเช็คชื่อเข้าแถวในวันนี้เรียบร้อยแล้ว<br>สถานะ: <strong>${STATUS_LABEL[existingStatus ?? ""] ?? existingStatus}</strong><br><span class="text-sm text-emerald-400 font-semibold mt-2 block">เมื่อ: ${existingCheckTime}</span>`
       : "",
   );
-  const coordsRef = useRef<{ lat: number | null; lng: number | null; accuracy: number | null }>({
+  const coordsRef = useRef<{ lat: number | null; lng: number | null; accuracy: number | null; samples: GpsSample[] }>({
     lat: null,
     lng: null,
     accuracy: null,
+    samples: [],
   });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -148,6 +159,9 @@ export default function CheckinClient({
 
   const MAX_WAIT_MS = 15000;
   const GOOD_ENOUGH_ACCURACY = 50;
+  const MIN_SAMPLES = 3;
+  // Collect a short burst for anti-spoof checks without adding much wait after a good fix.
+  const MIN_COLLECT_MS = 3000;
 
   // Scan-fail reporting is allowed even without GPS, but we try harder to attach a
   // coordinate so the teacher can gauge distance. watchPosition over a 10s window
@@ -195,8 +209,8 @@ export default function CheckinClient({
     });
   }
 
-  async function finishLocating(latitude: number, longitude: number, accuracy: number) {
-    coordsRef.current = { lat: latitude, lng: longitude, accuracy };
+  async function finishLocating(latitude: number, longitude: number, accuracy: number, samples: GpsSample[]) {
+    coordsRef.current = { lat: latitude, lng: longitude, accuracy, samples };
     setGpsStatus(`พิกัดปัจจุบัน: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}\n(คลาดเคลื่อน ±${Math.round(accuracy)} ม.)`);
 
     try {
@@ -235,19 +249,62 @@ export default function CheckinClient({
     }
 
     let best: { lat: number; lng: number; accuracy: number } | null = null;
+    const samples: GpsSample[] = [];
     let settled = false;
+    const startedAt = Date.now();
+    let minCollectTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let goodFixTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let maxWaitTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const clearTimers = () => {
+      if (minCollectTimeoutId) clearTimeout(minCollectTimeoutId);
+      if (goodFixTimeoutId) clearTimeout(goodFixTimeoutId);
+      if (maxWaitTimeoutId) clearTimeout(maxWaitTimeoutId);
+    };
+
+    const canSettleEarly = () =>
+      best !== null &&
+      samples.length >= MIN_SAMPLES &&
+      (best.accuracy <= GOOD_ENOUGH_ACCURACY || Date.now() - startedAt >= MIN_COLLECT_MS);
+
+    const settleWithBest = () => {
+      if (settled) return;
+      settled = true;
+      clearTimers();
+      navigator.geolocation.clearWatch(watchId);
+      if (best) {
+        finishLocating(best.lat, best.lng, best.accuracy, samples);
+      } else {
+        setLocating(false);
+        setGpsStatus("สถานะ GPS: รอตรวจพิกัด");
+        setAlert({ type: "error", message: "ไม่สามารถระบุพิกัดที่ตั้งของท่านได้ กรุณาตรวจสอบสัญญาณ GPS แล้วลองใหม่อีกครั้ง" });
+      }
+    };
+
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         if (settled) return;
-        const { latitude, longitude, accuracy } = position.coords;
+        const { latitude, longitude, accuracy, altitude, altitudeAccuracy, speed, heading } = position.coords;
+        samples.push({
+          lat: latitude,
+          lng: longitude,
+          accuracy,
+          altitude,
+          altitudeAccuracy,
+          speed,
+          heading,
+          timestamp: position.timestamp,
+        });
         if (!best || accuracy < best.accuracy) {
           best = { lat: latitude, lng: longitude, accuracy };
           setGpsStatus(`กำลังปรับสัญญาณ... ความแม่นยำล่าสุด ±${Math.round(accuracy)} ม.`);
         }
-        if (accuracy <= GOOD_ENOUGH_ACCURACY) {
-          settled = true;
-          navigator.geolocation.clearWatch(watchId);
-          finishLocating(best.lat, best.lng, best.accuracy);
+        if (best.accuracy <= GOOD_ENOUGH_ACCURACY && !goodFixTimeoutId) {
+          // If the browser stops emitting fixes after a good one, cap the extra wait.
+          goodFixTimeoutId = setTimeout(settleWithBest, MIN_COLLECT_MS);
+        }
+        if (canSettleEarly()) {
+          settleWithBest();
         }
       },
       (error) => {
@@ -257,6 +314,7 @@ export default function CheckinClient({
         // on a hard permission denial, which retrying can never fix.
         if (error.code === error.PERMISSION_DENIED) {
           settled = true;
+          clearTimers();
           navigator.geolocation.clearWatch(watchId);
           setLocating(false);
           setGpsStatus("สถานะ GPS: รอตรวจพิกัด");
@@ -266,18 +324,10 @@ export default function CheckinClient({
       { enableHighAccuracy: true, timeout: MAX_WAIT_MS, maximumAge: 0 },
     );
 
-    setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      navigator.geolocation.clearWatch(watchId);
-      if (best) {
-        finishLocating(best.lat, best.lng, best.accuracy);
-      } else {
-        setLocating(false);
-        setGpsStatus("สถานะ GPS: รอตรวจพิกัด");
-        setAlert({ type: "error", message: "ไม่สามารถระบุพิกัดที่ตั้งของท่านได้ กรุณาตรวจสอบสัญญาณ GPS แล้วลองใหม่อีกครั้ง" });
-      }
-    }, MAX_WAIT_MS);
+    minCollectTimeoutId = setTimeout(() => {
+      if (canSettleEarly()) settleWithBest();
+    }, MIN_COLLECT_MS);
+    maxWaitTimeoutId = setTimeout(settleWithBest, MAX_WAIT_MS);
   }
 
   async function confirmCheckin() {
@@ -285,7 +335,7 @@ export default function CheckinClient({
     setAlert(null);
     try {
       const { lat, lng, accuracy } = coordsRef.current;
-      const result = await submitCheckin(lat, lng, accuracy);
+      const result = await submitCheckin(lat, lng, accuracy, coordsRef.current.samples);
       if (result.ok) {
         if (timerRef.current) clearInterval(timerRef.current);
         setCompleteMessage(result.message);
