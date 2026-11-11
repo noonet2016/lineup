@@ -95,7 +95,7 @@ export default async function StudentHistoryPage({
           {data.student.fullName}
           {data.student.nickname ? ` (${data.student.nickname})` : ""}
         </h1>
-        <p className="text-xs text-slate-500 mt-1">รหัสนักเรียน: {data.student.studentId}</p>
+        <p className="text-xs text-slate-400 mt-1">รหัสนักเรียน: {data.student.studentId}</p>
       </div>
 
       <div className="glass-panel rounded-2xl p-5">
@@ -119,7 +119,7 @@ export default async function StudentHistoryPage({
             )}
           </div>
           <div className="text-right">
-            <p className="text-xs text-slate-500">เวลาที่เช็ค</p>
+            <p className="text-xs text-slate-400">เวลาที่เช็ค</p>
             <p className="text-lg font-mono text-slate-200">{formatWallClockTime(data.todayTime)}</p>
           </div>
         </div>
@@ -192,11 +192,11 @@ export default async function StudentHistoryPage({
           >
             <div className="absolute inset-[10px] rounded-full bg-slate-950 flex flex-col items-center justify-center">
               <span className="text-2xl font-extrabold text-cyan-400">{data.rate}%</span>
-              <span className="text-[10px] text-slate-500">เข้าแถว</span>
+              <span className="text-[10px] text-slate-400">เข้าแถว</span>
             </div>
           </div>
           <div className="flex-grow space-y-2 text-sm">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               {monthLabel} · มีรอบเช็ค {data.totalSessions} วัน
             </p>
             <div className="flex items-center justify-between">
@@ -230,13 +230,13 @@ export default async function StudentHistoryPage({
       <div id="daily" className="glass-panel rounded-2xl overflow-hidden scroll-mt-16">
         <div className="px-5 py-4 border-b border-slate-900">
           <h2 className="text-base font-bold text-white">ประวัติรายวัน</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             เรียงจากใหม่ไปเก่า · ทั้งหมด {data.historyTotal} วัน
             {totalPages > 1 ? ` · หน้า ${curPage}/${totalPages}` : ""}
           </p>
         </div>
         {data.history.length === 0 ? (
-          <div className="px-5 py-10 text-center text-slate-500 text-sm">ยังไม่มีประวัติการเช็คชื่อ</div>
+          <div className="px-5 py-10 text-center text-slate-400 text-sm">ยังไม่มีประวัติการเช็คชื่อ</div>
         ) : (
           <ul className="divide-y divide-slate-900/60">
             {data.history.map((row) => {
@@ -246,7 +246,7 @@ export default async function StudentHistoryPage({
                 <li key={row.sessionDate.toISOString()} className="flex items-center justify-between px-5 py-3">
                   <span className="text-sm text-slate-300">{formatWallClockDate(row.sessionDate)}</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-slate-500">
+                    <span className="text-xs font-mono text-slate-400">
                       {lm ? row.leaveReason ?? "" : formatWallClockTime(row.checkTime)}
                     </span>
                     {lm ? (
@@ -272,15 +272,15 @@ export default async function StudentHistoryPage({
                 ← ก่อนหน้า
               </Link>
             ) : (
-              <span className="text-slate-600 text-sm px-4 py-2">← ก่อนหน้า</span>
+              <span className="text-slate-400 text-sm px-4 py-2">← ก่อนหน้า</span>
             )}
-            <span className="text-xs text-slate-500">หน้า {curPage} / {totalPages}</span>
+            <span className="text-xs text-slate-400">หน้า {curPage} / {totalPages}</span>
             {curPage < totalPages ? (
               <Link href={pageHref(curPage + 1)} className="bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-200 text-sm font-semibold px-4 py-2 rounded-lg">
                 ถัดไป →
               </Link>
             ) : (
-              <span className="text-slate-600 text-sm px-4 py-2">ถัดไป →</span>
+              <span className="text-slate-400 text-sm px-4 py-2">ถัดไป →</span>
             )}
           </div>
         )}

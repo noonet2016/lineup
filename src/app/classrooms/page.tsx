@@ -35,7 +35,7 @@ export default async function ClassroomsPage() {
       <h1 className="text-2xl font-extrabold text-white">ห้องเรียนทั้งหมด</h1>
       <div className="grid gap-3">
         {classrooms.length === 0 && (
-          <p className="text-slate-500">ยังไม่มีห้องเรียนในระบบ</p>
+          <p className="text-slate-400">ยังไม่มีห้องเรียนในระบบ</p>
         )}
         {classrooms.map((room) => (
           <Link

@@ -146,7 +146,7 @@ export default function DashboardLive({
         )}
       </div>
       {q && (
-        <p className="text-xs text-slate-500 -mt-2">พบ {visible.length} จาก {students.length} คน</p>
+        <p className="text-xs text-slate-400 -mt-2">พบ {visible.length} จาก {students.length} คน</p>
       )}
 
       <div className="hidden md:block glass-panel rounded-2xl overflow-hidden shadow-xl">
@@ -167,7 +167,7 @@ export default function DashboardLive({
             <tbody className="divide-y divide-slate-900/40">
               {visible.length === 0 && (
                 <tr>
-                  <td colSpan={isAdvisor ? 8 : 7} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={isAdvisor ? 8 : 7} className="px-6 py-12 text-center text-slate-400">
                     {q ? `ไม่พบนักเรียนที่ตรงกับ "${query}"` : "ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้"}
                   </td>
                 </tr>
@@ -246,7 +246,7 @@ export default function DashboardLive({
                           ) : (
                             <span
                               title="ยังไม่มี LINE ID — เพิ่มได้ที่หน้าสถานะผูก LINE"
-                              className="inline-flex items-center gap-1 bg-slate-900/50 border border-slate-800 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-not-allowed"
+                              className="inline-flex items-center gap-1 bg-slate-900/50 border border-slate-800 text-slate-400 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-not-allowed"
                             >
                               💬 ทักไลน์
                             </span>
@@ -279,7 +279,7 @@ export default function DashboardLive({
 
       <div className="block md:hidden space-y-4 max-h-[65vh] overflow-y-auto pr-1">
         {visible.length === 0 && (
-          <div className="glass-panel p-8 text-center text-slate-500 rounded-2xl">
+          <div className="glass-panel p-8 text-center text-slate-400 rounded-2xl">
             {q ? `ไม่พบนักเรียนที่ตรงกับ "${query}"` : "ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้"}
           </div>
         )}
@@ -318,7 +318,7 @@ export default function DashboardLive({
                       </div>
                     )}
                     <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="text-[10px] text-slate-500 font-mono">รหัส: {student.studentId}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">รหัส: {student.studentId}</span>
                       {student.nickname && (
                         <span className="text-[9px] text-cyan-400 font-medium px-1.5 py-0.5 rounded bg-cyan-500/10">
                           ชื่อเล่น: {student.nickname}
@@ -338,11 +338,11 @@ export default function DashboardLive({
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 bg-slate-950/40 p-2.5 rounded-xl border border-slate-900/50">
                 <div>
-                  <span className="text-slate-500 block text-[9px] uppercase">เวลาบันทึก</span>
+                  <span className="text-slate-400 block text-[9px] uppercase">เวลาบันทึก</span>
                   <span className="text-slate-300 font-mono">{formatWallClockTime(student.checkTime, true)}</span>
                 </div>
                 <div className="text-center">
-                  <span className="text-slate-500 block text-[9px] uppercase">ระยะห่าง</span>
+                  <span className="text-slate-400 block text-[9px] uppercase">ระยะห่าง</span>
                   <span className="text-slate-300 font-mono">
                     {student.distanceM !== null ? `${student.distanceM} ม.` : "-"}
                     {student.isSuspicious && <span className="text-rose-500 ml-1">⚠️</span>}
@@ -372,7 +372,7 @@ export default function DashboardLive({
                     ) : (
                       <span
                         title="ยังไม่มี LINE ID — เพิ่มได้ที่หน้าสถานะผูก LINE"
-                        className="inline-block bg-slate-900/50 border border-slate-800 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-[10px] cursor-not-allowed"
+                        className="inline-block bg-slate-900/50 border border-slate-800 text-slate-400 font-bold px-3 py-1.5 rounded-lg text-[10px] cursor-not-allowed"
                       >
                         💬 ทักไลน์
                       </span>
@@ -423,7 +423,7 @@ export default function DashboardLive({
               <button type="button" onClick={() => setQuickLeaveStudent(null)} className="text-slate-400 hover:text-slate-200 text-xl leading-none">✕</button>
             </div>
             <p className="text-sm text-slate-300 mb-1">{quickLeaveStudent.fullName}</p>
-            <p className="text-xs text-slate-500 mb-4">เฉพาะวันนี้ ({todayLabel})</p>
+            <p className="text-xs text-slate-400 mb-4">เฉพาะวันนี้ ({todayLabel})</p>
             {quickLeaveError && <div className="mb-3 p-2.5 rounded-lg text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400">{quickLeaveError}</div>}
             <form action={submitQuickLeave} className="space-y-3">
               <input type="hidden" name="student_id" value={quickLeaveStudent.studentId} />
@@ -476,7 +476,7 @@ function StatCard({
     >
       <span className="text-xs text-slate-400 block mb-1">{label}</span>
       <span className={`text-2xl sm:text-3xl font-extrabold ${text}`}>{value}</span>
-      {sub && <span className="block text-[10px] text-slate-500 mt-0.5">{sub}</span>}
+      {sub && <span className="block text-[10px] text-slate-400 mt-0.5">{sub}</span>}
     </a>
   );
 }

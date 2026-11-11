@@ -71,7 +71,7 @@ export default function ScanFailListClient({
         <div className="text-center space-y-2">
           <h1 className="text-xl sm:text-3xl font-extrabold text-white">📷 รายงานสแกนหน้าไม่ติด</h1>
           <p className="text-slate-400 text-sm">แจ้งสแกนหน้าไม่ติด แต่ยังไม่ได้เช็คชื่อเข้าแถว</p>
-          <p className="text-xs text-slate-500">📅 {todayLabel}</p>
+          <p className="text-xs text-slate-400">📅 {todayLabel}</p>
         </div>
 
         <section className="glass-panel rounded-2xl p-4 shadow-2xl">
@@ -115,7 +115,7 @@ export default function ScanFailListClient({
 
         <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
           {reports.length === 0 ? (
-            <div className="text-center text-slate-500 text-sm py-10">ไม่มีรายการ</div>
+            <div className="text-center text-slate-400 text-sm py-10">ไม่มีรายการ</div>
           ) : (
             <ul className="divide-y divide-slate-900/60">
               {reports.map((report) => {

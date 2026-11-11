@@ -266,7 +266,7 @@ export default function ManageStudentsClient({
                 className={inputClass + " col-span-2"}
               />
             </div>
-            <p className="text-xs text-slate-500">รหัสผ่านเริ่มต้นจะเป็นรหัสนักเรียน ระบบจะบังคับให้ตั้งใหม่ตอน login ครั้งแรก</p>
+            <p className="text-xs text-slate-400">รหัสผ่านเริ่มต้นจะเป็นรหัสนักเรียน ระบบจะบังคับให้ตั้งใหม่ตอน login ครั้งแรก</p>
             <div className="flex gap-2">
               <button type="submit" disabled={pending} className="flex-1 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold py-2 rounded-xl text-sm">
                 บันทึก
@@ -384,14 +384,14 @@ export default function ManageStudentsClient({
               )}
             </div>
             {query.trim() && (
-              <p className="text-xs text-slate-500 mt-2">พบ {visible.length} จาก {list.length} คน</p>
+              <p className="text-xs text-slate-400 mt-2">พบ {visible.length} จาก {list.length} คน</p>
             )}
           </div>
         )}
         {list.length === 0 ? (
-          <div className="px-5 py-10 text-center text-slate-500 text-sm">ยังไม่มีนักเรียนในห้องนี้</div>
+          <div className="px-5 py-10 text-center text-slate-400 text-sm">ยังไม่มีนักเรียนในห้องนี้</div>
         ) : visible.length === 0 ? (
-          <div className="px-5 py-10 text-center text-slate-500 text-sm">ไม่พบนักเรียนที่ตรงกับคำค้นหา</div>
+          <div className="px-5 py-10 text-center text-slate-400 text-sm">ไม่พบนักเรียนที่ตรงกับคำค้นหา</div>
         ) : (
           <ul className="divide-y divide-slate-900/60 overflow-y-auto max-h-[60vh]">
             {visible.map((student) => {
@@ -406,7 +406,7 @@ export default function ManageStudentsClient({
                           onChange={(e) => setEditForm({ ...editForm, numberInClass: e.target.value })}
                           className={inputClass}
                         />
-                        <div className="text-xs text-slate-500 flex items-center px-1">รหัสนักเรียน: {student.studentId} (แก้ไม่ได้)</div>
+                        <div className="text-xs text-slate-400 flex items-center px-1">รหัสนักเรียน: {student.studentId} (แก้ไม่ได้)</div>
                         <input
                           required
                           placeholder="ชื่อ-นามสกุล"
@@ -443,7 +443,7 @@ export default function ManageStudentsClient({
                         {student.fullName}
                         {student.nickname ? " (" + student.nickname + ")" : ""}
                       </p>
-                      <p className="text-xs text-slate-500">รหัสนักเรียน: {student.studentId}</p>
+                      <p className="text-xs text-slate-400">รหัสนักเรียน: {student.studentId}</p>
                       {student.activities.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {student.activities.map((activity) => (

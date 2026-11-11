@@ -98,7 +98,7 @@ export function BackgroundGlow({ variant = "cyan" }: { variant?: "cyan" | "indig
 
 export function Footer({ bordered = true }: { bordered?: boolean }) {
   return (
-    <footer className={`${bordered ? "border-t border-slate-900" : ""} py-6 text-center text-slate-500 text-xs safe-pb safe-px`}>
+    <footer className={`${bordered ? "border-t border-slate-900" : ""} py-6 text-center text-slate-400 text-xs safe-pb safe-px`}>
       <p>&copy; {new Date().getFullYear() + 543} Line up System. พัฒนาโดย Kannokkarn Chaiwongkot</p>
     </footer>
   );
@@ -262,7 +262,7 @@ export function StudentNav({ active }: { active: StudentActive }) {
         {studentItems.map((item) => {
           const on = active === item.key;
           return (
-            <a key={item.key} href={item.href} aria-label={item.label} className={`flex flex-col items-center justify-center gap-1 py-2.5 transition-colors ${on ? "text-cyan-400" : "text-slate-500 hover:text-slate-300"}`}>
+            <a key={item.key} href={item.href} aria-label={item.label} className={`flex flex-col items-center justify-center gap-1 py-2.5 transition-colors ${on ? "text-cyan-400" : "text-slate-400 hover:text-slate-300"}`}>
               <Icon path={item.path} className="w-6 h-6" strokeWidth={on ? 2.2 : 1.8} />
               <span className="text-[10px] font-semibold tracking-tight">{item.label}</span>
             </a>

@@ -482,7 +482,7 @@ export default function CheckinClient({
               </div>
             </div>
             <div className="py-4">
-              <div className="text-sm text-slate-500 mb-4 whitespace-pre-line">{gpsStatus}</div>
+              <div className="text-sm text-slate-300 mb-4 whitespace-pre-line">{gpsStatus}</div>
               <button
                 onClick={requestLocation}
                 disabled={locating}

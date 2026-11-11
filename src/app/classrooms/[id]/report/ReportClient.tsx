@@ -113,7 +113,7 @@ export default function ReportClient({
               <tbody className="divide-y divide-slate-900/40">
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={9} className="px-6 py-12 text-center text-slate-400">
                       ไม่พบสถิติการเช็คชื่อเข้าแถวในช่วงเวลาที่เลือก
                     </td>
                   </tr>
@@ -133,7 +133,7 @@ export default function ReportClient({
                       <td className="px-6 py-4 text-center font-bold text-sky-400 font-mono">{row.excused}</td>
                       <td className="px-6 py-4 text-center text-slate-400 font-mono">{row.pending}</td>
                       <td className="px-6 py-4 text-center text-orange-400 font-mono">{row.flagged}</td>
-                      <td className="px-6 py-4 text-center text-slate-500 font-mono">{row.totalStudents} คน</td>
+                      <td className="px-6 py-4 text-center text-slate-400 font-mono">{row.totalStudents} คน</td>
                       <td className="px-6 py-4 text-right">
                         <a
                           href={detailHref}

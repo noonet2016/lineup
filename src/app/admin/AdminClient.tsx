@@ -313,7 +313,7 @@ export default function AdminClient({
                 placeholder="เว้นว่าง = ไม่เปลี่ยนค่าเดิม"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
               />
-              <span className="block text-[11px] text-slate-500 mt-1.5">ถ้านักเรียนแจ้งจากระยะไกลเกินค่านี้ ครูจะเห็น badge นอกรัศมี (ไม่บล็อกการแจ้ง)</span>
+              <span className="block text-[11px] text-slate-400 mt-1.5">ถ้านักเรียนแจ้งจากระยะไกลเกินค่านี้ ครูจะเห็น badge นอกรัศมี (ไม่บล็อกการแจ้ง)</span>
             </label>
             <button type="submit" disabled={pending} className="w-full rounded-xl bg-cyan-500 px-4 py-3 font-bold text-white shadow-lg shadow-cyan-500/20 transition-colors hover:bg-cyan-600 disabled:opacity-50">บันทึกจุดส่วนกลาง</button>
           </form>
@@ -362,7 +362,7 @@ export default function AdminClient({
                 placeholder="ครูเปลี่ยนเองได้ภายหลัง"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-12 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowAddPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-300 text-xs font-semibold">
+              <button type="button" onClick={() => setShowAddPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300 text-xs font-semibold">
                 {showAddPw ? "ซ่อน" : "แสดง"}
               </button>
             </div>
@@ -371,7 +371,7 @@ export default function AdminClient({
             <button type="submit" disabled={pending} className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98] disabled:opacity-60">
               {pending ? "กำลังบันทึก..." : "+ เพิ่มครู + ห้อง"}
             </button>
-            <p className="text-[11px] text-slate-500 mt-2">ครูที่เพิ่มจะเป็น &ldquo;ที่ปรึกษา&rdquo; ของห้องที่สร้าง — ล็อกอินแล้วตั้งจุดเช็คอิน + เพิ่มนักเรียนของห้องตัวเองได้ทันที</p>
+            <p className="text-[11px] text-slate-400 mt-2">ครูที่เพิ่มจะเป็น &ldquo;ที่ปรึกษา&rdquo; ของห้องที่สร้าง — ล็อกอินแล้วตั้งจุดเช็คอิน + เพิ่มนักเรียนของห้องตัวเองได้ทันที</p>
           </div>
         </form>
       </section>
@@ -384,7 +384,7 @@ export default function AdminClient({
         <form id="add-admin-form" action={addAdmin} className="grid sm:grid-cols-3 gap-4">
           <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">ชื่อ - นามสกุล</span><input name="full_name" required placeholder="เช่น ผู้ดูแลระบบ" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /></label>
           <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">Username</span><input name="username" required autoComplete="off" placeholder="เช่น admin2" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /></label>
-          <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">รหัสผ่านเริ่มต้น (≥ 6 ตัว)</span><div className="relative"><input name="password" type={showAdminPw ? "text" : "password"} required minLength={6} autoComplete="new-password" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-12 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /><button type="button" onClick={() => setShowAdminPw((value) => !value)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-300 text-xs font-semibold">{showAdminPw ? "ซ่อน" : "แสดง"}</button></div></label>
+          <label className="block"><span className="block text-xs font-semibold text-slate-400 mb-2">รหัสผ่านเริ่มต้น (≥ 6 ตัว)</span><div className="relative"><input name="password" type={showAdminPw ? "text" : "password"} required minLength={6} autoComplete="new-password" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-12 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" /><button type="button" onClick={() => setShowAdminPw((value) => !value)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300 text-xs font-semibold">{showAdminPw ? "ซ่อน" : "แสดง"}</button></div></label>
           <div className="sm:col-span-3"><button type="submit" disabled={pending} className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl transition-colors">{pending ? "กำลังบันทึก..." : "+ เพิ่มผู้ดูแลระบบ"}</button></div>
         </form>
       </section>
@@ -532,7 +532,7 @@ export default function AdminClient({
                     <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300">ผู้ดูแลระบบ</span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-500 font-mono">@{teacher.username}</p>
+                <p className="text-[11px] text-slate-400 font-mono">@{teacher.username}</p>
                 <p className="text-[11px] text-slate-400">ห้อง: {teacher.rooms.length ? teacher.rooms.map((r) => `ม.${r}`).join(", ") : "— ยังไม่มีห้อง"}</p>
                 {teacher.roomsDetailed.length ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -590,7 +590,7 @@ export default function AdminClient({
                 placeholder="รหัสผ่านใหม่ (≥ 6 ตัว)"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-12 text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowResetPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-300 text-xs font-semibold">
+              <button type="button" onClick={() => setShowResetPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300 text-xs font-semibold">
                 {showResetPw ? "ซ่อน" : "แสดง"}
               </button>
             </div>
@@ -680,7 +680,7 @@ export default function AdminClient({
             />
             <div className="max-h-[55vh] overflow-auto rounded-2xl border border-slate-800 bg-slate-950/40">
               {filteredMemberStudents.length === 0 ? (
-                <div className="px-4 py-8 text-center text-slate-500 text-sm">ไม่พบนักเรียนที่ตรงกับคำค้นหา</div>
+                <div className="px-4 py-8 text-center text-slate-400 text-sm">ไม่พบนักเรียนที่ตรงกับคำค้นหา</div>
               ) : (
                 <ul className="divide-y divide-slate-900/60">
                   {filteredMemberStudents.map((student) => {
@@ -690,7 +690,7 @@ export default function AdminClient({
                         <label className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-900/50 cursor-pointer">
                           <div className="min-w-0">
                             <div className="text-sm text-white font-semibold truncate">{studentLabel(student)}</div>
-                            <div className="text-[11px] text-slate-500">ห้อง ม.{student.roomName}</div>
+                            <div className="text-[11px] text-slate-400">ห้อง ม.{student.roomName}</div>
                           </div>
                           <input
                             type="checkbox"
@@ -717,7 +717,7 @@ export default function AdminClient({
               )}
             </div>
             <div className="flex items-center justify-between gap-3 mt-4">
-              <p className="text-xs text-slate-500">เลือกแล้ว {memberEditor.selectedIds.length} คน</p>
+              <p className="text-xs text-slate-400">เลือกแล้ว {memberEditor.selectedIds.length} คน</p>
               <div className="flex gap-2">
                 <button onClick={saveMembers} disabled={pending} className="rounded-2xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold py-2.5 px-5 transition-colors">
                   {pending ? "กำลังบันทึก..." : "บันทึกสมาชิก"}

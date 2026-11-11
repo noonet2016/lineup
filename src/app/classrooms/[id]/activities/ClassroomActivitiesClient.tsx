@@ -89,7 +89,7 @@ export default function ClassroomActivitiesClient({
       <PopupAlertModal alert={alert} onClose={() => setAlert(null)} />
 
       {activities.length === 0 ? (
-        <div className="glass-panel rounded-2xl p-10 text-center text-slate-500">ยังไม่มีกิจกรรม — ผู้ดูแลระบบเพิ่มได้ที่หน้าจัดการระบบ</div>
+        <div className="glass-panel rounded-2xl p-10 text-center text-slate-400">ยังไม่มีกิจกรรม — ผู้ดูแลระบบเพิ่มได้ที่หน้าจัดการระบบ</div>
       ) : (
         activities.map((activity) => (
           <div key={activity.id} className="glass-panel rounded-2xl p-5 flex items-center justify-between gap-4">
@@ -126,7 +126,7 @@ export default function ClassroomActivitiesClient({
             </div>
             <div className="overflow-auto p-2 flex-1">
               {filteredStudents.length === 0 ? (
-                <div className="p-6 text-center text-slate-500 text-sm">ไม่พบนักเรียน</div>
+                <div className="p-6 text-center text-slate-400 text-sm">ไม่พบนักเรียน</div>
               ) : (
                 filteredStudents.map((student) => {
                   const checked = editor.selectedIds.includes(student.studentId);

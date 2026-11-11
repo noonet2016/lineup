@@ -98,7 +98,7 @@ function StudentCard({ row, onOpen }: { row: StudentReportRow; onOpen: (row: Stu
         <div className="flex items-start gap-3 min-w-0">
           <CardAvatar row={row} />
           <div className="min-w-0">
-            <div className="text-xs text-slate-500 font-mono">{row.numberInClass ? `เลขที่ ${row.numberInClass}` : row.studentId}</div>
+            <div className="text-xs text-slate-400 font-mono">{row.numberInClass ? `เลขที่ ${row.numberInClass}` : row.studentId}</div>
             <div className="mt-1 text-white font-bold leading-snug whitespace-nowrap">{studentName(row)}</div>
             {row.activities.length > 0 && (
               <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -118,19 +118,19 @@ function StudentCard({ row, onOpen }: { row: StudentReportRow; onOpen: (row: Stu
       </div>
       <div className="mt-4 grid grid-cols-4 gap-2 text-center">
         <div className="rounded-xl bg-slate-950/60 p-2">
-          <div className="text-xs text-slate-500">มา</div>
+          <div className="text-xs text-slate-400">มา</div>
           <div className="font-mono font-bold text-emerald-400">{row.present}</div>
         </div>
         <div className="rounded-xl bg-slate-950/60 p-2">
-          <div className="text-xs text-slate-500">สาย</div>
+          <div className="text-xs text-slate-400">สาย</div>
           <div className="font-mono font-bold text-amber-400">{row.late}</div>
         </div>
         <div className="rounded-xl bg-slate-950/60 p-2">
-          <div className="text-xs text-slate-500">ขาด</div>
+          <div className="text-xs text-slate-400">ขาด</div>
           <div className="font-mono font-bold text-rose-400">{row.absent}</div>
         </div>
         <div className="rounded-xl bg-slate-950/60 p-2">
-          <div className="text-xs text-slate-500">%มา</div>
+          <div className="text-xs text-slate-400">%มา</div>
           <div className="font-mono font-bold text-white">{formatRate(row.attendRate)}</div>
         </div>
       </div>
@@ -293,13 +293,13 @@ export default function StudentReportClient({
         )}
 
         {!hasSessionData ? (
-          <div className="glass-panel rounded-2xl p-12 text-center text-slate-500 shadow-xl">ยังไม่มีข้อมูล</div>
+          <div className="glass-panel rounded-2xl p-12 text-center text-slate-400 shadow-xl">ยังไม่มีข้อมูล</div>
         ) : (
           <>
             {visibleSections.map((s) => (
               <section key={s.band} className="space-y-3">
                 <h2 className="text-lg font-extrabold text-white">{s.title}</h2>
-                {s.rows.length === 0 ? <div className="text-sm text-slate-500">ไม่มีนักเรียนในกลุ่มนี้</div> : s.rows.map((row) => <StudentCard key={row.studentId} row={row} onOpen={setSelected} />)}
+                {s.rows.length === 0 ? <div className="text-sm text-slate-400">ไม่มีนักเรียนในกลุ่มนี้</div> : s.rows.map((row) => <StudentCard key={row.studentId} row={row} onOpen={setSelected} />)}
               </section>
             ))}
 
@@ -373,7 +373,7 @@ export default function StudentReportClient({
                   </span>
                 )}
                 <div className="min-w-0">
-                  <div className="text-xs text-slate-500 font-mono">{selected.numberInClass ? `เลขที่ ${selected.numberInClass}` : selected.studentId}</div>
+                  <div className="text-xs text-slate-400 font-mono">{selected.numberInClass ? `เลขที่ ${selected.numberInClass}` : selected.studentId}</div>
                   <h3 className="text-xl font-extrabold text-white mt-1">{studentName(selected)}</h3>
                   {selected.activities.length > 0 && (
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -391,7 +391,7 @@ export default function StudentReportClient({
             </div>
             <div className="overflow-auto max-h-[60vh] divide-y divide-slate-900/70">
               {selected.days.length === 0 ? (
-                <div className="p-8 text-center text-slate-500">ยังไม่มีข้อมูล</div>
+                <div className="p-8 text-center text-slate-400">ยังไม่มีข้อมูล</div>
               ) : (
                 selected.days.map((day) => {
                   const badge = dashBadge(day.status);
@@ -399,7 +399,7 @@ export default function StudentReportClient({
                     <div key={`${selected.studentId}-${day.sessionId}`} className="p-4 flex items-center justify-between gap-4">
                       <div>
                         <div className="text-white font-semibold">{day.sessionDateLabel}</div>
-                        {day.exemptReason && <div className="text-xs text-slate-500 mt-1">{day.exemptReason}</div>}
+                        {day.exemptReason && <div className="text-xs text-slate-400 mt-1">{day.exemptReason}</div>}
                       </div>
                       <span className={`shrink-0 inline-flex border rounded-full px-3 py-1.5 text-xs font-bold ${badge.className}`}>{badge.text}</span>
                     </div>

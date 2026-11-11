@@ -202,7 +202,7 @@ export default function SettingsClient({
               placeholder="เว้นว่าง = ใช้รัศมีจุดเช็คอินของห้อง"
               className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             />
-            <span className="block text-[11px] text-slate-500 mt-1.5">
+            <span className="block text-[11px] text-slate-400 mt-1.5">
               ถ้านักเรียนแจ้งจากระยะไกลเกินค่านี้ ครูจะเห็น badge &ldquo;นอกรัศมี&rdquo; (ไม่บล็อกการแจ้ง)
             </span>
           </label>
@@ -231,12 +231,12 @@ export default function SettingsClient({
         </form>
         )}
         <ul className="divide-y divide-slate-900/60 border border-slate-900 rounded-xl overflow-y-auto max-h-72">
-          {holidays.length === 0 && <li className="px-4 py-6 text-center text-slate-500 text-sm">ยังไม่มีวันหยุดที่จะถึงในรายการ</li>}
+          {holidays.length === 0 && <li className="px-4 py-6 text-center text-slate-400 text-sm">ยังไม่มีวันหยุดที่จะถึงในรายการ</li>}
           {holidays.map((h) => (
             <li key={h.dateStr} className="flex items-center justify-between px-4 py-3 bg-slate-950/30">
               <div>
                 <span className="text-sm font-semibold text-white">{h.name}</span>
-                <span className="block text-xs text-slate-500 font-mono">{h.label}</span>
+                <span className="block text-xs text-slate-400 font-mono">{h.label}</span>
               </div>
               {isAdmin && (
                 <button
@@ -275,7 +275,7 @@ export default function SettingsClient({
           + เพิ่มจุดใหม่
         </button>
         {locations.length === 0 ? (
-          <div className="text-center text-slate-500 text-sm py-4 mb-4">ยังไม่มีจุดเข้าแถว กดปุ่ม “+ เพิ่มจุดใหม่” ด้านบน</div>
+          <div className="text-center text-slate-400 text-sm py-4 mb-4">ยังไม่มีจุดเข้าแถว กดปุ่ม “+ เพิ่มจุดใหม่” ด้านบน</div>
         ) : (
           <div className="space-y-3 mb-6 overflow-y-auto max-h-72 pr-1">
             {locations.map((loc) => (
@@ -291,8 +291,8 @@ export default function SettingsClient({
                   <span className="block text-sm font-bold text-white break-words pr-24">{loc.name}</span>
                   <div className="flex items-end justify-between gap-3 mt-1.5">
                     <div className="min-w-0">
-                      <span className="block text-[11px] text-slate-500 font-mono">{loc.lat}, {loc.lng}</span>
-                      <span className="block text-[11px] text-slate-500 font-mono">รัศมี {loc.radius} ม.</span>
+                      <span className="block text-[11px] text-slate-400 font-mono">{loc.lat}, {loc.lng}</span>
+                      <span className="block text-[11px] text-slate-400 font-mono">รัศมี {loc.radius} ม.</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button onClick={() => openEditLocation(loc.id)} className="text-amber-300 hover:text-amber-200 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition-all">
@@ -327,7 +327,7 @@ export default function SettingsClient({
                 required
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 pr-11 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowCurrentPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-300">
+              <button type="button" onClick={() => setShowCurrentPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300">
                 {showCurrentPw ? "🙈" : "👁️"}
               </button>
             </div>
@@ -342,7 +342,7 @@ export default function SettingsClient({
                 minLength={6}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 pr-11 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowNewPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-300">
+              <button type="button" onClick={() => setShowNewPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300">
                 {showNewPw ? "🙈" : "👁️"}
               </button>
             </div>
@@ -356,7 +356,7 @@ export default function SettingsClient({
                 required
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 pr-11 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <button type="button" onClick={() => setShowConfirmPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-300">
+              <button type="button" onClick={() => setShowConfirmPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-300">
                 {showConfirmPw ? "🙈" : "👁️"}
               </button>
             </div>

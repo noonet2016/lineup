@@ -167,7 +167,7 @@ export default function LeaveClient({ requests }: { requests: LeaveRequest[] }) 
           <h2 className="text-base font-bold text-white">คำขอลาของฉัน</h2>
         </div>
         {requests.length === 0 ? (
-          <div className="px-5 py-10 text-center text-slate-500 text-sm">ยังไม่มีคำขอลา</div>
+          <div className="px-5 py-10 text-center text-slate-400 text-sm">ยังไม่มีคำขอลา</div>
         ) : (
           <ul className="divide-y divide-slate-900/60">
             {requests.map((r) => {
@@ -177,7 +177,7 @@ export default function LeaveClient({ requests }: { requests: LeaveRequest[] }) 
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-100">{r.reason}</p>
-                      <p className="text-xs text-slate-500">{dateText(r.startDate, r.endDate)}</p>
+                      <p className="text-xs text-slate-400">{dateText(r.startDate, r.endDate)}</p>
                     </div>
                     <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold border ${badge.className}`}>{badge.label}</span>
                   </div>

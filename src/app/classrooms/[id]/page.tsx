@@ -89,7 +89,7 @@ export default async function ClassroomDashboardPage({
             ประจำวันที่ {formatWallClockDate(today)} | อัปเดทข้อมูลทุก 15 วินาที
             {!sessionOpen && " · ยังไม่เปิดรอบวันนี้"}
           </p>
-          {!isAdvisor && <p className="text-xs text-slate-500 mt-1">มุมมองอ่านอย่างเดียว (read-only)</p>}
+          {!isAdvisor && <p className="text-xs text-slate-400 mt-1">มุมมองอ่านอย่างเดียว (read-only)</p>}
         </div>
         <div className="flex items-center gap-2">
           {isAdvisor && !sessionOpen && (

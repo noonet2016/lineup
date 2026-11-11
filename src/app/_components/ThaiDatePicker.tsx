@@ -112,8 +112,8 @@ export default function ThaiDatePicker({ value, onChange, min, placeholder = "เน
         onClick={() => setOpen((current) => !current)}
         className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-left text-sm text-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
       >
-        <span className={displayValue ? "text-slate-100" : "text-slate-500"}>{displayValue || placeholder}</span>
-        <span aria-hidden="true" className="text-slate-500">
+        <span className={displayValue ? "text-slate-100" : "text-slate-400"}>{displayValue || placeholder}</span>
+        <span aria-hidden="true" className="text-slate-400">
           โ—ท
         </span>
       </button>
@@ -140,7 +140,7 @@ export default function ThaiDatePicker({ value, onChange, min, placeholder = "เน
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-500">
+          <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-400">
             {THAI_WEEKDAYS.map((day) => (
               <div key={day} className="py-1">
                 {day}

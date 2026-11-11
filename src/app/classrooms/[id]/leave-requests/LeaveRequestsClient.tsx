@@ -132,7 +132,7 @@ export default function LeaveRequestsClient({
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-white">📝 คำขอลาเรียน</h1>
           <p className="text-slate-400 text-sm mt-1">ห้องที่ปรึกษา ม.{roomName}</p>
-          <p className="text-xs text-slate-500 mt-1">📅 {selectedDateLabel}</p>
+          <p className="text-xs text-slate-400 mt-1">📅 {selectedDateLabel}</p>
         </div>
 
         <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
@@ -183,7 +183,7 @@ export default function LeaveRequestsClient({
           </div>
 
           {items.length === 0 ? (
-            <div className="text-center text-slate-500 text-sm py-10">ยังไม่มีคำขอลาจากนักเรียน</div>
+            <div className="text-center text-slate-400 text-sm py-10">ยังไม่มีคำขอลาจากนักเรียน</div>
           ) : (
             <ul className="divide-y divide-slate-900/60 border border-slate-900 rounded-xl overflow-hidden">
               {items.map((request) => {
@@ -212,16 +212,16 @@ export default function LeaveRequestsClient({
                           <span className="text-sky-400 font-medium">เหตุผล:</span> {request.reason}
                         </p>
                         <p className="text-xs text-slate-400">
-                          <span className="text-slate-500">ช่วงวันที่:</span> {formatDateRange(request.startDate, request.endDate)}
+                          <span className="text-slate-400">ช่วงวันที่:</span> {formatDateRange(request.startDate, request.endDate)}
                         </p>
                         {!isPending && request.reviewedAt && (
-                          <p className="text-xs text-slate-500">
-                            <span className="text-slate-600">พิจารณาเมื่อ:</span> {request.reviewedAt}
+                          <p className="text-xs text-slate-400">
+                            <span className="text-slate-400">พิจารณาเมื่อ:</span> {request.reviewedAt}
                           </p>
                         )}
                         {!isPending && request.reviewNote && (
                           <p className="text-xs text-slate-400">
-                            <span className="text-slate-500">หมายเหตุครู:</span> {request.reviewNote}
+                            <span className="text-slate-400">หมายเหตุครู:</span> {request.reviewNote}
                           </p>
                         )}
                       </div>
@@ -230,7 +230,7 @@ export default function LeaveRequestsClient({
                         <div className="w-full lg:w-[360px] shrink-0 space-y-3">
                           {isPending && (
                             <div>
-                              <label className="block text-xs font-medium text-slate-500 mb-2">หมายเหตุ (ไม่บังคับ)</label>
+                              <label className="block text-xs font-medium text-slate-400 mb-2">หมายเหตุ (ไม่บังคับ)</label>
                               <input
                                 value={notes[request.id] ?? ""}
                                 onChange={(e) => setNotes((current) => ({ ...current, [request.id]: e.target.value }))}

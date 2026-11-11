@@ -70,13 +70,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <LoginForms initialRole={activeRole} />
             <div className="flex items-center gap-3 my-5">
               <div className="h-px bg-slate-700/70 flex-1" />
-              <span className="text-xs text-slate-500 whitespace-nowrap">{dividerText}</span>
+              <span className="text-xs text-slate-400 whitespace-nowrap">{dividerText}</span>
               <div className="h-px bg-slate-700/70 flex-1" />
             </div>
             {lineButton}
           </div>
 
-          <div className="text-center mt-6 text-sm text-slate-500">
+          <div className="text-center mt-6 text-sm text-slate-400">
             <Link href="/" className="hover:text-slate-300 transition-colors">
               &larr; กลับหน้าหลัก
             </Link>

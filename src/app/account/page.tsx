@@ -107,11 +107,11 @@ export default async function AccountPage({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={account.linePictureUrl} alt="" className="w-14 h-14 rounded-full object-cover border border-slate-700 shrink-0" />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">?</div>
+                <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">?</div>
               )}
               <div className="min-w-0">
                 <p className="text-sm text-white font-semibold break-words">{account.lineDisplayName || "(ไม่ทราบชื่อ LINE)"}</p>
-                <p className="text-[11px] text-slate-500 font-mono break-all">ID: {account.lineUserId}</p>
+                <p className="text-[11px] text-slate-400 font-mono break-all">ID: {account.lineUserId}</p>
               </div>
             </div>
           </div>

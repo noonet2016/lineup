@@ -110,7 +110,7 @@ export default function ReportDayClient({
               <tbody className="divide-y divide-slate-900/40">
                 {filteredStudents.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
                       ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้
                     </td>
                   </tr>
@@ -166,7 +166,7 @@ export default function ReportDayClient({
 
         <div className="block md:hidden space-y-4 max-h-[65vh] overflow-y-auto pr-1">
           {filteredStudents.length === 0 && (
-            <div className="glass-panel p-8 text-center text-slate-500 rounded-2xl">ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้</div>
+            <div className="glass-panel p-8 text-center text-slate-400 rounded-2xl">ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้</div>
           )}
           {filteredStudents.map((st) => {
             const badge = dashBadge(st.displayStatus);
@@ -182,18 +182,18 @@ export default function ReportDayClient({
                         {st.fullName}
                         {st.nickname && <span className="block text-slate-400 font-normal">({st.nickname})</span>}
                       </h4>
-                      <span className="text-[10px] text-slate-500 font-mono">รหัส: {st.studentId}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">รหัส: {st.studentId}</span>
                     </div>
                   </div>
                   <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${badge.className}`}>{badge.text}</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-slate-400 bg-slate-950/40 p-2.5 rounded-xl border border-slate-900/50">
                   <div>
-                    <span className="text-slate-500 block text-[9px] uppercase">เวลาเช็ค</span>
+                    <span className="text-slate-400 block text-[9px] uppercase">เวลาเช็ค</span>
                     <span className="text-slate-300 font-mono">{st.checkTimeLabel}</span>
                   </div>
                   <div className="text-center">
-                    <span className="text-slate-500 block text-[9px] uppercase">ระยะห่าง</span>
+                    <span className="text-slate-400 block text-[9px] uppercase">ระยะห่าง</span>
                     <span className="text-slate-300 font-mono">
                       {st.distanceM !== null ? `${st.distanceM} ม.` : "-"}
                       {st.isSuspicious && <span className="text-rose-500 ml-1">⚠️</span>}

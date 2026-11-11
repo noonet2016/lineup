@@ -129,9 +129,9 @@ export default function LineStatusClient({
           />
 
           {students.length === 0 ? (
-            <div className="text-center text-slate-500 text-sm py-6">ยังไม่มีนักเรียนในห้องนี้</div>
+            <div className="text-center text-slate-400 text-sm py-6">ยังไม่มีนักเรียนในห้องนี้</div>
           ) : visible.length === 0 ? (
-            <div className="text-center text-slate-500 text-sm py-6">
+            <div className="text-center text-slate-400 text-sm py-6">
               {q ? <>ไม่พบนักเรียนที่ตรงกับ &ldquo;{query}&rdquo;</> : "ไม่มีนักเรียนในสถานะที่เลือก"}
             </div>
           ) : (
@@ -146,7 +146,7 @@ export default function LineStatusClient({
                       className="w-9 h-9 border border-slate-800 mt-0.5"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-xs text-slate-500 shrink-0 mt-0.5">?</div>
+                    <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-xs text-slate-400 shrink-0 mt-0.5">?</div>
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
@@ -158,8 +158,8 @@ export default function LineStatusClient({
                       )}
                     </div>
                     <div className="text-sm font-semibold text-white whitespace-nowrap">{s.fullName}</div>
-                    <div className="text-[11px] text-slate-500 font-mono break-words">เลขประจำตัว {s.studentId}{s.nickname ? ` · ชื่อเล่น ${s.nickname}` : ""}</div>
-                    <div className="text-xs text-slate-500 break-words">
+                    <div className="text-[11px] text-slate-400 font-mono break-words">เลขประจำตัว {s.studentId}{s.nickname ? ` · ชื่อเล่น ${s.nickname}` : ""}</div>
+                    <div className="text-xs text-slate-400 break-words">
                       {s.linked ? `LINE: ${s.lineDisplayName ?? "(ไม่ทราบชื่อ)"}` : "ยังไม่ได้ผูกบัญชี LINE"}
                     </div>
                     <div className="mt-2">

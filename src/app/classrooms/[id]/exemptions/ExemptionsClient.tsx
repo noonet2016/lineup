@@ -109,11 +109,11 @@ export default function ExemptionsClient({
             {exemptWeekday !== "today" && (
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-2">เริ่ม (ไม่บังคับ)</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-2">เริ่ม (ไม่บังคับ)</label>
                   <input type="date" name="start_date" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/50" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-2">สิ้นสุด (ไม่บังคับ)</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-2">สิ้นสุด (ไม่บังคับ)</label>
                   <input type="date" name="end_date" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/50" />
                 </div>
               </div>
@@ -148,9 +148,9 @@ export default function ExemptionsClient({
             </div>
           )}
           {exemptions.length === 0 ? (
-            <div className="text-center text-slate-500 text-sm py-6">ยังไม่มีนักเรียนที่ยกเว้น</div>
+            <div className="text-center text-slate-400 text-sm py-6">ยังไม่มีนักเรียนที่ยกเว้น</div>
           ) : visibleExemptions.length === 0 ? (
-            <div className="text-center text-slate-500 text-sm py-6">ไม่พบรายการที่ตรงกับคำค้นหา</div>
+            <div className="text-center text-slate-400 text-sm py-6">ไม่พบรายการที่ตรงกับคำค้นหา</div>
           ) : (
             <ul className="flex-grow divide-y divide-slate-900/60 border border-slate-900 rounded-xl overflow-y-auto max-h-[60vh]">
               {visibleExemptions.map((e) => (
@@ -159,7 +159,7 @@ export default function ExemptionsClient({
                     <div className="text-sm font-semibold text-white truncate">
                       เลขที่ {e.numberInClass ?? "-"} · {e.studentName}
                     </div>
-                    <div className="text-[11px] text-slate-500 font-mono">เลขประจำตัว {e.studentId}{e.nickname ? ` · ชื่อเล่น ${e.nickname}` : ""}</div>
+                    <div className="text-[11px] text-slate-400 font-mono">เลขประจำตัว {e.studentId}{e.nickname ? ` · ชื่อเล่น ${e.nickname}` : ""}</div>
                     <div className="text-xs text-slate-400 mt-0.5">
                       <span className="text-sky-400">🎌 {e.reason}</span> ·{" "}
                       {e.weekday ? `ทุกวัน${WEEKDAY_LABEL[e.weekday]}` : e.startDate === e.endDate && e.startDate ? `วันที่ ${e.startDate}` : "ทุกวันเรียน"}
