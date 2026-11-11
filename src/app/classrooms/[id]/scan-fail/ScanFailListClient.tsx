@@ -136,10 +136,10 @@ export default function ScanFailListClient({
                           src={report.linePictureUrl}
                           alt={report.fullName}
                           caption={studentLabel}
-                          className="w-11 h-11 border border-slate-700"
+                          className="w-12 h-12 border border-slate-700"
                         />
                       ) : (
-                        <div className="w-11 h-11 rounded-full shrink-0 bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-base font-bold">
+                        <div className="w-12 h-12 rounded-full shrink-0 bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-base font-bold">
                           {initial}
                         </div>
                       )}
