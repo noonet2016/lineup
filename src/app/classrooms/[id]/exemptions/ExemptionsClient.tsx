@@ -33,6 +33,11 @@ export default function ExemptionsClient({
   exemptions,
   todayLabel,
   adminBack,
+  viewAll,
+  selectedDate,
+  selectedDateLabel,
+  todayDate,
+  totalCount,
 }: {
   classroomId: number;
   roomName: string;
@@ -41,6 +46,11 @@ export default function ExemptionsClient({
   exemptions: Exemption[];
   todayLabel: string;
   adminBack: boolean;
+  viewAll: boolean;
+  selectedDate: string;
+  selectedDateLabel: string;
+  todayDate: string;
+  totalCount: number;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -59,6 +69,16 @@ export default function ExemptionsClient({
       e.reason.toLowerCase().includes(q),
     );
   }, [exemptions, query]);
+
+  const base = `/classrooms/${classroomId}/exemptions`;
+  function navigateToDate(date: string) {
+    router.push(`${base}?date=${date}`);
+  }
+  function shiftDate(days: number) {
+    const date = new Date(`${selectedDate}T00:00:00.000Z`);
+    date.setUTCDate(date.getUTCDate() + days);
+    navigateToDate(date.toISOString().slice(0, 10));
+  }
 
   function run(action: () => Promise<{ ok: boolean; message: string }>) {
     setBanner(null);
@@ -129,7 +149,33 @@ export default function ExemptionsClient({
         </section>
 
         <section className="min-w-0 glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">
-          <h2 className="text-lg font-bold text-white mb-4">รายการยกเว้น ({exemptions.length})</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2 className="text-lg font-bold text-white">
+              {viewAll ? `รายการยกเว้นทั้งหมด (${totalCount})` : `ยกเว้นวันที่เลือก (${exemptions.length})`}
+            </h2>
+            <div className="inline-flex rounded-xl border border-slate-800 bg-slate-950/60 p-1 text-sm font-bold">
+              <button type="button" onClick={() => navigateToDate(selectedDate)} className={`min-h-9 px-3 rounded-lg ${!viewAll ? "bg-sky-500 text-white" : "text-slate-300 hover:text-white"}`}>ตามวัน</button>
+              <button type="button" onClick={() => router.push(`${base}?view=all`)} className={`min-h-9 px-3 rounded-lg ${viewAll ? "bg-sky-500 text-white" : "text-slate-300 hover:text-white"}`}>ทั้งหมด</button>
+            </div>
+          </div>
+          {!viewAll && (
+            <div className="mb-4 space-y-2">
+              <p className="text-sm text-slate-300">📅 {selectedDateLabel}</p>
+              <div className="flex items-stretch gap-2">
+                <button type="button" onClick={() => shiftDate(-1)} className="min-h-11 px-4 rounded-xl bg-slate-600 hover:bg-slate-500 active:bg-slate-700 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-60" aria-label="วันก่อนหน้า">◀</button>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(event) => {
+                    if (event.target.value) navigateToDate(event.target.value);
+                  }}
+                  className="min-h-11 flex-1 min-w-0 rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-center text-sm font-semibold text-white [color-scheme:dark] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                />
+                <button type="button" onClick={() => shiftDate(1)} className="min-h-11 px-4 rounded-xl bg-slate-600 hover:bg-slate-500 active:bg-slate-700 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-60" aria-label="วันถัดไป">▶</button>
+                <button type="button" disabled={selectedDate === todayDate} onClick={() => navigateToDate(todayDate)} className="min-h-11 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-60">วันนี้</button>
+              </div>
+            </div>
+          )}
           {exemptions.length > 0 && (
             <div className="relative mb-4">
               <input
@@ -152,7 +198,7 @@ export default function ExemptionsClient({
             </div>
           )}
           {exemptions.length === 0 ? (
-            <div className="text-center text-slate-400 text-sm py-6">ยังไม่มีนักเรียนที่ยกเว้น</div>
+            <div className="text-center text-slate-400 text-sm py-6">{viewAll ? "ยังไม่มีนักเรียนที่ยกเว้น" : "ไม่มีนักเรียนที่ได้รับการยกเว้นในวันที่เลือก"}</div>
           ) : visibleExemptions.length === 0 ? (
             <div className="text-center text-slate-400 text-sm py-6">ไม่พบรายการที่ตรงกับคำค้นหา</div>
           ) : (

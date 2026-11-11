@@ -2,14 +2,42 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { isAdmin } from "@/lib/teacher";
-import { formatWallClockDate, todayInBangkok } from "@/lib/time";
+import { formatDateInput, formatWallClockDate, nowInBangkok, parseDateInput, todayInBangkok } from "@/lib/time";
 import ExemptionsClient from "./ExemptionsClient";
 import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClassroomExemptionsPage({ params }: { params: Promise<{ id: string }> }) {
+/** Mon=1 … Sun=7, from a wall-clock Date (UTC fields). */
+function isoWeekday(date: Date): number {
+  const day = date.getUTCDay();
+  return day === 0 ? 7 : day;
+}
+
+/** Does this exemption apply on `day`? Same rule as matchExemption in lib/studentHistory. */
+function appliesOn(e: { weekday: number | null; startDate: Date | null; endDate: Date | null }, day: Date): boolean {
+  if (e.weekday !== null && e.weekday !== isoWeekday(day)) return false;
+  if (e.startDate && e.startDate > day) return false;
+  if (e.endDate && e.endDate < day) return false;
+  return true;
+}
+
+export default async function ClassroomExemptionsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ date?: string | string[]; view?: string | string[] }>;
+}) {
   const { id } = await params;
+  const sp = await searchParams;
+  const viewAll = (Array.isArray(sp.view) ? sp.view[0] : sp.view) === "all";
+  const today = nowInBangkok().dateOnly;
+  const todayDate = formatDateInput(today);
+  const rawDate = Array.isArray(sp.date) ? sp.date[0] : sp.date;
+  const parsed = rawDate ? parseDateInput(rawDate) : null;
+  const selectedDay = parsed && formatDateInput(parsed) === rawDate ? parsed : today;
+  const selectedDate = formatDateInput(selectedDay);
   const classroomId = Number(id);
   if (!Number.isInteger(classroomId)) redirect("/classrooms");
 
@@ -34,6 +62,8 @@ export default async function ClassroomExemptionsPage({ params }: { params: Prom
   ]);
 
   const todayLabel = formatWallClockDate(todayInBangkok());
+  // Default view = only what is in effect on the selected day (active + matching date/weekday).
+  const shown = viewAll ? exemptions : exemptions.filter((e) => e.isActive === 1 && appliesOn(e, selectedDay));
 
   return (
     <ExemptionsClient
@@ -42,8 +72,13 @@ export default async function ClassroomExemptionsPage({ params }: { params: Prom
       fullName={classroom.advisor?.fullName ?? ""}
       todayLabel={todayLabel}
       adminBack={admin}
+      viewAll={viewAll}
+      selectedDate={selectedDate}
+      selectedDateLabel={formatWallClockDate(selectedDay)}
+      todayDate={todayDate}
+      totalCount={exemptions.length}
       students={students.map((s) => ({ studentId: s.studentId, fullName: s.fullName, nickname: s.nickname, numberInClass: s.numberInClass }))}
-      exemptions={exemptions.map((e) => ({
+      exemptions={shown.map((e) => ({
         id: e.id,
         studentId: e.student.studentId,
         studentName: e.student.fullName,
