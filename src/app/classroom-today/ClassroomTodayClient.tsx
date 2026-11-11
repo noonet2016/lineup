@@ -1,12 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { LightboxProvider } from "@/app/_components/ImageLightbox";
+import StudentAvatar from "@/app/_components/StudentAvatar";
 
 type LeaveRow = {
   studentId: string;
   numberInClass: number | null;
   fullName: string;
   nickname: string | null;
+  photoUrl: string | null;
   pending: boolean;
   label: string;
   dotClass: string;
@@ -39,6 +42,7 @@ export default function ClassroomTodayClient({
   }
 
   return (
+    <LightboxProvider>
     <main className="mx-auto w-full max-w-md py-6 space-y-5">
       <section className="glass-panel rounded-2xl p-5 space-y-4">
         <div className="space-y-1">
@@ -97,8 +101,11 @@ export default function ClassroomTodayClient({
             {rows.map((row) => (
               <li key={row.studentId} className={`px-5 py-4 ${row.pending ? "opacity-75" : ""}`}>
                 <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-slate-300">
-                    {row.numberInClass ?? "-"}
+                  <div className="relative shrink-0">
+                    <StudentAvatar student={row} className="w-12 h-12" />
+                    <span className="absolute -bottom-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-slate-950 border border-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center">
+                      {row.numberInClass ?? "-"}
+                    </span>
                   </div>
                   <div className="min-w-0 flex-1 space-y-2">
                     <div>
@@ -117,5 +124,6 @@ export default function ClassroomTodayClient({
         )}
       </section>
     </main>
+    </LightboxProvider>
   );
 }

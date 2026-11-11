@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { classifyLeave, leaveMeta, matchExemption } from "@/lib/studentHistory";
 import { formatDateInput, formatWallClockDate, nowInBangkok, parseDateInput } from "@/lib/time";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,7 @@ export default async function ClassroomTodayPage({ searchParams }: PageProps) {
         numberInClass: classmate.numberInClass,
         fullName: classmate.fullName,
         nickname: classmate.nickname,
+        photoUrl: studentAvatarUrl(classmate.studentId, null),
         pending,
         label: meta.text,
         dotClass: meta.dotClass,
