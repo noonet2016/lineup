@@ -76,7 +76,7 @@ export default function ExemptionsClient({
         <PopupAlertModal alert={banner ? { type: banner.kind, message: banner.text } : null} onClose={() => setBanner(null)} />
 
         <div className="grid lg:grid-cols-2 gap-6 items-stretch">
-        <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">
+        <section className="min-w-0 glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">
           <h2 className="text-lg font-bold text-white mb-5">เพิ่มการยกเว้น</h2>
           <form action={(formData) => run(() => addExemption(formData))} className="space-y-4">
             <div>
@@ -124,7 +124,7 @@ export default function ExemptionsClient({
           </form>
         </section>
 
-        <section className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">
+        <section className="min-w-0 glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col">
           <h2 className="text-lg font-bold text-white mb-4">รายการยกเว้น ({exemptions.length})</h2>
           {exemptions.length > 0 && (
             <div className="relative mb-4">

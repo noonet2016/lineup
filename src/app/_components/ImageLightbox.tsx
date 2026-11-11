@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 type LightboxImage = { src: string; caption?: string };
 type LightboxContextValue = { open: (img: LightboxImage) => void };
@@ -64,6 +64,28 @@ export function LightboxThumb({
   className?: string;
 }) {
   const { open } = useLightbox();
+  // LINE profile-picture URLs expire (LINE CDN returns 404). Fall back to an initial avatar
+  // instead of a broken-image icon with the alt text bleeding into the circle.
+  const [broken, setBroken] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  // An <img> that already failed before hydration never fires React's onError — check on mount.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) setBroken(true);
+  }, [src]);
+  if (broken) {
+    const label = (alt || caption || "?").replace(/^[\d.\s-]+/, "");
+    const initial = label.replace(/^(นางสาว|นาง|นาย|เด็กหญิง|เด็กชาย|ด\.ญ\.|ด\.ช\.)\s*/, "").charAt(0) || "?";
+    return (
+      <div
+        className={`shrink-0 rounded-full bg-slate-800 flex items-center justify-center text-sm font-semibold text-slate-300 ${className}`}
+        title="รูปโปรไฟล์ LINE หมดอายุ"
+        aria-hidden="true"
+      >
+        {initial}
+      </div>
+    );
+  }
   return (
     <button
       type="button"
@@ -72,7 +94,7 @@ export function LightboxThumb({
       aria-label="ดูรูปโปรไฟล์ขนาดใหญ่"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="w-full h-full object-cover" />
+      <img ref={imgRef} src={src} alt={alt} className="w-full h-full object-cover" onError={() => setBroken(true)} />
     </button>
   );
 }
