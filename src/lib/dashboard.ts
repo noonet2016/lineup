@@ -6,6 +6,7 @@ import { getActivityTagMap, type ActivityTag } from "./actions/activities";
 export type { DashboardStatus } from "./dashboardBadge";
 export { dashBadge } from "./dashboardBadge";
 import type { DashboardStatus } from "./dashboardBadge";
+import { studentAvatarUrl } from "./studentPhoto";
 
 export type DashboardFilter =
   | "all"
@@ -36,6 +37,8 @@ export type DashboardRow = {
   exemptReason: string | null;
   exemptLabel: string;
   scanFailBadge: string | null;
+  /** School photo (teacher-only route) or LINE picture fallback; null = none. */
+  photoUrl: string | null;
 };
 
 export type DashboardStats = {
@@ -161,6 +164,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
         nickname: true,
         numberInClass: true,
         lineChatId: true,
+        linePictureUrl: true,
         attendanceRecords: {
           where: { sessionId },
           select: {
@@ -247,6 +251,7 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
         editReason: record?.editReason ?? null,
         exemptReason,
         exemptLabel: exemptLabels.get(student.studentId) ?? "",
+        photoUrl: studentAvatarUrl(student.studentId, student.linePictureUrl),
         scanFailBadge: hasScanFail ? `⚠️ สแกนหน้าไม่ติด · แจ้ง ${scanFailMap[student.studentId].reportedAt}` : null,
       });
     }

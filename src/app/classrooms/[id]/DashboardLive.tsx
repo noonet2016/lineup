@@ -7,6 +7,7 @@ import { fetchDashboardSnapshot } from "@/lib/actions/dashboardLive";
 import { addExemption } from "@/lib/actions/exemptions";
 import { formatWallClockTime } from "@/lib/time";
 import ActivityBadge from "@/app/_components/ActivityBadge";
+import { LightboxProvider, LightboxThumb } from "@/app/_components/ImageLightbox";
 import { lineChatUrl } from "@/lib/lineChatId";
 
 const FILTERS: { value: DashboardFilter; label: string; color: string }[] = [
@@ -90,7 +91,7 @@ export default function DashboardLive({
     : students;
 
   return (
-    <>
+    <LightboxProvider>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <StatCard classroomId={classroomId} filter="present" active={filter === "present"} label="มาปกติ" value={stats.present} colorClass="border-l-emerald-500 text-emerald-400 ring-emerald-500/50" />
         <StatCard classroomId={classroomId} filter="late" active={filter === "late"} label="สาย" value={stats.late} colorClass="border-l-amber-500 text-amber-400 ring-amber-500/50" />
@@ -179,9 +180,12 @@ export default function DashboardLive({
                     <td className="px-6 py-4 text-slate-400 font-medium">{student.numberInClass ?? "-"}</td>
                     <td className="px-6 py-4 text-slate-400 font-mono">{student.studentId}</td>
                     <td className="px-6 py-4 text-white font-semibold">
-                      <a href={`/classrooms/${classroomId}/students/${student.studentId}`} className="hover:text-indigo-400">
-                        {student.fullName}
-                      </a>
+                      <div className="flex items-center gap-3">
+                        <StudentAvatar student={student} className="w-10 h-10" />
+                        <a href={`/classrooms/${classroomId}/students/${student.studentId}`} className="hover:text-indigo-400">
+                          {student.fullName}
+                        </a>
+                      </div>
                       {student.activities.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1.5">
                           {student.activities.map((activity) => (
@@ -301,8 +305,11 @@ export default function DashboardLive({
             <div key={student.studentId} className={`glass-panel p-4 rounded-2xl relative border-l-4 ${leftColor} flex flex-col gap-3`}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-900/80 border border-slate-800 flex items-center justify-center text-slate-400 font-bold text-sm shrink-0">
-                    {student.numberInClass ?? "-"}
+                  <div className="relative shrink-0">
+                    <StudentAvatar student={student} className="w-12 h-12" />
+                    <span className="absolute -bottom-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-slate-950 border border-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center">
+                      {student.numberInClass ?? "-"}
+                    </span>
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-white leading-tight">
@@ -447,7 +454,7 @@ export default function DashboardLive({
           </div>
         </div>
       )}
-    </>
+    </LightboxProvider>
   );
 }
 
@@ -501,5 +508,25 @@ function FilterTab({
     >
       {children}
     </a>
+  );
+}
+
+/** Student photo (tap to enlarge) or an initial when there is no photo. */
+function StudentAvatar({ student, className }: { student: DashboardData["students"][number]; className: string }) {
+  if (student.photoUrl) {
+    return (
+      <LightboxThumb
+        src={student.photoUrl}
+        alt={student.fullName}
+        caption={`${student.numberInClass ?? "-"}. ${student.fullName}${student.nickname ? ` (${student.nickname})` : ""}`}
+        className={`${className} border border-slate-800`}
+      />
+    );
+  }
+  const initial = student.fullName.replace(/^(นางสาว|นาง|นาย|เด็กหญิง|เด็กชาย)\s*/, "").charAt(0) || "?";
+  return (
+    <div className={`${className} shrink-0 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 text-sm font-bold`} aria-hidden="true">
+      {initial}
+    </div>
   );
 }
