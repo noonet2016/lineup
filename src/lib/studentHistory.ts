@@ -80,7 +80,7 @@ export type StudentHistory = {
 
 export const HISTORY_PAGE_SIZE = 30;
 
-/** Mirrors legacy student/history.php: today's status + monthly summary + last-90 daily history for one student. */
+/** Mirrors legacy student/history.php: today's status + summary + daily history, both limited to the selected month range. */
 export async function loadStudentHistory(
   studentId: string,
   startYear: number,
@@ -137,11 +137,13 @@ export async function loadStudentHistory(
         attendanceRecords: { where: { studentId }, select: { status: true } },
       },
     }),
+    // Daily history follows the SAME selected month range as the summary (Trainer 2026-11-11:
+    // choosing พฤศจิกายน must not list other months).
     prisma.attendanceSession.count({
-      where: { classroomId: student.classroomId },
+      where: { classroomId: student.classroomId, sessionDate: { gte: monthStart, lte: monthEnd } },
     }),
     prisma.attendanceSession.findMany({
-      where: { classroomId: student.classroomId },
+      where: { classroomId: student.classroomId, sessionDate: { gte: monthStart, lte: monthEnd } },
       orderBy: { sessionDate: "desc" },
       skip: (page - 1) * HISTORY_PAGE_SIZE,
       take: HISTORY_PAGE_SIZE,
