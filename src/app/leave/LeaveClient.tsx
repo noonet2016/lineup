@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import ThaiDatePicker from "@/app/_components/ThaiDatePicker";
 import { requestLeave, cancelMyLeave } from "@/lib/actions/leave";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
+import { LightboxProvider } from "@/app/_components/ImageLightbox";
+import StudentAvatar from "@/app/_components/StudentAvatar";
 
 type LeaveRequest = {
   id: number;
@@ -34,7 +36,13 @@ function dateText(start: string | null, end: string | null): string {
   return `${start ?? "?"} – ${end ?? "?"}`;
 }
 
-export default function LeaveClient({ requests }: { requests: LeaveRequest[] }) {
+export default function LeaveClient({
+  requests,
+  student,
+}: {
+  requests: LeaveRequest[];
+  student: { fullName: string; nickname: string | null; numberInClass: number | null; photoUrl: string | null };
+}) {
   const router = useRouter();
   const [reasonChoice, setReasonChoice] = useState(REASON_OPTIONS[0]);
   const [customReason, setCustomReason] = useState("");
@@ -90,6 +98,20 @@ export default function LeaveClient({ requests }: { requests: LeaveRequest[] }) 
   return (
     <main className="max-w-md mx-auto safe-px py-10 space-y-6">
       <h1 className="text-2xl font-extrabold text-white">ยื่นขอลา / ขอยกเว้นเข้าแถว</h1>
+
+      <LightboxProvider>
+        <div className="glass-panel rounded-2xl p-4 flex items-center gap-4">
+          <StudentAvatar student={student} className="w-16 h-16" initialClassName="text-xl" />
+          <div className="min-w-0">
+            <p className="text-xs text-slate-400">ผู้ยื่นคำขอ</p>
+            <p className="text-base font-bold text-white break-words">{student.fullName}</p>
+            <p className="text-sm text-slate-400">
+              เลขที่ {student.numberInClass ?? "-"}
+              {student.nickname ? ` · ชื่อเล่น ${student.nickname}` : ""}
+            </p>
+          </div>
+        </div>
+      </LightboxProvider>
 
       <PopupAlertModal alert={message ? { type: message.type, message: message.text } : null} onClose={() => setMessage(null)} />
 
