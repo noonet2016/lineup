@@ -94,7 +94,7 @@ export function LightboxThumb({
       aria-label="ดูรูปโปรไฟล์ขนาดใหญ่"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img ref={imgRef} src={src} alt={alt} className="w-full h-full object-cover" onError={() => setBroken(true)} />
+      <img ref={imgRef} src={src} alt={alt} loading="lazy" decoding="async" className="w-full h-full object-cover" onError={() => setBroken(true)} />
     </button>
   );
 }

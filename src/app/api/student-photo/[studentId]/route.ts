@@ -4,9 +4,9 @@ import { getSession } from "@/lib/session";
 import { readStudentPhoto } from "@/lib/studentPhoto";
 
 /**
- * Student school photo — the advisor of the student's classroom, the admin, or a student of
- * the SAME classroom (own photo + classmates on /classroom-today, Trainer 2026-11-11).
- * Never students of another room.
+ * Student school photo — the advisor of the student's classroom, the admin, or the student
+ * themself. Students never get classmates' photos (team review 2026-11-11: official ID photos
+ * of minors stay on teacher surfaces; /classroom-today shows class numbers instead).
  * Photos are PII and stored outside git/public (see src/lib/studentPhoto.ts).
  */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ studentId: string }> }) {
@@ -16,15 +16,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ stu
   if (!session) return new NextResponse("Unauthorized", { status: 401 });
 
   if (session.role === "student") {
-    if (session.id !== studentId) {
-      const [me, target] = await Promise.all([
-        prisma.student.findUnique({ where: { studentId: session.id }, select: { classroomId: true, status: true } }),
-        prisma.student.findUnique({ where: { studentId }, select: { classroomId: true } }),
-      ]);
-      if (!me || me.status !== 1 || !target || me.classroomId !== target.classroomId) {
-        return new NextResponse("Forbidden", { status: 403 });
-      }
-    }
+    if (session.id !== studentId) return new NextResponse("Forbidden", { status: 403 });
     const photo = readStudentPhoto(studentId);
     if (!photo) return new NextResponse("Not found", { status: 404 });
     return photoResponse(photo);

@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { isAdmin } from "@/lib/teacher";
 import { formatWallClockDate, todayInBangkok } from "@/lib/time";
 import ExemptionsClient from "./ExemptionsClient";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,7 @@ export default async function ClassroomExemptionsPage({ params }: { params: Prom
         studentName: e.student.fullName,
         nickname: e.student.nickname,
         numberInClass: e.student.numberInClass,
+        photoUrl: studentAvatarUrl(e.student.studentId, null),
         reason: e.reason,
         weekday: e.weekday,
         startDate: e.startDate ? e.startDate.toISOString().slice(0, 10) : null,

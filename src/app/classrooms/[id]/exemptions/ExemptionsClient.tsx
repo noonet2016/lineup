@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import { PopupAlertModal } from "@/app/_components/PopupAlert";
 import { addExemption, deleteExemption, toggleExemptionActive } from "@/lib/actions/exemptions";
+import { LightboxProvider } from "@/app/_components/ImageLightbox";
+import StudentAvatar from "@/app/_components/StudentAvatar";
 
 const WEEKDAY_LABEL: Record<number, string> = { 1: "จันทร์", 2: "อังคาร", 3: "พุธ", 4: "พฤหัสบดี", 5: "ศุกร์", 6: "เสาร์", 7: "อาทิตย์" };
 
@@ -15,6 +17,7 @@ type Exemption = {
   studentName: string;
   nickname: string | null;
   numberInClass: number | null;
+  photoUrl: string | null;
   reason: string;
   weekday: number | null;
   startDate: string | null;
@@ -68,6 +71,7 @@ export default function ExemptionsClient({
 
   return (
     <TeacherShell active="exemptions" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
+      <LightboxProvider>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-white">🎌 ยกเว้นเข้าแถว</h1>
@@ -155,7 +159,8 @@ export default function ExemptionsClient({
             <ul className="flex-grow divide-y divide-slate-900/60 border border-slate-900 rounded-xl overflow-y-auto max-h-[60vh]">
               {visibleExemptions.map((e) => (
                 <li key={e.id} className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-950/30">
-                  <div className="min-w-0">
+                  <StudentAvatar student={{ fullName: e.studentName, nickname: e.nickname, numberInClass: e.numberInClass, photoUrl: e.photoUrl }} className="w-10 h-10" />
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold text-white truncate">
                       เลขที่ {e.numberInClass ?? "-"} · {e.studentName}
                     </div>
@@ -182,6 +187,7 @@ export default function ExemptionsClient({
         </section>
         </div>
       </main>
+      </LightboxProvider>
     </TeacherShell>
   );
 }
