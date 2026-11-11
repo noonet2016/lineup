@@ -30,6 +30,7 @@ type ActivityRow = {
   name: string;
   color: string;
   isActive: number;
+  exemptAssembly: number;
   memberIds: string[];
   memberCount: number;
 };
@@ -42,8 +43,8 @@ type StudentRow = {
   roomName: string;
 };
 
-type ActivityForm = { name: string; color: string; isActive: boolean };
-const DEFAULT_ACTIVITY_FORM: ActivityForm = { name: "", color: "slate", isActive: true };
+type ActivityForm = { name: string; color: string; isActive: boolean; exemptAssembly: boolean };
+const DEFAULT_ACTIVITY_FORM: ActivityForm = { name: "", color: "slate", isActive: true, exemptAssembly: false };
 const COLOR_OPTIONS = ["fuchsia", "amber", "lime", "sky", "violet", "rose", "slate"] as const;
 
 function studentLabel(student: StudentRow) {
@@ -180,7 +181,7 @@ export default function AdminClient({
   function createNewActivity(e: FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const result = await createActivity(newActivity.name, newActivity.color);
+      const result = await createActivity(newActivity.name, newActivity.color, newActivity.exemptAssembly);
       showResult(result);
       if (result.ok) {
         setNewActivity(DEFAULT_ACTIVITY_FORM);
@@ -193,7 +194,7 @@ export default function AdminClient({
     if (!editActivity) return;
     const target = editActivity;
     startTransition(async () => {
-      const result = await updateActivity(target.id, target.form.name, target.form.color, target.form.isActive);
+      const result = await updateActivity(target.id, target.form.name, target.form.color, target.form.isActive, target.form.exemptAssembly);
       showResult(result);
       if (result.ok) {
         setEditActivity(null);
@@ -444,6 +445,10 @@ export default function AdminClient({
               ))}
             </select>
           </label>
+          <label className="sm:col-span-2 flex items-center gap-2 text-sm text-slate-300">
+            <input type="checkbox" checked={newActivity.exemptAssembly} onChange={(e) => setNewActivity((current) => ({ ...current, exemptAssembly: e.target.checked }))} className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-indigo-500 focus:ring-indigo-500" />
+            ยกเว้นเข้าแถว (สมาชิกไม่ต้องเช็คชื่อทุกวัน)
+          </label>
           <button type="submit" disabled={pending || !newActivity.name.trim()} className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl text-sm">
             + เพิ่มกิจกรรม
           </button>
@@ -463,6 +468,10 @@ export default function AdminClient({
                       }
                       className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                     />
+                  </label>
+                  <label className="sm:col-span-3 flex items-center gap-2 text-sm text-slate-300">
+                    <input type="checkbox" checked={editActivity.form.exemptAssembly} onChange={(e) => setEditActivity((current) => (current ? { ...current, form: { ...current.form, exemptAssembly: e.target.checked } } : current))} className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-indigo-500 focus:ring-indigo-500" />
+                    ยกเว้นเข้าแถว (สมาชิกไม่ต้องเช็คชื่อทุกวัน)
                   </label>
                   <label className="block">
                     <span className="block text-xs font-semibold text-slate-400 mb-2">สี</span>
@@ -505,6 +514,7 @@ export default function AdminClient({
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <ActivityBadge name={activity.name} color={activity.color} />
+                      {activity.exemptAssembly === 1 && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300">ยกเว้นเข้าแถว</span>}
                       {!activity.isActive && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-400">ไม่ใช้งาน</span>}
                     </div>
                     <p className="text-xs text-slate-400 mt-2">สมาชิก {activity.memberCount} คน</p>
@@ -519,7 +529,7 @@ export default function AdminClient({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditActivity({ id: activity.id, form: { name: activity.name, color: activity.color, isActive: Boolean(activity.isActive) } })}
+                      onClick={() => setEditActivity({ id: activity.id, form: { name: activity.name, color: activity.color, isActive: Boolean(activity.isActive), exemptAssembly: activity.exemptAssembly === 1 } })}
                       className="text-xs font-semibold text-indigo-300 hover:text-indigo-200 px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 transition-all"
                     >
                       แก้ไข

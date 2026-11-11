@@ -5,6 +5,7 @@ import { todayInBangkok } from "@/lib/time";
 import { AdminShell } from "../_components/LegacyChrome";
 import OverviewClient from "./OverviewClient";
 import { studentAvatarUrl } from "@/lib/studentPhoto";
+import { getActivityExemptionsByStudentIds } from "@/lib/activityExemptions";
 
 export const dynamic = "force-dynamic";
 
@@ -42,10 +43,11 @@ export default async function AdminPage() {
 
   const today = todayInBangkok();
   const recentWindowStart = dateDaysBefore(today, 29);
-  const [classrooms, students, exemptions, noLineCount, openScanFailCount] = await Promise.all([
+  const [classrooms, students, exemptions, activityExemptions, noLineCount, openScanFailCount] = await Promise.all([
     prisma.classroom.findMany({ orderBy: { id: "asc" }, select: { id: true, roomName: true, _count: { select: { students: { where: { status: 1 } } } }, sessions: { select: { classroomId: true, sessionDate: true, attendanceRecords: { select: { studentId: true, status: true } } } } } }),
     prisma.student.findMany({ where: { status: 1 }, orderBy: [{ classroomId: "asc" }, { numberInClass: "asc" }, { studentId: "asc" }], select: { studentId: true, fullName: true, nickname: true, numberInClass: true, linePictureUrl: true, classroom: { select: { id: true, roomName: true } } } }),
     prisma.studentExemption.findMany({ where: { isActive: 1, status: "approved" }, select: { studentId: true, weekday: true, startDate: true, endDate: true } }),
+    prisma.student.findMany({ where: { status: 1 }, select: { studentId: true } }).then((rows) => getActivityExemptionsByStudentIds(rows.map((row) => row.studentId))),
     prisma.student.count({ where: { lineUserId: null } }),
     prisma.scanFailReport.count({ where: { acknowledgedAt: null } }),
   ]);
@@ -54,6 +56,7 @@ export default async function AdminPage() {
   for (const student of students) studentIdsByClassroom.set(student.classroom.id, [...(studentIdsByClassroom.get(student.classroom.id) ?? []), student.studentId]);
   const exemptionsByStudent = new Map<string, OverviewExemption[]>();
   for (const exemption of exemptions) exemptionsByStudent.set(exemption.studentId, [...(exemptionsByStudent.get(exemption.studentId) ?? []), exemption]);
+  for (const exemption of activityExemptions) exemptionsByStudent.set(exemption.studentId, [...(exemptionsByStudent.get(exemption.studentId) ?? []), exemption]);
   const allSessions = classrooms.flatMap((classroom) => classroom.sessions);
   const todaySummary = summarizeSessions(allSessions.filter((item) => item.sessionDate.getTime() === today.getTime()), studentIdsByClassroom, exemptionsByStudent);
   const trend = Array.from({ length: 7 }, (_, index) => { const date = dateDaysBefore(today, 6 - index); return { label: `${date.getUTCDate()}/${date.getUTCMonth() + 1}`, rate: attendanceRate(summarizeSessions(allSessions.filter((item) => item.sessionDate.getTime() === date.getTime()), studentIdsByClassroom, exemptionsByStudent)) }; });

@@ -20,7 +20,7 @@ function normalizeIds(values: (string | number)[]): number[] {
   return [...new Set(values.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
 }
 
-export async function createActivity(name: string, color: string): Promise<ActionResult> {
+export async function createActivity(name: string, color: string, exemptAssembly = false): Promise<ActionResult> {
   await requireAdmin();
 
   const normalizedName = normalizeName(name);
@@ -28,7 +28,7 @@ export async function createActivity(name: string, color: string): Promise<Actio
   if (!normalizedName) return { ok: false, message: "กรุณาระบุชื่อกิจกรรม" };
 
   try {
-    await prisma.schoolActivity.create({ data: { name: normalizedName, color: normalizedColor } });
+    await prisma.schoolActivity.create({ data: { name: normalizedName, color: normalizedColor, exemptAssembly: exemptAssembly ? 1 : 0 } });
   } catch (error) {
     if (error instanceof Error && error.message.toLowerCase().includes("unique")) {
       return { ok: false, message: `มีกิจกรรมชื่อ "${normalizedName}" อยู่แล้ว` };
@@ -40,7 +40,7 @@ export async function createActivity(name: string, color: string): Promise<Actio
   return { ok: true, message: `เพิ่มกิจกรรม "${normalizedName}" เรียบร้อยแล้ว` };
 }
 
-export async function updateActivity(id: number, name: string, color: string, isActive: boolean): Promise<ActionResult> {
+export async function updateActivity(id: number, name: string, color: string, isActive: boolean, exemptAssembly = false): Promise<ActionResult> {
   await requireAdmin();
 
   const normalizedName = normalizeName(name);
@@ -51,7 +51,7 @@ export async function updateActivity(id: number, name: string, color: string, is
   try {
     await prisma.schoolActivity.update({
       where: { id },
-      data: { name: normalizedName, color: normalizedColor, isActive: isActive ? 1 : 0 },
+      data: { name: normalizedName, color: normalizedColor, isActive: isActive ? 1 : 0, exemptAssembly: exemptAssembly ? 1 : 0 },
     });
   } catch (error) {
     if (error instanceof Error && error.message.toLowerCase().includes("unique")) {

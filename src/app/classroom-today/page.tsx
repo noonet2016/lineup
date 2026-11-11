@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { classifyLeave, leaveMeta, matchExemption } from "@/lib/studentHistory";
 import { formatDateInput, formatWallClockDate, nowInBangkok, parseDateInput } from "@/lib/time";
+import { getActivityExemptions } from "@/lib/activityExemptions";
 
 export const dynamic = "force-dynamic";
 
@@ -45,8 +46,9 @@ export default async function ClassroomTodayPage({ searchParams }: PageProps) {
     },
   });
 
+  const activityExemptions = await getActivityExemptions(student.classroomId);
   const leaveRows = students.flatMap((classmate) => {
-    const exemption = matchExemption(classmate.exemptions, selectedDay);
+    const exemption = matchExemption([...classmate.exemptions, ...activityExemptions.filter((item) => item.studentId === classmate.studentId)], selectedDay);
     if (!exemption) return [];
     const kind = classifyLeave(exemption.reason);
     const pending = exemption.status === "pending";

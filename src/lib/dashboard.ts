@@ -7,6 +7,7 @@ export type { DashboardStatus } from "./dashboardBadge";
 export { dashBadge } from "./dashboardBadge";
 import type { DashboardStatus } from "./dashboardBadge";
 import { studentAvatarUrl } from "./studentPhoto";
+import { getActivityExemptions } from "./activityExemptions";
 
 export type DashboardFilter =
   | "all"
@@ -72,7 +73,7 @@ function isoWeekday(date: Date): number {
 /** Mirrors legacy lib/exemption.php get_exempt_map(): exemptions in effect for classroom_id on `date`. */
 export async function getExemptMap(classroomId: number, date: Date): Promise<Map<string, string>> {
   const weekday = isoWeekday(date);
-  const exemptions = await prisma.studentExemption.findMany({
+  const [exemptions, activityExemptions] = await Promise.all([prisma.studentExemption.findMany({
     where: {
       isActive: 1,
       status: "approved",
@@ -84,9 +85,10 @@ export async function getExemptMap(classroomId: number, date: Date): Promise<Map
       ],
     },
     select: { studentId: true, reason: true },
-  });
+  }), getActivityExemptions(classroomId)]);
   const map = new Map<string, string>();
   for (const e of exemptions) map.set(e.studentId, e.reason);
+  for (const e of activityExemptions) if (!map.has(e.studentId)) map.set(e.studentId, e.reason);
   return map;
 }
 

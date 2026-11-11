@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { todayInBangkok } from "./time";
+import { getActivityExemptionsByStudentIds } from "./activityExemptions";
 
 export type HistoryStatus = "present" | "late" | "absent" | "pending" | "flagged" | "notyet" | "none" | "leave";
 
@@ -121,10 +122,11 @@ export async function loadStudentHistory(
 
   const page = Math.max(1, historyPage);
   // All active (approved OR pending) exemptions for this student — matched per-date in JS below.
-  const exemptions = (await prisma.studentExemption.findMany({
+  const [realExemptions, activityExemptions] = await Promise.all([prisma.studentExemption.findMany({
     where: { studentId, isActive: 1, status: { in: ["approved", "pending"] } },
     select: { reason: true, weekday: true, startDate: true, endDate: true, status: true },
-  })) as ActiveExemption[];
+  }), getActivityExemptionsByStudentIds([studentId])]);
+  const exemptions = [...realExemptions, ...activityExemptions] as ActiveExemption[];
 
   const [rangeSessions, historyTotal, history] = await Promise.all([
     // Whole selected range (with this student's record) so leave days can be subtracted from "absent".

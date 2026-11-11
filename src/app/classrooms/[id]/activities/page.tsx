@@ -27,7 +27,7 @@ export default async function ClassroomActivitiesPage({ params }: { params: Prom
     prisma.schoolActivity.findMany({
       where: { isActive: 1 },
       orderBy: [{ id: "asc" }],
-      select: { id: true, name: true, color: true },
+      select: { id: true, name: true, color: true, exemptAssembly: true },
     }),
     prisma.student.findMany({
       where: { classroomId, status: 1 },

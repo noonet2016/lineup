@@ -8,7 +8,7 @@ import StudentAvatar from "@/app/_components/StudentAvatar";
 import { PopupAlertModal, usePopupAlert } from "@/app/_components/PopupAlert";
 import { setActivityMembersInClassroom } from "@/lib/actions/activities";
 
-type ActivityOption = { id: number; name: string; color: string };
+type ActivityOption = { id: number; name: string; color: string; exemptAssembly: number };
 type Student = { studentId: string; fullName: string; nickname: string | null; numberInClass: number | null; photoUrl: string | null; activityIds: number[] };
 
 type EditorState = { activityId: number; name: string; color: string; selectedIds: string[]; query: string } | null;
@@ -105,6 +105,7 @@ export default function ClassroomActivitiesClient({
             <div className="min-w-0 space-y-3">
               <div className="flex items-center gap-3">
                 <ActivityBadge name={activity.name} color={activity.color} />
+                {activity.exemptAssembly === 1 && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300">ยกเว้นเข้าแถว</span>}
                 <span className="text-sm text-slate-400">{memberCount.get(activity.id) ?? 0} คนในห้องนี้</span>
               </div>
               {(membersByActivity.get(activity.id)?.length ?? 0) > 0 && (
