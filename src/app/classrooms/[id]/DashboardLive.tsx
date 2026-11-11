@@ -277,7 +277,7 @@ export default function DashboardLive({
         </div>
       </div>
 
-      <div className="block md:hidden space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+      <div className="block md:hidden space-y-4 pr-1">
         {visible.length === 0 && (
           <div className="glass-panel p-8 text-center text-slate-400 rounded-2xl">
             {q ? `ไม่พบนักเรียนที่ตรงกับ "${query}"` : "ไม่มีรายชื่อนักเรียนในหัวข้อตัวกรองนี้"}
