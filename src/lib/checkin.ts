@@ -276,7 +276,10 @@ export async function submitCheckin(
 
   const spoofScore = scoreSuspicion(samples, lat!, lng!, location);
   if (spoofScore.suspicious) {
-    finalStatus = "flagged";
+    // SILENT flag (docs/ANTISPOOF_PLAN.md, Trainer 2026-11-11): keep the time-based status the
+    // student would normally get, so every student-facing page (checkin, history) looks like an
+    // ordinary check-in and a cheater gets no signal to iterate on. Only isSuspicious marks it;
+    // teachers see ⚠️ and it stays in the dashboard "รอตรวจ" list until a teacher edits it.
     isSuspicious = true;
     await logEvent(student.studentId, "spoof_suspected", spoofScore.reasons.join("; "));
   }

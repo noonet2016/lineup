@@ -210,14 +210,18 @@ export async function loadDashboard(classroomId: number, filter: DashboardFilter
     if (displayStatus in stats) {
       stats[displayStatus as keyof DashboardStats]++;
     }
-    if (displayStatus === "pending" || displayStatus === "flagged") stats.review++;
+    // Silent spoof flags keep status present/late but must still reach the teacher's review
+    // list — until a teacher has edited the record (editReason set = reviewed).
+    const needsReview =
+      displayStatus === "pending" || displayStatus === "flagged" || (Boolean(record?.isSuspicious) && !record?.editReason);
+    if (needsReview) stats.review++;
     if (record?.editReason) stats.edited++;
     if (hasScanFail) stats.scanfail++;
     allCount++;
 
     let show = true;
     if (filter === "pending_review") {
-      show = displayStatus === "pending" || displayStatus === "flagged";
+      show = needsReview;
     } else if (filter === "edited") {
       show = Boolean(record?.editReason);
     } else if (filter === "scanfail") {

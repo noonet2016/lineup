@@ -216,7 +216,7 @@ export default function DashboardLive({
                     <td className="px-6 py-4 text-center text-slate-400 font-mono">
                       {student.distanceM ?? "-"}
                       {student.isSuspicious && (
-                        <span className="text-rose-500 ml-1" title="อยู่นอกรัศมีที่กำหนด">
+                        <span className="text-rose-500 ml-1" title="พิกัดผิดปกติ (นอกรัศมี หรือสงสัย GPS ปลอม) — ครูควรตรวจสอบ">
                           ⚠️
                         </span>
                       )}
