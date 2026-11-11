@@ -110,6 +110,25 @@ export default function CheckinClient({
   const [scanFailReported, setScanFailReported] = useState<string | null>(scanFailReportedAt);
   const [scanFailGeoState, setScanFailGeoState] = useState<ScanFailGeo | null>(scanFailGeo);
   const [alert, setAlert] = useState<Alert>(null);
+  const alertButtonRef = useRef<HTMLButtonElement>(null);
+  const previousAlertFocusRef = useRef<HTMLElement | null>(null);
+  const isAlertOpen = Boolean(alert);
+
+  useEffect(() => {
+    if (!isAlertOpen) {
+      previousAlertFocusRef.current?.focus();
+      previousAlertFocusRef.current = null;
+      return;
+    }
+
+    previousAlertFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    alertButtonRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAlert(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isAlertOpen]);
 
   // Poll for the teacher's acknowledgment so the student sees it without a manual refresh.
   useEffect(() => {
@@ -461,6 +480,7 @@ export default function CheckinClient({
               <h4 className="text-white font-bold text-lg mb-1.5">{alertMeta.title}</h4>
               <p className="text-slate-300 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: alert.message }} />
               <button
+                ref={alertButtonRef}
                 type="button"
                 onClick={() => setAlert(null)}
                 className="mt-5 w-full rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 transition-colors"

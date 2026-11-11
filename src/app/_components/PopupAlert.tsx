@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type PopupType = "success" | "error" | "warning";
 export type PopupAlert = { type: PopupType; message: string } | null;
@@ -33,6 +33,31 @@ export function PopupAlertModal({
   onClose: () => void;
   buttonLabel?: string;
 }) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  const isOpen = Boolean(alert);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+      return;
+    }
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    buttonRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCloseRef.current();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
+
   if (!alert) return null;
   const meta = META[alert.type];
   return (
@@ -52,6 +77,7 @@ export function PopupAlertModal({
         <h4 className="text-white font-bold text-lg mb-1.5">{meta.title}</h4>
         <p className="text-slate-300 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: alert.message }} />
         <button
+          ref={buttonRef}
           type="button"
           onClick={onClose}
           className="mt-5 w-full rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 transition-colors"
