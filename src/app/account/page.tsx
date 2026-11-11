@@ -4,6 +4,9 @@ import { getSession } from "@/lib/session";
 import { logout } from "@/lib/actions/auth";
 import { BackgroundGlow, Footer, StudentShell, TeacherShell } from "../_components/LegacyChrome";
 import LineChatIdForm from "./LineChatIdForm";
+import { LightboxProvider } from "@/app/_components/ImageLightbox";
+import StudentAvatar from "@/app/_components/StudentAvatar";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +77,21 @@ export default async function AccountPage({
       <div className="glass-panel rounded-2xl p-4 space-y-2">
         <p className="text-xs text-slate-400">{session.role === "student" ? "นักเรียน" : "ครู"}</p>
         {studentAccount ? (
+          <>
+          <LightboxProvider>
+            <div className="flex justify-center py-2">
+              <StudentAvatar
+                student={{
+                  fullName: studentAccount.fullName,
+                  nickname: studentAccount.nickname,
+                  numberInClass: studentAccount.numberInClass,
+                  photoUrl: studentAvatarUrl(studentAccount.studentId, account.linePictureUrl),
+                }}
+                className="w-24 h-24"
+                initialClassName="text-3xl"
+              />
+            </div>
+          </LightboxProvider>
           <dl className="space-y-1.5 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-slate-400">เลขที่</dt>
@@ -92,6 +110,7 @@ export default async function AccountPage({
               <dd className="text-white">{studentAccount.nickname || "-"}</dd>
             </div>
           </dl>
+          </>
         ) : (
           <p className="text-lg font-bold text-white break-words">{account.fullName}</p>
         )}
