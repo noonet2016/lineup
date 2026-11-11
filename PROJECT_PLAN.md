@@ -34,3 +34,4 @@ Replace the legacy PHP student attendance check-in app with a Next.js 16 + Prism
 - 2026-07-08: LIFF P3 (OA rich menu) deferred indefinitely — access is via the LIFF URL pinned in each classroom's LINE group instead. Not a blocker.
 ## Notes
 - The legacy PHP project at `/Users/kanokkarn/Data/AI Title/projects/lineup` is read-only reference material for this migration.
+- 🅿️ Backlog (2026-11-11): auto check-in on entering radius — PARKED; keep manual check-in due to LINE LIFF limits (GPS only while page open). Analysis + recommended option ก in [[AUTO_CHECKIN_IDEA]] (`docs/AUTO_CHECKIN_IDEA.md`).
