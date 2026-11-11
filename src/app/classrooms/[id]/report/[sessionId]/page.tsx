@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/teacher";
 import { formatDateInput, formatWallClockDate, formatWallClockTime } from "@/lib/time";
 import { loadReportDay } from "@/lib/report";
 import ReportDayClient from "./ReportDayClient";
+import { studentAvatarUrl } from "@/lib/studentPhoto";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,7 @@ export default async function ClassroomReportDayPage({
         fullName: s.fullName,
         nickname: s.nickname,
         numberInClass: s.numberInClass,
+        photoUrl: studentAvatarUrl(s.studentId, null),
         displayStatus: s.displayStatus,
         checkTimeLabel: formatWallClockTime(s.checkTime, true),
         distanceM: s.distanceM,

@@ -7,7 +7,8 @@ import { fetchDashboardSnapshot } from "@/lib/actions/dashboardLive";
 import { addExemption } from "@/lib/actions/exemptions";
 import { formatWallClockTime } from "@/lib/time";
 import ActivityBadge from "@/app/_components/ActivityBadge";
-import { LightboxProvider, LightboxThumb } from "@/app/_components/ImageLightbox";
+import { LightboxProvider } from "@/app/_components/ImageLightbox";
+import StudentAvatar from "@/app/_components/StudentAvatar";
 import { lineChatUrl } from "@/lib/lineChatId";
 
 const FILTERS: { value: DashboardFilter; label: string; color: string }[] = [
@@ -511,22 +512,3 @@ function FilterTab({
   );
 }
 
-/** Student photo (tap to enlarge) or an initial when there is no photo. */
-function StudentAvatar({ student, className }: { student: DashboardData["students"][number]; className: string }) {
-  if (student.photoUrl) {
-    return (
-      <LightboxThumb
-        src={student.photoUrl}
-        alt={student.fullName}
-        caption={`${student.numberInClass ?? "-"}. ${student.fullName}${student.nickname ? ` (${student.nickname})` : ""}`}
-        className={`${className} border border-slate-800`}
-      />
-    );
-  }
-  const initial = student.fullName.replace(/^(นางสาว|นาง|นาย|เด็กหญิง|เด็กชาย)\s*/, "").charAt(0) || "?";
-  return (
-    <div className={`${className} shrink-0 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 text-sm font-bold`} aria-hidden="true">
-      {initial}
-    </div>
-  );
-}

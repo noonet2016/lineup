@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { TeacherShell } from "@/app/_components/LegacyChrome";
 import { dashBadge } from "@/lib/dashboardBadge";
+import { LightboxProvider } from "@/app/_components/ImageLightbox";
+import StudentAvatar from "@/app/_components/StudentAvatar";
 import type { DashboardStatus } from "@/lib/dashboardBadge";
 
 type DayFilter = "all" | DashboardStatus;
@@ -12,6 +14,7 @@ type StudentRow = {
   fullName: string;
   nickname: string | null;
   numberInClass: number | null;
+  photoUrl: string | null;
   displayStatus: DashboardStatus;
   checkTimeLabel: string;
   distanceM: number | null;
@@ -57,6 +60,7 @@ export default function ReportDayClient({
 
   return (
     <TeacherShell active="report" fullName={fullName} roomName={roomName} classroomId={classroomId} adminBack={adminBack}>
+      <LightboxProvider>
       <main className="max-w-full mx-auto safe-px py-8 space-y-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
@@ -122,8 +126,13 @@ export default function ReportDayClient({
                       <td className="px-6 py-4 text-slate-400 font-medium">{st.numberInClass ?? "-"}</td>
                       <td className="px-6 py-4 text-slate-400 font-mono">{st.studentId}</td>
                       <td className="px-6 py-4 text-white font-semibold">
-                        {st.fullName}
-                        {st.nickname && <span className="block text-slate-400 font-normal">({st.nickname})</span>}
+                        <div className="flex items-center gap-3">
+                          <StudentAvatar student={st} className="w-10 h-10" />
+                          <div>
+                            {st.fullName}
+                            {st.nickname && <span className="block text-slate-400 font-normal">({st.nickname})</span>}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badge.className}`}>{badge.text}</span>
@@ -174,8 +183,11 @@ export default function ReportDayClient({
               <div key={st.studentId} className={`glass-panel p-4 rounded-2xl border-l-4 ${LEFT_BORDER[st.displayStatus]} flex flex-col gap-3`}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-900/80 border border-slate-800 flex items-center justify-center text-slate-400 font-bold text-sm shrink-0">
-                      {st.numberInClass ?? "-"}
+                    <div className="relative shrink-0">
+                      <StudentAvatar student={st} className="w-12 h-12" />
+                      <span className="absolute -bottom-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-slate-950 border border-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center">
+                        {st.numberInClass ?? "-"}
+                      </span>
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-white leading-tight">
@@ -228,6 +240,7 @@ export default function ReportDayClient({
           })}
         </div>
       </main>
+      </LightboxProvider>
     </TeacherShell>
   );
 }
