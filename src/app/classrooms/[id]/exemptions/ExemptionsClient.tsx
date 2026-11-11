@@ -225,7 +225,8 @@ export default function ExemptionsClient({
                     <div className="text-sm font-semibold text-white truncate">
                       เลขที่ {e.numberInClass ?? "-"} · {e.studentName}
                     </div>
-                    <div className="text-xs text-slate-400 font-mono">เลขประจำตัว {e.studentId}{e.nickname ? ` · ชื่อเล่น ${e.nickname}` : ""}</div>
+                    <div className="text-xs text-slate-400 font-mono">เลขประจำตัว {e.studentId}</div>
+                    {e.nickname && <div className="text-xs text-slate-400">ชื่อเล่น {e.nickname}</div>}
                     <div className="text-xs text-slate-400 mt-0.5">
                       <span className="text-sky-400">🎌 {e.reason}</span> ·{" "}
                       {e.weekday ? `ทุกวัน${WEEKDAY_LABEL[e.weekday]}` : e.startDate === e.endDate && e.startDate ? `วันที่ ${e.startDate}` : "ทุกวันเรียน"}
